@@ -104,7 +104,7 @@ Future<void> showWatermarkDialog(BuildContext context, {required DocumentSession
                 ),
                 TextField(
                   controller: pages,
-                  decoration: InputDecoration(labelText: 'Pages (blank = all $count)', hintText: 'e.g. 1-3, 5'),
+                  decoration: InputDecoration(labelText: 'Pages (blank = all)', hintText: 'e.g. 1-3, 5'),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Apply watermark')),

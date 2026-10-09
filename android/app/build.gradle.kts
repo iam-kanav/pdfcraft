@@ -5,6 +5,10 @@ plugins {
 }
 
 android {
+    packaging {
+        // Post-quantum lookup tables from BouncyCastle; PDF encryption never uses them.
+        resources.excludes += listOf("org/bouncycastle/pqc/**")
+    }
     namespace = "com.pdfcraft.pdfcraft"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -23,7 +27,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+        // The universal APK skips 32-bit x86; --split-per-abi sets its own filters.
+        if (!project.hasProperty("split-per-abi")) {
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+        }
     }
 
     buildTypes {
@@ -31,6 +38,7 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

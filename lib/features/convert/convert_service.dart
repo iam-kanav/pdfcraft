@@ -173,7 +173,12 @@ class ConvertService {
 
   /// Editable slides: page artwork (with text removed) as the background and the page's
   /// text blocks as real text boxes at their original positions.
-  static Future<Uint8List> _pdfToPptx(String path, {String? password, List<int>? pages, void Function(double)? onProgress}) async {
+  static Future<Uint8List> _pdfToPptx(
+    String path, {
+    String? password,
+    List<int>? pages,
+    void Function(double)? onProgress,
+  }) async {
     final engine = PdfEngine.instance;
     final dir = await Directory.systemTemp.createTemp('pptx');
     try {

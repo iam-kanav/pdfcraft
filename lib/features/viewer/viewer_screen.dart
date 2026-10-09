@@ -682,7 +682,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         IconButton(
           tooltip: 'Read aloud',
           icon: const Icon(Symbols.volume_up),
-          onPressed: document == null ? null : () => tts.active ? tts.stop() : tts.start(fromPage: pageNumber ?? 1),
+          onPressed: document == null ? null : () => tts.active ? tts.stop() : _readAloud(pageNumber ?? 1),
         ),
         IconButton(
           tooltip: 'Search',
@@ -701,6 +701,13 @@ class _ViewerScreenState extends State<ViewerScreen> {
   );
 
   /// Acrobat-style overflow sheet: document header, view & navigation, tools, file actions.
+  Future<void> _readAloud(int fromPage) async {
+    final started = await tts.start(fromPage: fromPage);
+    if (!started && mounted) {
+      showSnack(context, 'No readable text from this page on. For scans, run Recognize text first.');
+    }
+  }
+
   Future<void> _showMoreSheet() async {
     final lib = _services.library;
     final page = pageNumber ?? 1;
@@ -833,7 +840,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         }
         setState(() {});
       case 'tts':
-        tts.start(fromPage: page);
+        await _readAloud(page);
       case 'goto':
         final count = document?.pages.length ?? 1;
         final r = await showTextInputDialog(

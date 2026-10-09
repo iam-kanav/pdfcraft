@@ -81,4 +81,22 @@ void main() {
     expect(p.basename(FileService.uniquePath(tmp.path, 'a.pdf')), 'a (3).pdf');
     expect(p.basename(FileService.uniquePath(tmp.path, 'b.pdf')), 'b.pdf');
   });
+  test('re-importing an original returns the edited library copy, even after rename', () async {
+    final files = FileService(Directory(p.join(tmp.path, 'lib')));
+    await files.ensureRoot();
+    final original = File(p.join(tmp.path, 'Report.pdf'))..writeAsStringSync('%PDF-1.4 original');
+    final first = await files.import(original.path);
+    File(first).writeAsStringSync('%PDF-1.4 edited in app');
+    expect(await files.import(original.path), first);
+
+    final renamed = await files.rename(first, 'Q3 Report');
+    expect(await files.import(original.path), renamed);
+    expect(File(renamed).readAsStringSync(), '%PDF-1.4 edited in app');
+
+    // A different original still gets its own copy.
+    final other = File(p.join(tmp.path, 'Report.pdf'))..writeAsStringSync('%PDF-1.4 another');
+    final second = await files.import(other.path);
+    expect(second, isNot(renamed));
+    expect(p.basename(second), 'Report.pdf');
+  });
 }

@@ -100,11 +100,16 @@ Future<void> _withSession(
   BuildContext context,
   String path,
   String? password,
-  Widget Function(dynamic session) build,
-) async {
+  Widget Function(dynamic session) build, {
+  bool openAfterEdit = false,
+}) async {
   final session = AppServices.instance.newSession(path, password: password);
   try {
     await _push(context, build(session));
+    // Tools that close themselves once applied show the result in the viewer.
+    if (openAfterEdit && session.revision > 0 && context.mounted) {
+      await _push(context, ViewerScreen(path: session.path, password: session.password));
+    }
   } finally {
     session.dispose();
   }
@@ -179,7 +184,7 @@ class ToolRegistry {
       icon: Symbols.grid_view,
       color: Brand.organize,
       category: ToolCategory.organize,
-      launcher: (c, p, pw) => _withSession(c, p!, pw, (s) => OrganizeScreen(session: s)),
+      launcher: (c, p, pw) => _withSession(c, p!, pw, (s) => OrganizeScreen(session: s), openAfterEdit: true),
     ),
     PdfTool(
       id: 'split',
@@ -197,7 +202,7 @@ class ToolRegistry {
       icon: Symbols.crop,
       color: Brand.organize,
       category: ToolCategory.organize,
-      launcher: (c, p, pw) => _withSession(c, p!, pw, (s) => CropScreen(session: s)),
+      launcher: (c, p, pw) => _withSession(c, p!, pw, (s) => CropScreen(session: s), openAfterEdit: true),
     ),
     PdfTool(
       id: 'compress',
@@ -211,7 +216,7 @@ class ToolRegistry {
     PdfTool(
       id: 'export',
       title: 'Export PDF',
-      subtitle: 'To Word, text, HTML, images',
+      subtitle: 'To Word, Excel, PowerPoint, images',
       icon: Symbols.ios_share,
       color: Brand.convert,
       category: ToolCategory.convert,
@@ -260,8 +265,13 @@ class ToolRegistry {
       icon: Symbols.water_drop,
       color: Brand.edit,
       category: ToolCategory.edit,
-      launcher: (c, p, pw) =>
-          _withSession(c, p!, pw, (s) => _ToolDialogHost(run: (ctx) => showWatermarkDialog(ctx, session: s))),
+      launcher: (c, p, pw) => _withSession(
+        c,
+        p!,
+        pw,
+        (s) => _ToolDialogHost(run: (ctx) => showWatermarkDialog(ctx, session: s)),
+        openAfterEdit: true,
+      ),
     ),
     PdfTool(
       id: 'pagenumbers',
@@ -270,8 +280,13 @@ class ToolRegistry {
       icon: Symbols.format_list_numbered,
       color: Brand.edit,
       category: ToolCategory.edit,
-      launcher: (c, p, pw) =>
-          _withSession(c, p!, pw, (s) => _ToolDialogHost(run: (ctx) => showPageNumbersDialog(ctx, session: s))),
+      launcher: (c, p, pw) => _withSession(
+        c,
+        p!,
+        pw,
+        (s) => _ToolDialogHost(run: (ctx) => showPageNumbersDialog(ctx, session: s)),
+        openAfterEdit: true,
+      ),
     ),
     PdfTool(
       id: 'properties',

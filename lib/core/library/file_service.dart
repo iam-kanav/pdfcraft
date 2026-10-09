@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:path/path.dart' as p;
 
@@ -149,6 +152,7 @@ class FileService {
     }
     final entity = isDir ? Directory(path) : File(path);
     final renamed = await entity.rename(target);
+    await _remapImports(path, renamed.path);
     return renamed.path;
   }
 
@@ -159,13 +163,14 @@ class FileService {
     }
     final target = uniquePath(dest.path, p.basename(path));
     try {
-      return (await (isDir ? Directory(path) : File(path)).rename(target)).path;
+      await (isDir ? Directory(path) : File(path)).rename(target);
     } on FileSystemException {
       if (isDir) rethrow;
       await File(path).copy(target);
       await File(path).delete();
-      return target;
     }
+    await _remapImports(path, target);
+    return target;
   }
 
   Future<String> copy(String path, Directory dest, {String? name}) async {
@@ -188,14 +193,55 @@ class FileService {
   }
 
   /// Copies an external file into the library (root or [into]). Returns the new path.
-  /// If an identical file with the same name (or a numbered variant) already exists, it is reused.
+  /// Importing the same original again returns the earlier copy, including any edits made to it
+  /// since; an identical file with the same name (or a numbered variant) is also reused.
   Future<String> import(String source, {Directory? into, String? name}) async {
     final dest = into ?? root;
     await dest.create(recursive: true);
     final fileName = sanitizeFileName(name ?? p.basename(source));
-    final existing = await _findIdentical(source, dest, fileName);
-    if (existing != null) return existing;
-    return copy(source, dest, name: fileName);
+    final hash = (await sha1.bind(File(source).openRead()).first).toString();
+    final index = await _readImportIndex();
+    final previous = index[hash];
+    if (previous != null && await File(previous).exists()) return previous;
+    final path = await _findIdentical(source, dest, fileName) ?? await copy(source, dest, name: fileName);
+    index[hash] = path;
+    await _writeImportIndex(index);
+    return path;
+  }
+
+  File get _importIndexFile => File(p.join(root.path, '.imports.json'));
+
+  Future<Map<String, String>> _readImportIndex() async {
+    try {
+      final f = _importIndexFile;
+      if (!await f.exists()) return {};
+      return (jsonDecode(await f.readAsString()) as Map).cast<String, String>();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Keeps import links pointing at files (or files inside folders) that were renamed or moved.
+  Future<void> _remapImports(String from, String to) async {
+    final index = await _readImportIndex();
+    if (index.isEmpty) return;
+    var changed = false;
+    for (final e in index.entries.toList()) {
+      if (p.equals(e.value, from)) {
+        index[e.key] = to;
+        changed = true;
+      } else if (p.isWithin(from, e.value)) {
+        index[e.key] = p.join(to, p.relative(e.value, from: from));
+        changed = true;
+      }
+    }
+    if (changed) await _writeImportIndex(index);
+  }
+
+  Future<void> _writeImportIndex(Map<String, String> index) async {
+    // Drop entries whose library copy is gone.
+    index.removeWhere((_, path) => !File(path).existsSync());
+    await _importIndexFile.writeAsString(jsonEncode(index));
   }
 
   Future<String?> _findIdentical(String source, Directory dest, String fileName) async {

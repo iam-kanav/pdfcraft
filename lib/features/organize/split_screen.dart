@@ -67,6 +67,7 @@ class _SplitScreenState extends State<SplitScreen> {
   }
 
   Future<void> _split() async {
+    FocusScope.of(context).unfocus();
     List<(int, int)> ranges;
     try {
       ranges = _computeRanges();

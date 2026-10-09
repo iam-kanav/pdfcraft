@@ -73,13 +73,26 @@ class TtsController extends ChangeNotifier {
     await _tts.setPitch(s.ttsPitch);
   }
 
-  Future<void> start({required int fromPage}) async {
+  /// Starts reading at [fromPage]. Returns false when there is no text left to read.
+  Future<bool> start({required int fromPage}) async {
     await _init();
+    final doc = host.document;
+    if (doc == null) return false;
+    // Skip ahead to the first page with readable text (scanned pages have none).
+    var page = fromPage;
+    _page = page;
+    await _loadPage(page);
+    while (_chunks.isEmpty && page < doc.pages.length) {
+      page++;
+      _page = page;
+      await _loadPage(page);
+    }
+    if (_chunks.isEmpty) return false;
     active = true;
-    _page = fromPage;
     notifyListeners();
-    await _loadPage(_page);
+    if (page != fromPage) unawaited(host.controller.goToPage(pageNumber: page));
     _play();
+    return true;
   }
 
   /// Speaks arbitrary text (e.g. a selection) without page tracking.

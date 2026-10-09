@@ -91,9 +91,24 @@ class _DocumentPickerScreenState extends State<_DocumentPickerScreen> {
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: TextField(
-              decoration: const InputDecoration(prefixIcon: Icon(Symbols.search), hintText: 'Search files'),
-              onChanged: (v) => setState(() => _query = v),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: TextField(
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Symbols.search),
+                  hintText: 'Search files',
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 11),
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              ),
             ),
           ),
         ),

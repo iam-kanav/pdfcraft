@@ -105,24 +105,27 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              _SourceCard(
-                icon: Symbols.document_scanner,
-                label: 'Scan',
-                onTap: () =>
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const ScannerScreen())),
-              ),
-              const SizedBox(width: 8),
-              _SourceCard(
-                icon: Symbols.description,
-                label: 'Document',
-                subtitle: 'Word, text, Markdown, Excel',
-                onTap: _fromDocument,
-              ),
-              const SizedBox(width: 8),
-              _SourceCard(icon: Symbols.note_add, label: 'Blank', onTap: _blank),
-            ],
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SourceCard(
+                  icon: Symbols.document_scanner,
+                  label: 'Scan',
+                  onTap: () =>
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const ScannerScreen())),
+                ),
+                const SizedBox(width: 8),
+                _SourceCard(
+                  icon: Symbols.description,
+                  label: 'Document',
+                  subtitle: 'Word, text, Markdown, Excel',
+                  onTap: _fromDocument,
+                ),
+                const SizedBox(width: 8),
+                _SourceCard(icon: Symbols.note_add, label: 'Blank', onTap: _blank),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           Row(
@@ -259,6 +262,7 @@ class _SourceCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 30, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 6),
