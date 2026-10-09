@@ -9,6 +9,7 @@ import '../../core/native/platform_bridge.dart';
 import '../../core/services.dart';
 import '../../core/util/format.dart';
 import '../common/dialogs.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -60,7 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const _Header('Appearance'),
           ListTile(
-            leading: const Icon(Icons.brightness_6_outlined),
+            leading: const Icon(Symbols.brightness_6),
             title: const Text('Theme'),
             trailing: DropdownButton<ThemeMode>(
               value: s.themeMode,
@@ -73,9 +74,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          SwitchListTile(secondary: const Icon(Icons.dark_mode_outlined), title: const Text('Night mode for pages'), value: s.nightPages, onChanged: (v) => s.nightPages = v),
+          SwitchListTile(
+            secondary: const Icon(Symbols.dark_mode),
+            title: const Text('Night mode for pages'),
+            value: s.nightPages,
+            onChanged: (v) => s.nightPages = v,
+          ),
           ListTile(
-            leading: const Icon(Icons.view_day_outlined),
+            leading: const Icon(Symbols.view_day),
             title: const Text('Page layout'),
             trailing: DropdownButton<PageScrollMode>(
               value: s.scrollMode,
@@ -89,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const _Header('Commenting'),
           ListTile(
-            leading: const Icon(Icons.person_outline),
+            leading: const Icon(Symbols.person_outline),
             title: const Text('Author name'),
             subtitle: Text(s.authorName),
             onTap: () async {
@@ -98,9 +104,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const _Header('Storage'),
-          ListTile(leading: const Icon(Icons.folder_outlined), title: const Text('My Files'), subtitle: Text(_libraryBytes == null ? '…' : formatBytes(_libraryBytes!))),
           ListTile(
-            leading: const Icon(Icons.cleaning_services_outlined),
+            leading: const Icon(Symbols.folder),
+            title: const Text('My Files'),
+            subtitle: Text(_libraryBytes == null ? '…' : formatBytes(_libraryBytes!)),
+          ),
+          ListTile(
+            leading: const Icon(Symbols.cleaning_services),
             title: const Text('Clear cache'),
             subtitle: Text(_cacheBytes == null ? '…' : formatBytes(_cacheBytes!)),
             onTap: () async {
@@ -116,22 +126,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.phone_android),
+            leading: const Icon(Symbols.phone_android),
             title: const Text('All files access'),
-            subtitle: Text(_allFiles == true ? 'Allowed — PDFs anywhere on the device are listed' : 'Not allowed — only files you open or import'),
-            trailing: _allFiles == true ? const Icon(Icons.check, color: Colors.green) : TextButton(onPressed: PlatformBridge.instance.requestAllFilesAccess, child: const Text('Allow')),
+            subtitle: Text(
+              _allFiles == true
+                  ? 'Allowed — PDFs anywhere on the device are listed'
+                  : 'Not allowed — only files you open or import',
+            ),
+            trailing: _allFiles == true
+                ? const Icon(Symbols.check, color: Colors.green)
+                : TextButton(onPressed: PlatformBridge.instance.requestAllFilesAccess, child: const Text('Allow')),
           ),
           const _Header('About'),
           const ListTile(
-            leading: Icon(Icons.offline_bolt_outlined),
+            leading: Icon(Symbols.offline_bolt),
             title: Text('Works offline'),
-            subtitle: Text('All processing — reading, editing, OCR, conversion and encryption — happens on this device. No account and no cloud.'),
+            subtitle: Text(
+              'All processing — reading, editing, OCR, conversion and encryption — happens on this device. No account and no cloud.',
+            ),
           ),
           const AboutListTile(
-            icon: Icon(Icons.info_outline),
+            icon: Icon(Symbols.info),
             applicationName: 'PDFCraft',
             applicationVersion: '1.0.0',
-            applicationLegalese: 'Uses PDFium (pdfrx), PDFBox-Android, Google ML Kit on-device text recognition and Noto fonts.',
+            applicationLegalese:
+                'Uses PDFium (pdfrx), PDFBox-Android, Google ML Kit on-device text recognition and Noto fonts.',
           ),
         ],
       ),
@@ -147,6 +166,9 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-    child: Text(text, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
+    child: Text(
+      text,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
+    ),
   );
 }

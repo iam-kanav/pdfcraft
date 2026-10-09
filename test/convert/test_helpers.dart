@@ -8,21 +8,13 @@ import 'package:pdfcraft/core/models/doc_structure.dart';
 import 'package:pdfcraft/features/convert/engine/pdf_builder.dart';
 
 /// Loads the bundled Noto Sans family from disk.
-Future<PdfFontSet> loadTestFonts() => PdfFontSet.load(
-  (path) async => ByteData.sublistView(File(path).readAsBytesSync()),
-);
+Future<PdfFontSet> loadTestFonts() =>
+    PdfFontSet.load((path) async => ByteData.sublistView(File(path).readAsBytesSync()));
 
 Uint8List makePng(int w, int h, {int r = 200, int g = 40, int b = 40}) {
   final image = img.Image(width: w, height: h);
   img.fill(image, color: img.ColorRgb8(r, g, b));
-  img.fillRect(
-    image,
-    x1: 0,
-    y1: 0,
-    x2: w ~/ 2,
-    y2: h ~/ 2,
-    color: img.ColorRgb8(20, 20, 220),
-  );
+  img.fillRect(image, x1: 0, y1: 0, x2: w ~/ 2, y2: h ~/ 2, color: img.ColorRgb8(20, 20, 220));
   return img.encodePng(image);
 }
 
@@ -38,13 +30,10 @@ Uint8List makeJpeg(int w, int h, {int? exifOrientation}) {
 /// Uncompressed PDF inspection helpers.
 String pdfText(Uint8List bytes) => latin1.decode(bytes);
 
-int pdfPageCount(Uint8List bytes) =>
-    RegExp(r'/Type\s*/Page(?![A-Za-z])').allMatches(pdfText(bytes)).length;
+int pdfPageCount(Uint8List bytes) => RegExp(r'/Type\s*/Page(?![A-Za-z])').allMatches(pdfText(bytes)).length;
 
 List<({double width, double height})> pdfMediaBoxes(Uint8List bytes) =>
-    RegExp(
-          r'/MediaBox\s*\[\s*([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s*\]',
-        )
+    RegExp(r'/MediaBox\s*\[\s*([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s*\]')
         .allMatches(pdfText(bytes))
         .map(
           (m) => (
@@ -66,12 +55,7 @@ Object describe(DocBlock b) => switch (b) {
   HeadingBlock() => ['H', b.level, b.spans.map(describeSpan).toList()],
   ParagraphBlock() => ['P', b.spans.map(describeSpan).toList()],
   QuoteBlock() => ['Q', b.spans.map(describeSpan).toList()],
-  ListItemBlock() => [
-    'LI',
-    b.ordered,
-    b.indent,
-    b.spans.map(describeSpan).toList(),
-  ],
+  ListItemBlock() => ['LI', b.ordered, b.indent, b.spans.map(describeSpan).toList()],
   ImageBlock() => ['IMG', b.bytes.length, b.caption],
   TableBlock() => ['T', b.hasHeader, b.rows],
   PageBreakBlock() => ['BR'],

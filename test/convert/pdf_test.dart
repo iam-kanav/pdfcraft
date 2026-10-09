@@ -16,10 +16,7 @@ const _lorem =
 
 DocStructure richDoc(Uint8List png, Uint8List jpeg) => DocStructure(
   blocks: [
-    const HeadingBlock(
-      level: 1,
-      spans: [TextSpanData('Grüße – Ελληνικά – Кириллица')],
-    ),
+    const HeadingBlock(level: 1, spans: [TextSpanData('Grüße – Ελληνικά – Кириллица')]),
     const ParagraphBlock(
       spans: [
         TextSpanData('Plain, '),
@@ -35,15 +32,10 @@ DocStructure richDoc(Uint8List png, Uint8List jpeg) => DocStructure(
         TextSpanData('.\tTabbed\nNew line. Control\u0007char.'),
       ],
     ),
-    for (var l = 2; l <= 6; l++)
-      HeadingBlock(level: l, spans: [TextSpanData('Heading level $l')]),
+    for (var l = 2; l <= 6; l++) HeadingBlock(level: l, spans: [TextSpanData('Heading level $l')]),
     const ListItemBlock(spans: [TextSpanData('Bullet')]),
     const ListItemBlock(spans: [TextSpanData('Nested bullet')], indent: 1),
-    const ListItemBlock(
-      spans: [TextSpanData('Nested number')],
-      ordered: true,
-      indent: 1,
-    ),
+    const ListItemBlock(spans: [TextSpanData('Nested number')], ordered: true, indent: 1),
     const ListItemBlock(spans: [TextSpanData('Number one')], ordered: true),
     const ListItemBlock(spans: [TextSpanData('Number two')], ordered: true),
     const QuoteBlock(spans: [TextSpanData('A quotation.')]),
@@ -57,17 +49,9 @@ DocStructure richDoc(Uint8List png, Uint8List jpeg) => DocStructure(
       ],
       hasHeader: true,
     ),
-    TableBlock(
-      rows: [
-        List.generate(14, (i) => 'Column $i'),
-        List.generate(14, (i) => '$i'),
-      ],
-      hasHeader: true,
-    ),
+    TableBlock(rows: [List.generate(14, (i) => 'Column $i'), List.generate(14, (i) => '$i')], hasHeader: true),
     const PageBreakBlock(),
-    const ParagraphBlock(
-      spans: [TextSpanData('Missing glyphs: 你好 ✓ are tolerated.')],
-    ),
+    const ParagraphBlock(spans: [TextSpanData('Missing glyphs: 你好 ✓ are tolerated.')]),
   ],
 );
 
@@ -96,11 +80,7 @@ void main() {
       expect(has(r'/Author\s*\(Tester\)'), isTrue);
       expect(has(r'/Creator\s*\(PDFCraft\)'), isTrue);
       expect(has(r'/URI\s*\(https://example\.com\)'), isTrue);
-      expect(
-        has(r'/FontFile2'),
-        isTrue,
-        reason: 'TrueType fonts must be embedded',
-      );
+      expect(has(r'/FontFile2'), isTrue, reason: 'TrueType fonts must be embedded');
       expect(has(r'/BaseFont\s*/NotoSans-Regular'), isTrue);
       expect(has(r'/Helvetica'), isFalse);
       expect(has(r'/DCTDecode'), isTrue);
@@ -110,17 +90,8 @@ void main() {
 
     test('compressed output is valid and smaller', () async {
       final doc = richDoc(png, jpeg);
-      final compressed = await buildPdfFromStructure(
-        doc,
-        fonts: fonts,
-        title: 'T',
-      );
-      final plain = await buildPdfFromStructure(
-        doc,
-        fonts: fonts,
-        title: 'T',
-        compress: false,
-      );
+      final compressed = await buildPdfFromStructure(doc, fonts: fonts, title: 'T');
+      final plain = await buildPdfFromStructure(doc, fonts: fonts, title: 'T', compress: false);
       expectValidPdfEnvelope(compressed);
       expect(compressed.length, lessThan(plain.length));
     });
@@ -129,171 +100,120 @@ void main() {
       final doc = DocStructure(
         blocks: [
           for (var i = 0; i < 120; i++) ...[
-            if (i % 20 == 0)
-              HeadingBlock(
-                level: 2,
-                spans: [TextSpanData('Section ${i ~/ 20 + 1}')],
-              ),
+            if (i % 20 == 0) HeadingBlock(level: 2, spans: [TextSpanData('Section ${i ~/ 20 + 1}')]),
             ParagraphBlock(spans: [TextSpanData('Paragraph $i. $_lorem')]),
           ],
+        ],
+      );
+      final bytes = await buildPdfFromStructure(doc, fonts: fonts, compress: false);
+      expectValidPdfEnvelope(bytes);
+      expect(pdfPageCount(bytes), greaterThan(5));
+    });
+
+    test('single huge paragraph, list item, quote and table span pages', () async {
+      final huge = _lorem * 120; // ~30k characters
+      final doc = DocStructure(
+        blocks: [
+          ParagraphBlock(spans: [TextSpanData(huge), const TextSpanData(' bold tail', bold: true)]),
+          ListItemBlock(spans: [TextSpanData(_lorem * 40)], ordered: true),
+          QuoteBlock(spans: [TextSpanData(_lorem * 50)]),
+          TableBlock(
+            rows: [
+              ['#', 'Text'],
+              for (var i = 0; i < 150; i++) ['$i', 'Row $i'],
+            ],
+            hasHeader: true,
+          ),
+          TableBlock(
+            rows: [
+              ['huge cell', _lorem * 100],
+              ['many lines', List.generate(300, (i) => 'line $i').join('\n')],
+            ],
+          ),
+          HeadingBlock(level: 1, spans: [TextSpanData(_lorem * 40)]),
+          ImageBlock(bytes: png, width: 200, height: 100, caption: _lorem * 30),
+        ],
+      );
+      final bytes = await buildPdfFromStructure(doc, fonts: fonts, compress: false);
+      expectValidPdfEnvelope(bytes);
+      expect(pdfPageCount(bytes), greaterThan(12));
+    });
+
+    test('large base font on a small page still lays out long list items', () async {
+      final doc = DocStructure(
+        blocks: [
+          ListItemBlock(spans: [TextSpanData(_lorem * 30)]),
+          ListItemBlock(spans: [TextSpanData(_lorem * 30)], ordered: true, indent: 3),
         ],
       );
       final bytes = await buildPdfFromStructure(
         doc,
         fonts: fonts,
+        format: PdfPageFormat.a6,
+        margin: 20,
+        baseFontSize: 24,
         compress: false,
       );
       expectValidPdfEnvelope(bytes);
-      expect(pdfPageCount(bytes), greaterThan(5));
+      expect(pdfPageCount(bytes), greaterThan(20));
     });
 
-    test(
-      'single huge paragraph, list item, quote and table span pages',
-      () async {
-        final huge = _lorem * 120; // ~30k characters
-        final doc = DocStructure(
-          blocks: [
-            ParagraphBlock(
-              spans: [
-                TextSpanData(huge),
-                const TextSpanData(' bold tail', bold: true),
-              ],
-            ),
-            ListItemBlock(spans: [TextSpanData(_lorem * 40)], ordered: true),
-            QuoteBlock(spans: [TextSpanData(_lorem * 50)]),
-            TableBlock(
-              rows: [
-                ['#', 'Text'],
-                for (var i = 0; i < 150; i++) ['$i', 'Row $i'],
-              ],
-              hasHeader: true,
-            ),
-            TableBlock(
-              rows: [
-                ['huge cell', _lorem * 100],
-                ['many lines', List.generate(300, (i) => 'line $i').join('\n')],
-              ],
-            ),
-            HeadingBlock(level: 1, spans: [TextSpanData(_lorem * 40)]),
-            ImageBlock(
-              bytes: png,
-              width: 200,
-              height: 100,
-              caption: _lorem * 30,
-            ),
-          ],
-        );
-        final bytes = await buildPdfFromStructure(
-          doc,
-          fonts: fonts,
-          compress: false,
-        );
-        expectValidPdfEnvelope(bytes);
-        expect(pdfPageCount(bytes), greaterThan(12));
-      },
-    );
+    test('page breaks: leading, repeated and trailing breaks do not create blank pages', () async {
+      final doc = DocStructure(
+        blocks: const [
+          PageBreakBlock(),
+          ParagraphBlock(spans: [TextSpanData('one')]),
+          PageBreakBlock(),
+          PageBreakBlock(),
+          ParagraphBlock(spans: [TextSpanData('two')]),
+          PageBreakBlock(),
+          ParagraphBlock(spans: [TextSpanData('three')]),
+          PageBreakBlock(),
+        ],
+      );
+      final bytes = await buildPdfFromStructure(doc, fonts: fonts, compress: false, pageNumbers: false);
+      expect(pdfPageCount(bytes), 3);
+    });
 
-    test(
-      'large base font on a small page still lays out long list items',
-      () async {
-        final doc = DocStructure(
-          blocks: [
-            ListItemBlock(spans: [TextSpanData(_lorem * 30)]),
-            ListItemBlock(
-              spans: [TextSpanData(_lorem * 30)],
-              ordered: true,
-              indent: 3,
-            ),
-          ],
-        );
-        final bytes = await buildPdfFromStructure(
-          doc,
-          fonts: fonts,
-          format: PdfPageFormat.a6,
-          margin: 20,
-          baseFontSize: 24,
-          compress: false,
-        );
-        expectValidPdfEnvelope(bytes);
-        expect(pdfPageCount(bytes), greaterThan(20));
-      },
-    );
+    test('empty document yields a single valid page; custom format is used', () async {
+      final bytes = await buildPdfFromStructure(
+        DocStructure(blocks: const []),
+        fonts: fonts,
+        format: PdfPageFormat.letter,
+        compress: false,
+      );
+      expectValidPdfEnvelope(bytes);
+      expect(pdfPageCount(bytes), 1);
+      final box = pdfMediaBoxes(bytes).single;
+      expect(box.width, closeTo(612, 0.5));
+      expect(box.height, closeTo(792, 0.5));
+    });
 
-    test(
-      'page breaks: leading, repeated and trailing breaks do not create blank pages',
-      () async {
-        final doc = DocStructure(
-          blocks: const [
-            PageBreakBlock(),
-            ParagraphBlock(spans: [TextSpanData('one')]),
-            PageBreakBlock(),
-            PageBreakBlock(),
-            ParagraphBlock(spans: [TextSpanData('two')]),
-            PageBreakBlock(),
-            ParagraphBlock(spans: [TextSpanData('three')]),
-            PageBreakBlock(),
-          ],
-        );
-        final bytes = await buildPdfFromStructure(
-          doc,
-          fonts: fonts,
-          compress: false,
-          pageNumbers: false,
-        );
-        expect(pdfPageCount(bytes), 3);
-      },
-    );
-
-    test(
-      'empty document yields a single valid page; custom format is used',
-      () async {
-        final bytes = await buildPdfFromStructure(
-          DocStructure(blocks: const []),
-          fonts: fonts,
-          format: PdfPageFormat.letter,
-          compress: false,
-        );
-        expectValidPdfEnvelope(bytes);
-        expect(pdfPageCount(bytes), 1);
-        final box = pdfMediaBoxes(bytes).single;
-        expect(box.width, closeTo(612, 0.5));
-        expect(box.height, closeTo(792, 0.5));
-      },
-    );
-
-    test(
-      'pypdf reads the output and extracts Unicode text',
-      () async {
-        final bytes = await buildPdfFromStructure(
-          richDoc(png, jpeg),
-          fonts: fonts,
-          title: 'Ext',
-        );
-        final dir = await Directory.systemTemp.createTemp('pdfcraft_pdf');
-        try {
-          final f = File('${dir.path}/out.pdf')..writeAsBytesSync(bytes);
-          final r = await Process.run('python3', [
-            '-c',
-            'import sys, pypdf\n'
-                'r = pypdf.PdfReader(sys.argv[1], strict=True)\n'
-                'print(len(r.pages)); print(r.metadata.title)\n'
-                'print("".join(p.extract_text() for p in r.pages))',
-            f.path,
-          ]);
-          expect(r.exitCode, 0, reason: '${r.stderr}');
-          final out = r.stdout as String;
-          final lines = out.split('\n');
-          expect(int.parse(lines[0]), greaterThanOrEqualTo(3));
-          expect(lines[1], 'Ext');
-          expect(out, contains('Ελληνικά'));
-          expect(out, contains('Кириллица'));
-          expect(out, contains('Grüße'));
-        } finally {
-          await dir.delete(recursive: true);
-        }
-      },
-      skip: hasPypdf() ? false : 'python3 with pypdf is not available',
-    );
+    test('pypdf reads the output and extracts Unicode text', () async {
+      final bytes = await buildPdfFromStructure(richDoc(png, jpeg), fonts: fonts, title: 'Ext');
+      final dir = await Directory.systemTemp.createTemp('pdfcraft_pdf');
+      try {
+        final f = File('${dir.path}/out.pdf')..writeAsBytesSync(bytes);
+        final r = await Process.run('python3', [
+          '-c',
+          'import sys, pypdf\n'
+              'r = pypdf.PdfReader(sys.argv[1], strict=True)\n'
+              'print(len(r.pages)); print(r.metadata.title)\n'
+              'print("".join(p.extract_text() for p in r.pages))',
+          f.path,
+        ]);
+        expect(r.exitCode, 0, reason: '${r.stderr}');
+        final out = r.stdout as String;
+        final lines = out.split('\n');
+        expect(int.parse(lines[0]), greaterThanOrEqualTo(3));
+        expect(lines[1], 'Ext');
+        expect(out, contains('Ελληνικά'));
+        expect(out, contains('Кириллица'));
+        expect(out, contains('Grüße'));
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    }, skip: hasPypdf() ? false : 'python3 with pypdf is not available');
   });
 
   group('buildPdfFromImages', () {
@@ -301,45 +221,29 @@ void main() {
     final tall = makeJpeg(100, 400);
     final rotated = makeJpeg(100, 50, exifOrientation: 6); // displays as 50x100
 
-    test(
-      'fitImage: one page per image, long side 842pt, aspect kept, EXIF respected',
-      () async {
-        final bytes = await buildPdfFromImages(
-          [wide, tall, rotated],
-          title: 'Scans',
-          compress: false,
-        );
-        expectValidPdfEnvelope(bytes);
-        expect(pdfPageCount(bytes), 3);
-        expect(RegExp(r'/Title\s*\(Scans\)').hasMatch(pdfText(bytes)), isTrue);
-        final boxes = pdfMediaBoxes(bytes);
-        expect(boxes[0].width, closeTo(842, 0.5));
-        expect(boxes[0].height, closeTo(842 * 2 / 3, 0.5));
-        expect(boxes[1].width, closeTo(210.5, 0.5));
-        expect(boxes[1].height, closeTo(842, 0.5));
-        expect(boxes[2].width, closeTo(421, 0.5));
-        expect(boxes[2].height, closeTo(842, 0.5));
-      },
-    );
+    test('fitImage: one page per image, long side 842pt, aspect kept, EXIF respected', () async {
+      final bytes = await buildPdfFromImages([wide, tall, rotated], title: 'Scans', compress: false);
+      expectValidPdfEnvelope(bytes);
+      expect(pdfPageCount(bytes), 3);
+      expect(RegExp(r'/Title\s*\(Scans\)').hasMatch(pdfText(bytes)), isTrue);
+      final boxes = pdfMediaBoxes(bytes);
+      expect(boxes[0].width, closeTo(842, 0.5));
+      expect(boxes[0].height, closeTo(842 * 2 / 3, 0.5));
+      expect(boxes[1].width, closeTo(210.5, 0.5));
+      expect(boxes[1].height, closeTo(842, 0.5));
+      expect(boxes[2].width, closeTo(421, 0.5));
+      expect(boxes[2].height, closeTo(842, 0.5));
+    });
 
     test('JPEG data is embedded without recompression', () async {
       final bytes = await buildPdfFromImages([tall], compress: false);
       final text = pdfText(bytes);
       expect(RegExp(r'/DCTDecode').hasMatch(text), isTrue);
-      expect(
-        text.contains(pdfText(tall)),
-        isTrue,
-        reason: 'original JPEG bytes should appear verbatim',
-      );
+      expect(text.contains(pdfText(tall)), isTrue, reason: 'original JPEG bytes should appear verbatim');
     });
 
     test('A4 auto orientation picks landscape for wide images', () async {
-      final bytes = await buildPdfFromImages(
-        [wide, tall],
-        pageSize: ImagePageSize.a4,
-        margin: 20,
-        compress: false,
-      );
+      final bytes = await buildPdfFromImages([wide, tall], pageSize: ImagePageSize.a4, margin: 20, compress: false);
       final boxes = pdfMediaBoxes(bytes);
       expect(boxes[0].width, closeTo(PdfPageFormat.a4.height, 0.5));
       expect(boxes[0].height, closeTo(PdfPageFormat.a4.width, 0.5));
@@ -368,11 +272,7 @@ void main() {
     });
 
     test('fitImage adds margins around the image', () async {
-      final bytes = await buildPdfFromImages(
-        [wide],
-        margin: 30,
-        compress: false,
-      );
+      final bytes = await buildPdfFromImages([wide], margin: 30, compress: false);
       final b = pdfMediaBoxes(bytes).single;
       expect(b.width, closeTo(842 + 60, 0.5));
       expect(b.height, closeTo(842 * 2 / 3 + 60, 0.5));
@@ -380,10 +280,7 @@ void main() {
 
     test('rejects empty input and undecodable data', () async {
       expect(() => buildPdfFromImages([]), throwsArgumentError);
-      expect(
-        () => buildPdfFromImages([Uint8List.fromList(List.filled(64, 7))]),
-        throwsFormatException,
-      );
+      expect(() => buildPdfFromImages([Uint8List.fromList(List.filled(64, 7))]), throwsFormatException);
     });
   });
 }

@@ -10,6 +10,7 @@ import '../../core/session/document_session.dart';
 import '../../core/util/format.dart';
 import '../common/dialogs.dart';
 import 'protect_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Document properties with editable metadata (title, author, subject, keywords).
 class PropertiesScreen extends StatefulWidget {
@@ -23,8 +24,7 @@ class PropertiesScreen extends StatefulWidget {
 }
 
 class _PropertiesScreenState extends State<PropertiesScreen> {
-  late final DocumentSession _session =
-      widget.session ?? AppServices.instance.newSession(widget.path);
+  late final DocumentSession _session = widget.session ?? AppServices.instance.newSession(widget.path);
   DocumentInfo? _info;
   Object? _error;
   final _title = TextEditingController();
@@ -90,11 +90,22 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
   }
 
   Future<void> _strip() async {
-    final ok = await confirmDialog(context, title: 'Remove all metadata?', message: 'Title, author, subject, keywords, creator and XMP metadata are deleted.', confirmLabel: 'Remove');
+    final ok = await confirmDialog(
+      context,
+      title: 'Remove all metadata?',
+      message: 'Title, author, subject, keywords, creator and XMP metadata are deleted.',
+      confirmLabel: 'Remove',
+    );
     if (!ok) return;
     await _session.apply(
       'Remove metadata',
-      (i, o) => PdfEngine.instance.setMetadata(i, o, {'title': null, 'author': null, 'subject': null, 'keywords': null, 'creator': null, 'producer': null}, password: _session.password, stripXmp: true),
+      (i, o) => PdfEngine.instance.setMetadata(
+        i,
+        o,
+        {'title': null, 'author': null, 'subject': null, 'keywords': null, 'creator': null, 'producer': null},
+        password: _session.password,
+        stripXmp: true,
+      ),
     );
     _load();
   }
@@ -104,7 +115,10 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 120, child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+        SizedBox(
+          width: 120,
+          child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ),
         Expanded(child: SelectableText(value == null || value.isEmpty ? '—' : value)),
       ],
     ),
@@ -128,12 +142,25 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
               children: [
                 Text('Description', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
-                for (final (c, l) in [(_title, 'Title'), (_author, 'Author'), (_subject, 'Subject'), (_keywords, 'Keywords')])
+                for (final (c, l) in [
+                  (_title, 'Title'),
+                  (_author, 'Author'),
+                  (_subject, 'Subject'),
+                  (_keywords, 'Keywords'),
+                ])
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: TextField(controller: c, decoration: InputDecoration(labelText: l), onChanged: (_) => setState(() => _dirty = true)),
+                    child: TextField(
+                      controller: c,
+                      decoration: InputDecoration(labelText: l),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
                   ),
-                TextButton.icon(onPressed: _strip, icon: const Icon(Icons.cleaning_services_outlined), label: const Text('Remove all metadata')),
+                TextButton.icon(
+                  onPressed: _strip,
+                  icon: const Icon(Symbols.cleaning_services),
+                  label: const Text('Remove all metadata'),
+                ),
                 const Divider(height: 32),
                 Text('File', style: Theme.of(context).textTheme.titleSmall),
                 _row('Name', p.basename(_session.path)),
@@ -141,7 +168,10 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
                 _row('Size', formatBytes(File(_session.path).lengthSync())),
                 _row('Pages', '${info.pageCount}'),
                 if (info.pages.isNotEmpty)
-                  _row('Page size', '${(info.pages.first.width / 72 * 25.4).toStringAsFixed(0)} × ${(info.pages.first.height / 72 * 25.4).toStringAsFixed(0)} mm (${info.pages.first.width.round()} × ${info.pages.first.height.round()} pt)'),
+                  _row(
+                    'Page size',
+                    '${(info.pages.first.width / 72 * 25.4).toStringAsFixed(0)} × ${(info.pages.first.height / 72 * 25.4).toStringAsFixed(0)} mm (${info.pages.first.width.round()} × ${info.pages.first.height.round()} pt)',
+                  ),
                 _row('PDF version', info.version.toStringAsFixed(1)),
                 _row('Created', info.created == null ? null : df.format(info.created!)),
                 _row('Modified', info.modified == null ? null : df.format(info.modified!)),
@@ -150,16 +180,28 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
                 _row('Form fields', '${info.fieldCount}'),
                 const Divider(height: 32),
                 Text('Security', style: Theme.of(context).textTheme.titleSmall),
-                _row('Encryption', info.encrypted ? (info.keyLength >= 256 ? 'AES-256' : '${info.keyLength}-bit') : 'None'),
-                for (final e in {'print': 'Printing', 'copy': 'Copying', 'modify': 'Editing', 'annotate': 'Commenting', 'fillForms': 'Form filling', 'assemble': 'Page assembly'}.entries)
+                _row(
+                  'Encryption',
+                  info.encrypted ? (info.keyLength >= 256 ? 'AES-256' : '${info.keyLength}-bit') : 'None',
+                ),
+                for (final e in {
+                  'print': 'Printing',
+                  'copy': 'Copying',
+                  'modify': 'Editing',
+                  'annotate': 'Commenting',
+                  'fillForms': 'Form filling',
+                  'assemble': 'Page assembly',
+                }.entries)
                   _row(e.value, info.permissions[e.key] == false ? 'Not allowed' : 'Allowed'),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProtectScreen(session: _session)));
+                    await Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute(builder: (_) => ProtectScreen(session: _session)));
                     _load();
                   },
-                  icon: const Icon(Icons.lock_outline),
+                  icon: const Icon(Symbols.lock_outline),
                   label: const Text('Security settings'),
                 ),
               ],

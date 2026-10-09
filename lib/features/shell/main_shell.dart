@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../common/open_actions.dart';
 import '../convert/create_pdf_screen.dart';
 import '../files/files_screen.dart';
 import '../home/home_screen.dart';
-import '../home/starred_screen.dart';
+import '../home/search_screen.dart';
 import '../organize/combine_screen.dart';
 import '../scanner/scanner_screen.dart';
 import '../tools/tools_screen.dart';
 
-/// Bottom-navigation shell: Home · Files · Tools · Starred, with a create (+) button.
+/// Bottom-navigation shell modelled on Acrobat: Home · Files · Tools · Search, with a blue (+) button.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -19,15 +20,15 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _tab = 0;
+  final _searchKey = GlobalKey<SearchScreenState>();
 
   void _showCreate() {
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) {
-        Widget item(IconData icon, String label, String sub, VoidCallback onTap) => ListTile(
-          leading: CircleAvatar(backgroundColor: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.1), child: Icon(icon, color: Theme.of(ctx).colorScheme.primary)),
+        Widget item(IconData icon, String label, VoidCallback onTap) => ListTile(
+          leading: Icon(icon),
           title: Text(label),
-          subtitle: Text(sub),
           onTap: () {
             Navigator.pop(ctx);
             onTap();
@@ -37,10 +38,11 @@ class _MainShellState extends State<MainShell> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              item(Icons.document_scanner_outlined, 'Scan', 'Use the camera to scan documents', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen()))),
-              item(Icons.note_add_outlined, 'Create PDF', 'From images or documents', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreatePdfScreen()))),
-              item(Icons.merge_type, 'Combine files', 'Merge several PDFs', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CombineScreen()))),
-              item(Icons.folder_open_outlined, 'Open a file', 'Browse files on this device', () => pickAndOpenPdf(context)),
+              item(Symbols.document_scanner, 'Scan a document', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen()))),
+              item(Symbols.note_add, 'Create a PDF', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreatePdfScreen()))),
+              item(Symbols.picture_as_pdf, 'Combine files', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CombineScreen()))),
+              item(Symbols.folder_open, 'Open a file', () => pickAndOpenPdf(context)),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -54,20 +56,26 @@ class _MainShellState extends State<MainShell> {
       const HomeScreen(),
       const FilesScreen(),
       const ToolsScreen(),
-      const StarredScreen(),
+      SearchScreen(key: _searchKey, embedded: true),
     ];
     return Scaffold(
       body: IndexedStack(index: _tab, children: pages),
-      floatingActionButton: _tab <= 1 ? FloatingActionButton(tooltip: 'Create', onPressed: _showCreate, child: const Icon(Icons.add, size: 30)) : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Files'),
-          NavigationDestination(icon: Icon(Icons.apps_outlined), selectedIcon: Icon(Icons.apps), label: 'Tools'),
-          NavigationDestination(icon: Icon(Icons.star_border_rounded), selectedIcon: Icon(Icons.star_rounded), label: 'Starred'),
-        ],
+      floatingActionButton: _tab <= 1 ? FloatingActionButton(tooltip: 'Create', onPressed: _showCreate, child: const Icon(Symbols.add, weight: 400)) : null,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).dividerColor))),
+        child: BottomNavigationBar(
+          currentIndex: _tab,
+          onTap: (i) {
+            setState(() => _tab = i);
+            if (i == 3) _searchKey.currentState?.focus();
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Symbols.home), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Symbols.description), label: 'Files'),
+            BottomNavigationBarItem(icon: Icon(Symbols.apps), label: 'Tools'),
+            BottomNavigationBarItem(icon: Icon(Symbols.search), label: 'Search'),
+          ],
+        ),
       ),
     );
   }

@@ -7,8 +7,10 @@ import '../../core/session/document_session.dart';
 import '../../core/util/format.dart';
 import '../common/dialogs.dart';
 import '../viewer/widgets/color_palette.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
-Future<int> _pageCount(DocumentSession s) async => (await PdfEngine.instance.info(s.path, password: s.password)).pageCount;
+Future<int> _pageCount(DocumentSession s) async =>
+    (await PdfEngine.instance.info(s.path, password: s.password)).pageCount;
 
 /// Adds a text or image watermark (tagged so it can be removed later).
 Future<void> showWatermarkDialog(BuildContext context, {required DocumentSession session}) async {
@@ -36,17 +38,31 @@ Future<void> showWatermarkDialog(BuildContext context, {required DocumentSession
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Add watermark', style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Add watermark',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 12),
                 SegmentedButton<bool>(
-                  segments: const [ButtonSegment(value: false, label: Text('Text')), ButtonSegment(value: true, label: Text('Image'))],
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('Text')),
+                    ButtonSegment(value: true, label: Text('Image')),
+                  ],
                   selected: {useImage},
                   onSelectionChanged: (v) => setState(() => useImage = v.first),
                 ),
                 const SizedBox(height: 12),
                 if (!useImage) ...[
-                  TextField(controller: text, decoration: const InputDecoration(labelText: 'Text')),
-                  Wrap(children: [for (final c in kAnnotationColors) ColorDot(color: c, selected: c == color, onTap: () => setState(() => color = c), size: 24)]),
+                  TextField(
+                    controller: text,
+                    decoration: const InputDecoration(labelText: 'Text'),
+                  ),
+                  Wrap(
+                    children: [
+                      for (final c in kAnnotationColors)
+                        ColorDot(color: c, selected: c == color, onTap: () => setState(() => color = c), size: 24),
+                    ],
+                  ),
                   Text('Size ${size.round()} pt'),
                   Slider(value: size, min: 12, max: 120, onChanged: (v) => setState(() => size = v)),
                 ] else
@@ -55,13 +71,19 @@ Future<void> showWatermarkDialog(BuildContext context, {required DocumentSession
                       final r = await pickLocalFile(type: FileType.image);
                       setState(() => imagePath = r?.path);
                     },
-                    icon: const Icon(Icons.image_outlined),
+                    icon: const Icon(Symbols.image),
                     label: Text(imagePath == null ? 'Choose image' : 'Image selected'),
                   ),
                 Text('Opacity ${(opacity * 100).round()}%'),
                 Slider(value: opacity, min: 0.05, max: 1, onChanged: (v) => setState(() => opacity = v)),
                 Text('Rotation ${rotation.round()}°'),
-                Slider(value: rotation, min: -90, max: 90, divisions: 36, onChanged: (v) => setState(() => rotation = v)),
+                Slider(
+                  value: rotation,
+                  min: -90,
+                  max: 90,
+                  divisions: 36,
+                  onChanged: (v) => setState(() => rotation = v),
+                ),
                 DropdownButtonFormField<String>(
                   initialValue: position,
                   decoration: const InputDecoration(labelText: 'Position'),
@@ -80,7 +102,10 @@ Future<void> showWatermarkDialog(BuildContext context, {required DocumentSession
                   value: layer == 'under',
                   onChanged: (v) => setState(() => layer = v ? 'under' : 'over'),
                 ),
-                TextField(controller: pages, decoration: InputDecoration(labelText: 'Pages (blank = all $count)', hintText: 'e.g. 1-3, 5')),
+                TextField(
+                  controller: pages,
+                  decoration: InputDecoration(labelText: 'Pages (blank = all $count)', hintText: 'e.g. 1-3, 5'),
+                ),
                 const SizedBox(height: 16),
                 FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Apply watermark')),
               ],
@@ -102,20 +127,25 @@ Future<void> showWatermarkDialog(BuildContext context, {required DocumentSession
     showSnack(context, 'Choose an image first', error: true);
     return;
   }
-  await _apply(context, session, 'Add watermark', (i, o) => PdfEngine.instance.watermark(
-    i,
-    o,
-    password: session.password,
-    text: useImage ? null : text.text,
-    imagePath: useImage ? imagePath : null,
-    fontSize: size,
-    color: color,
-    opacity: opacity,
-    rotation: rotation,
-    position: position,
-    layer: layer,
-    pages: pageList,
-  ));
+  await _apply(
+    context,
+    session,
+    'Add watermark',
+    (i, o) => PdfEngine.instance.watermark(
+      i,
+      o,
+      password: session.password,
+      text: useImage ? null : text.text,
+      imagePath: useImage ? imagePath : null,
+      fontSize: size,
+      color: color,
+      opacity: opacity,
+      rotation: rotation,
+      position: position,
+      layer: layer,
+      pages: pageList,
+    ),
+  );
 }
 
 /// Adds page numbers / header-footer text.
@@ -141,7 +171,10 @@ Future<void> showPageNumbersDialog(BuildContext context, {required DocumentSessi
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Page numbers & header/footer', style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Page numbers & header/footer',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 6,
@@ -160,7 +193,10 @@ Future<void> showPageNumbersDialog(BuildContext context, {required DocumentSessi
                 const SizedBox(height: 8),
                 TextField(
                   controller: custom,
-                  decoration: const InputDecoration(labelText: 'Text', helperText: '{n} = number, {N} = total. Any text works for headers/footers.'),
+                  decoration: const InputDecoration(
+                    labelText: 'Text',
+                    helperText: '{n} = number, {N} = total. Any text works for headers/footers.',
+                  ),
                   onChanged: (v) => format = v,
                 ),
                 const SizedBox(height: 12),
@@ -171,9 +207,21 @@ Future<void> showPageNumbersDialog(BuildContext context, {required DocumentSessi
                 Slider(value: size, min: 6, max: 24, divisions: 18, onChanged: (v) => setState(() => size = v)),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: start, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Start at'))),
+                    Expanded(
+                      child: TextField(
+                        controller: start,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Start at'),
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(flex: 2, child: TextField(controller: pages, decoration: InputDecoration(labelText: 'Pages (blank = all)', hintText: '1-$count'))),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: pages,
+                        decoration: InputDecoration(labelText: 'Pages (blank = all)', hintText: '1-$count'),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -193,16 +241,21 @@ Future<void> showPageNumbersDialog(BuildContext context, {required DocumentSessi
     showSnack(context, e.message, error: true);
     return;
   }
-  await _apply(context, session, 'Add page numbers', (i, o) => PdfEngine.instance.pageNumbers(
-    i,
-    o,
-    password: session.password,
-    format: custom.text.trim().isEmpty ? format : custom.text,
-    position: position,
-    fontSize: size,
-    startNumber: int.tryParse(start.text.trim()) ?? 1,
-    pages: pageList,
-  ));
+  await _apply(
+    context,
+    session,
+    'Add page numbers',
+    (i, o) => PdfEngine.instance.pageNumbers(
+      i,
+      o,
+      password: session.password,
+      format: custom.text.trim().isEmpty ? format : custom.text,
+      position: position,
+      fontSize: size,
+      startNumber: int.tryParse(start.text.trim()) ?? 1,
+      pages: pageList,
+    ),
+  );
 }
 
 class _PositionGrid extends StatelessWidget {
@@ -230,7 +283,10 @@ class _PositionGrid extends StatelessWidget {
     return Container(
       width: 180,
       padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(border: Border.all(color: scheme.outlineVariant), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Column(
         children: [
           Row(children: [cell('top-left'), cell('top-center'), cell('top-right')]),
@@ -257,7 +313,13 @@ Future<void> showRemoveArtifactsDialog(BuildContext context, {required DocumentS
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: kinds.contains(k),
-                title: Text(k == 'Header' ? 'Headers (incl. top page numbers)' : k == 'Footer' ? 'Footers (incl. bottom page numbers)' : 'Watermarks'),
+                title: Text(
+                  k == 'Header'
+                      ? 'Headers (incl. top page numbers)'
+                      : k == 'Footer'
+                      ? 'Footers (incl. bottom page numbers)'
+                      : 'Watermarks',
+                ),
                 onChanged: (v) => setState(() => v == true ? kinds.add(k) : kinds.remove(k)),
               ),
           ],
@@ -270,11 +332,25 @@ Future<void> showRemoveArtifactsDialog(BuildContext context, {required DocumentS
     ),
   );
   if (ok != true || !context.mounted) return;
-  final n = await _apply(context, session, 'Remove page marks', (i, o) => PdfEngine.instance.removeArtifacts(i, o, password: session.password, kinds: kinds.toList()));
-  if (context.mounted && n != null) showSnack(context, n == 0 ? 'No tagged watermarks, headers or footers found' : 'Removed $n item${n == 1 ? '' : 's'}');
+  final n = await _apply(
+    context,
+    session,
+    'Remove page marks',
+    (i, o) => PdfEngine.instance.removeArtifacts(i, o, password: session.password, kinds: kinds.toList()),
+  );
+  if (context.mounted && n != null)
+    showSnack(
+      context,
+      n == 0 ? 'No tagged watermarks, headers or footers found' : 'Removed $n item${n == 1 ? '' : 's'}',
+    );
 }
 
-Future<T?> _apply<T>(BuildContext context, DocumentSession session, String label, Future<T> Function(String, String) op) async {
+Future<T?> _apply<T>(
+  BuildContext context,
+  DocumentSession session,
+  String label,
+  Future<T> Function(String, String) op,
+) async {
   try {
     final r = await session.apply(label, op);
     if (context.mounted) showSnack(context, '$label: done');

@@ -33,18 +33,12 @@ void main() {
     expect(maxCornerError(quad, truth), lessThan(0.03 * 1500));
   });
 
-  test(
-    'detectQuadFromBytes returns null for garbage and empty scenes',
-    () async {
-      expect(
-        await detectQuadFromBytes(Uint8List.fromList([1, 2, 3, 4])),
-        isNull,
-      );
-      final flat = img.Image(width: 300, height: 200);
-      img.fill(flat, color: img.ColorRgb8(90, 90, 90));
-      expect(await detectQuadFromBytes(img.encodeJpg(flat)), isNull);
-    },
-  );
+  test('detectQuadFromBytes returns null for garbage and empty scenes', () async {
+    expect(await detectQuadFromBytes(Uint8List.fromList([1, 2, 3, 4])), isNull);
+    final flat = img.Image(width: 300, height: 200);
+    img.fill(flat, color: img.ColorRgb8(90, 90, 90));
+    expect(await detectQuadFromBytes(img.encodeJpg(flat)), isNull);
+  });
 
   test('end to end: detect, warp, filter, rotate, encode', () async {
     final (jpeg, _) = _photo();
@@ -52,17 +46,11 @@ void main() {
     final quadJson = det['quad'] as Map<String, dynamic>;
 
     for (final filter in ScanFilter.values) {
-      final out = await processScanBytes(
-        ScanRequest(imageBytes: jpeg, quad: quadJson, filter: filter.name),
-      );
+      final out = await processScanBytes(ScanRequest(imageBytes: jpeg, quad: quadJson, filter: filter.name));
       final decoded = img.decodeJpg(out);
       expect(decoded, isNotNull, reason: filter.name);
       // 540 x 720 page -> aspect 0.75.
-      expect(
-        decoded!.width / decoded.height,
-        closeTo(0.75, 0.0225),
-        reason: filter.name,
-      );
+      expect(decoded!.width / decoded.height, closeTo(0.75, 0.0225), reason: filter.name);
       expect(max(decoded.width, decoded.height), lessThanOrEqualTo(2400));
     }
 
@@ -83,14 +71,7 @@ void main() {
 
     // Quarter-turn notation is accepted too.
     final quarter = img.decodeJpg(
-      await processScanBytes(
-        ScanRequest(
-          imageBytes: jpeg,
-          quad: quadJson,
-          rotation: -1,
-          maxDimension: 500,
-        ),
-      ),
+      await processScanBytes(ScanRequest(imageBytes: jpeg, quad: quadJson, rotation: -1, maxDimension: 500)),
     )!;
     expect(quarter.width, rotated.width);
     expect(quarter.height, rotated.height);
@@ -101,12 +82,7 @@ void main() {
     final det = (await detectQuadFromBytes(jpeg))!;
     final out = img.decodeJpg(
       await processScanBytes(
-        ScanRequest(
-          imageBytes: jpeg,
-          quad: det['quad'] as Map<String, dynamic>,
-          filter: 'blackWhite',
-          jpegQuality: 95,
-        ),
+        ScanRequest(imageBytes: jpeg, quad: det['quad'] as Map<String, dynamic>, filter: 'blackWhite', jpegQuality: 95),
       ),
     )!;
     var white = 0, black = 0;
@@ -122,9 +98,7 @@ void main() {
 
   test('without a quad the whole image is processed', () async {
     final (jpeg, _) = _photo();
-    final out = img.decodeJpg(
-      await processScanBytes(ScanRequest(imageBytes: jpeg, maxDimension: 600)),
-    )!;
+    final out = img.decodeJpg(await processScanBytes(ScanRequest(imageBytes: jpeg, maxDimension: 600)))!;
     expect(out.width, 600);
     expect(out.height, 450);
   });
@@ -132,14 +106,7 @@ void main() {
   test('EXIF orientation is honoured', () async {
     final src = img.Image(width: 400, height: 300);
     img.fill(src, color: img.ColorRgb8(60, 60, 60));
-    img.fillRect(
-      src,
-      x1: 80,
-      y1: 50,
-      x2: 320,
-      y2: 250,
-      color: img.ColorRgb8(240, 240, 240),
-    );
+    img.fillRect(src, x1: 80, y1: 50, x2: 320, y2: 250, color: img.ColorRgb8(240, 240, 240));
     src.exif.imageIfd.orientation = 6; // Rotate 90 degrees clockwise.
     final jpeg = img.encodeJpg(src);
     final oriented = decodeOriented(jpeg)!;
@@ -151,12 +118,7 @@ void main() {
     expect(det['height'], 400);
     final quad = Quad.fromJson(det['quad'] as Map<String, dynamic>);
     // The 240x200 bright rectangle becomes 200x240 after rotation.
-    final truth = Quad.fromList(const [
-      Point(50.0, 80.0),
-      Point(250.0, 80.0),
-      Point(250.0, 320.0),
-      Point(50.0, 320.0),
-    ]);
+    final truth = Quad.fromList(const [Point(50.0, 80.0), Point(250.0, 80.0), Point(250.0, 320.0), Point(50.0, 320.0)]);
     expect(maxCornerError(quad, truth), lessThan(0.03 * 500));
 
     final thumb = img.decodeJpg(await makeThumbnail(jpeg, maxDim: 100))!;
@@ -170,10 +132,7 @@ void main() {
     expect(t.width, 400);
     expect(t.height, 300);
     expect(() => makeThumbnail(Uint8List(10)), throwsFormatException);
-    expect(
-      () => processScanBytes(ScanRequest(imageBytes: Uint8List(10))),
-      throwsFormatException,
-    );
+    expect(() => processScanBytes(ScanRequest(imageBytes: Uint8List(10))), throwsFormatException);
   });
 
   test('entry points run inside Isolate.run', () async {
@@ -182,14 +141,7 @@ void main() {
     expect(det, isNotNull);
     final quad = det!['quad'] as Map<String, dynamic>;
     final out = await Isolate.run(
-      () => processScanBytes(
-        ScanRequest(
-          imageBytes: jpeg,
-          quad: quad,
-          filter: 'autoColor',
-          maxDimension: 600,
-        ),
-      ),
+      () => processScanBytes(ScanRequest(imageBytes: jpeg, quad: quad, filter: 'autoColor', maxDimension: 600)),
     );
     expect(img.decodeJpg(out)!.height, 600);
   });

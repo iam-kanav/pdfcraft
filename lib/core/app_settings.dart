@@ -31,7 +31,7 @@ class AppSettings extends ChangeNotifier {
   double get ttsPitch => _prefs.getDouble('ttsPitch') ?? 1.0;
   set ttsPitch(double v) => _set(() => _prefs.setDouble('ttsPitch', v));
 
-  int get annotationColor => _prefs.getInt('annotColor') ?? 0xFFFFD400;
+  int get annotationColor => _prefs.getInt('annotColor') ?? 0xFFFFE94D;
   set annotationColor(int v) => _set(() => _prefs.setInt('annotColor', v));
 
   int get inkColor => _prefs.getInt('inkColor') ?? 0xFFE11D48;

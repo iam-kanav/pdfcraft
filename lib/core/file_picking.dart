@@ -15,7 +15,11 @@ class PickedFile {
 }
 
 /// Opens the system picker and returns local copies of the chosen files.
-Future<List<PickedFile>> pickLocalFiles({FileType type = FileType.any, List<String>? extensions, bool multiple = false}) async {
+Future<List<PickedFile>> pickLocalFiles({
+  FileType type = FileType.any,
+  List<String>? extensions,
+  bool multiple = false,
+}) async {
   final picked = multiple
       ? await FilePicker.pickFiles(type: type, allowedExtensions: extensions)
       : [?await FilePicker.pickFile(type: type, allowedExtensions: extensions)];

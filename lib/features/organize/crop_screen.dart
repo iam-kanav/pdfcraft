@@ -5,6 +5,7 @@ import '../../core/native/pdf_engine.dart';
 import '../../core/pdf_render.dart';
 import '../../core/session/document_session.dart';
 import '../common/dialogs.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Visual crop: drag the edges of the crop box, apply to one page or all pages.
 class CropScreen extends StatefulWidget {
@@ -56,7 +57,12 @@ class _CropScreenState extends State<CropScreen> {
       // Apply the same relative crop to every page.
       for (var i = 0; i < doc.pages.length; i++) {
         final q = doc.pages[i];
-        crops[i] = Rect.fromLTRB(crop.left / pg.width * q.width, crop.top / pg.height * q.height, crop.right / pg.width * q.width, crop.bottom / pg.height * q.height);
+        crops[i] = Rect.fromLTRB(
+          crop.left / pg.width * q.width,
+          crop.top / pg.height * q.height,
+          crop.right / pg.width * q.width,
+          crop.bottom / pg.height * q.height,
+        );
       }
     } else {
       crops[_page] = crop;
@@ -91,7 +97,8 @@ class _CropScreenState extends State<CropScreen> {
                         final scale = (c.maxWidth / pg.width).clamp(0.0, c.maxHeight / pg.height);
                         final w = pg.width * scale, h = pg.height * scale;
                         final crop = _crop!;
-                        Rect sc(Rect r) => Rect.fromLTRB(r.left * scale, r.top * scale, r.right * scale, r.bottom * scale);
+                        Rect sc(Rect r) =>
+                            Rect.fromLTRB(r.left * scale, r.top * scale, r.right * scale, r.bottom * scale);
                         void drag(String edge, Offset d) {
                           final dx = d.dx / scale, dy = d.dy / scale;
                           var r = _crop!;
@@ -114,7 +121,14 @@ class _CropScreenState extends State<CropScreen> {
                               width: 32,
                               height: 32,
                               alignment: Alignment.center,
-                              child: Container(width: 14, height: 14, decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 3))),
+                              child: Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(color: Theme.of(context).colorScheme.primary, width: 3),
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -125,7 +139,9 @@ class _CropScreenState extends State<CropScreen> {
                             child: Stack(
                               clipBehavior: Clip.none,
                               children: [
-                                Positioned.fill(child: PdfPageView(document: doc, pageNumber: _page + 1)),
+                                Positioned.fill(
+                                  child: PdfPageView(document: doc, pageNumber: _page + 1),
+                                ),
                                 Positioned.fill(child: CustomPaint(painter: _ShadePainter(cr))),
                                 handle('lt', Alignment.topLeft),
                                 handle('rt', Alignment.topRight),
@@ -148,9 +164,15 @@ class _CropScreenState extends State<CropScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        IconButton(onPressed: _page > 0 ? () => setState(() => _page--) : null, icon: const Icon(Icons.chevron_left)),
+                        IconButton(
+                          onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                          icon: const Icon(Symbols.chevron_left),
+                        ),
                         Text('Page ${_page + 1} of ${doc.pages.length}'),
-                        IconButton(onPressed: _page < doc.pages.length - 1 ? () => setState(() => _page++) : null, icon: const Icon(Icons.chevron_right)),
+                        IconButton(
+                          onPressed: _page < doc.pages.length - 1 ? () => setState(() => _page++) : null,
+                          icon: const Icon(Symbols.chevron_right),
+                        ),
                         const Spacer(),
                         TextButton(onPressed: () => setState(_resetCrop), child: const Text('Reset')),
                         const Text('All pages'),
@@ -178,10 +200,13 @@ class _ShadePainter extends CustomPainter {
       ..addRect(Offset.zero & size)
       ..addRect(crop);
     canvas.drawPath(path, shade);
-    canvas.drawRect(crop, Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2);
+    canvas.drawRect(
+      crop,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
   }
 
   @override

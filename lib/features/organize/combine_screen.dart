@@ -10,6 +10,7 @@ import '../common/dialogs.dart';
 import '../common/doc_widgets.dart';
 import '../common/document_picker.dart';
 import '../common/open_actions.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Combine several PDFs into one, in a user-chosen order.
 class CombineScreen extends StatefulWidget {
@@ -58,7 +59,9 @@ class _CombineScreenState extends State<CombineScreen> {
           specs.add(k == 0 ? PageSpec.page(i) : PageSpec.fromFile(f, i, password: _passwords[f]));
         }
       }
-      final out = AppServices.instance.files.outputPath('${sanitizeFileName(_name.text.trim().isEmpty ? 'Combined' : _name.text.trim())}.pdf');
+      final out = AppServices.instance.files.outputPath(
+        '${sanitizeFileName(_name.text.trim().isEmpty ? 'Combined' : _name.text.trim())}.pdf',
+      );
       final first = _files.first;
       // The first file's security must not leak into the result; organize keeps it otherwise.
       final tmp = AppServices.instance.tempPath('first.pdf');
@@ -86,15 +89,29 @@ class _CombineScreenState extends State<CombineScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: TextField(controller: _name, decoration: const InputDecoration(labelText: 'Output file name', suffixText: '.pdf')),
+            child: TextField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Output file name', suffixText: '.pdf'),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Drag to reorder. Pages are combined top to bottom.', style: Theme.of(context).textTheme.bodySmall),
+            child: Text(
+              'Drag to reorder. Pages are combined top to bottom.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
           Expanded(
             child: _files.isEmpty
-                ? EmptyState(icon: Icons.merge_type, title: 'Add files to combine', action: FilledButton.icon(onPressed: _add, icon: const Icon(Icons.add), label: const Text('Add files')))
+                ? EmptyState(
+                    icon: Symbols.merge_type,
+                    title: 'Add files to combine',
+                    action: FilledButton.icon(
+                      onPressed: _add,
+                      icon: const Icon(Symbols.add),
+                      label: const Text('Add files'),
+                    ),
+                  )
                 : ReorderableListView.builder(
                     itemCount: _files.length,
                     onReorder: (a, b) => setState(() {
@@ -111,8 +128,11 @@ class _CombineScreenState extends State<CombineScreen> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _files.removeAt(i))),
-                            ReorderableDragStartListener(index: i, child: const Icon(Icons.drag_handle)),
+                            IconButton(
+                              icon: const Icon(Symbols.close),
+                              onPressed: () => setState(() => _files.removeAt(i)),
+                            ),
+                            ReorderableDragStartListener(index: i, child: const Icon(Symbols.drag_handle)),
                           ],
                         ),
                       );
@@ -126,12 +146,22 @@ class _CombineScreenState extends State<CombineScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              OutlinedButton.icon(onPressed: _busy ? null : _add, icon: const Icon(Icons.add), label: const Text('Add files')),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _add,
+                icon: const Icon(Symbols.add),
+                label: const Text('Add files'),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: _busy || _files.length < 2 ? null : _combine,
-                  icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.merge_type),
+                  icon: _busy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Symbols.merge_type),
                   label: Text(_busy ? 'Combining…' : 'Combine ${_files.length} files'),
                 ),
               ),

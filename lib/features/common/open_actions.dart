@@ -20,7 +20,9 @@ Future<void> openDocument(BuildContext context, String path, {int? initialPage, 
     return;
   }
   await Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => ViewerScreen(path: path, initialPage: initialPage, password: password)),
+    MaterialPageRoute(
+      builder: (_) => ViewerScreen(path: path, initialPage: initialPage, password: password),
+    ),
   );
 }
 
@@ -53,9 +55,9 @@ Future<void> handleIncomingFiles(BuildContext context, List<IncomingFile> files)
     if (!context.mounted) return;
     await openDocument(context, imported.first);
   } else if (images.isNotEmpty) {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => CreatePdfScreen(initialImages: images.map((e) => e.path).toList())),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => CreatePdfScreen(initialImages: images.map((e) => e.path).toList())));
   } else if (files.isNotEmpty) {
     showSnack(context, 'Unsupported file type: ${files.first.name}', error: true);
   }
@@ -79,6 +81,10 @@ Future<void> saveCopyToDownloads(BuildContext context, String path) async {
     '.zip' => 'application/zip',
     _ => 'application/octet-stream',
   };
-  final where = await runWithProgress(context, 'Saving…', () => PlatformBridge.instance.saveToDownloads(path, name, mime: mime));
+  final where = await runWithProgress(
+    context,
+    'Saving…',
+    () => PlatformBridge.instance.saveToDownloads(path, name, mime: mime),
+  );
   if (where != null && context.mounted) showSnack(context, 'Saved to $where');
 }

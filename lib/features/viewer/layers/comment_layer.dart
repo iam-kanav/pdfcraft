@@ -11,6 +11,7 @@ import '../viewer_state.dart';
 import '../widgets/color_palette.dart';
 import '../widgets/navigator_sheet.dart';
 import '../widgets/selection_box.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Saves pending ink strokes as Ink annotations (one per page).
 Future<void> commitInk(ViewerHost host) async {
@@ -31,7 +32,10 @@ Future<void> commitInk(ViewerHost host) async {
       'type': 'ink',
       'page': e.key,
       'paths': [
-        for (final s in e.value) [for (final p in s.points) ...[p.dx, p.dy]],
+        for (final s in e.value)
+          [
+            for (final p in s.points) ...[p.dx, p.dy],
+          ],
       ],
       'color': colorToInt(first.color),
       'strokeWidth': first.width,
@@ -39,12 +43,18 @@ Future<void> commitInk(ViewerHost host) async {
       'author': author,
     });
   }
-  await host.edit('Add drawing', (i, o) => PdfEngine.instance.addAnnotations(i, o, annots, password: host.session.password));
+  await host.edit(
+    'Add drawing',
+    (i, o) => PdfEngine.instance.addAnnotations(i, o, annots, password: host.session.password),
+  );
 }
 
 Future<void> deleteAnnotation(ViewerHost host, AnnotInfo a) async {
   host.viewerState.select(null);
-  await host.edit('Delete ${a.typeLabel.toLowerCase()}', (i, o) => PdfEngine.instance.deleteAnnotations(i, o, [(page: a.page, id: a.id)], password: host.session.password));
+  await host.edit(
+    'Delete ${a.typeLabel.toLowerCase()}',
+    (i, o) => PdfEngine.instance.deleteAnnotations(i, o, [(page: a.page, id: a.id)], password: host.session.password),
+  );
 }
 
 /// Per-page interaction layer for comment tools.
@@ -59,6 +69,8 @@ class CommentLayer extends StatefulWidget {
   @override
   State<CommentLayer> createState() => _CommentLayerState();
 }
+
+final _wordChar = RegExp(r"[\p{L}\p{N}_\-’']", unicode: true);
 
 class _CommentLayerState extends State<CommentLayer> {
   InkStroke? _current;
@@ -110,37 +122,59 @@ class _CommentLayerState extends State<CommentLayer> {
         vs.select(a);
         if (a != null) _showAnnotationActions(a);
       case CommentTool.note:
-        final text = await showTextInputDialog(context, title: 'Add note', hint: 'Comment', confirmLabel: 'Post', maxLines: 5);
+        final text = await showTextInputDialog(
+          context,
+          title: 'Add note',
+          hint: 'Comment',
+          confirmLabel: 'Post',
+          maxLines: 5,
+        );
         if (text == null) return;
-        await host.edit('Add note', (i, o) => PdfEngine.instance.addAnnotations(i, o, [
-          {
-            'type': 'note',
-            'page': pageIndex,
-            'x': p.dx - 11,
-            'y': p.dy - 11,
-            'contents': text,
-            'color': colorToInt(vs.color),
-            'author': AppServices.instance.settings.authorName,
-          },
-        ], password: host.session.password));
+        await host.edit(
+          'Add note',
+          (i, o) => PdfEngine.instance.addAnnotations(i, o, [
+            {
+              'type': 'note',
+              'page': pageIndex,
+              'x': p.dx - 11,
+              'y': p.dy - 11,
+              'contents': text,
+              'color': colorToInt(vs.color),
+              'author': AppServices.instance.settings.authorName,
+            },
+          ], password: host.session.password),
+        );
       case CommentTool.freeText:
-        final text = await showTextInputDialog(context, title: 'Add text', hint: 'Type here', confirmLabel: 'Add', maxLines: 6);
+        final text = await showTextInputDialog(
+          context,
+          title: 'Add text',
+          hint: 'Type here',
+          confirmLabel: 'Add',
+          maxLines: 6,
+        );
         if (text == null || text.trim().isEmpty) return;
         final lines = text.split('\n');
         final longest = lines.fold<int>(0, (m, l) => math.max(m, l.length));
         final w = math.min(widget.page.width - p.dx - 4, math.max(60.0, longest * vs.fontSize * 0.55 + 8));
-        final h = (lines.length + (longest * vs.fontSize * 0.55 > w ? (longest * vs.fontSize * 0.55 / w).ceil() : 0)) * vs.fontSize * 1.25 + 8;
-        await host.edit('Add text', (i, o) => PdfEngine.instance.addAnnotations(i, o, [
-          {
-            'type': 'freetext',
-            'page': pageIndex,
-            'rect': [p.dx, p.dy, p.dx + w, p.dy + h],
-            'text': text,
-            'fontSize': vs.fontSize,
-            'color': colorToInt(vs.inkColor),
-            'author': AppServices.instance.settings.authorName,
-          },
-        ], password: host.session.password));
+        final h =
+            (lines.length + (longest * vs.fontSize * 0.55 > w ? (longest * vs.fontSize * 0.55 / w).ceil() : 0)) *
+                vs.fontSize *
+                1.25 +
+            8;
+        await host.edit(
+          'Add text',
+          (i, o) => PdfEngine.instance.addAnnotations(i, o, [
+            {
+              'type': 'freetext',
+              'page': pageIndex,
+              'rect': [p.dx, p.dy, p.dx + w, p.dy + h],
+              'text': text,
+              'fontSize': vs.fontSize,
+              'color': colorToInt(vs.inkColor),
+              'author': AppServices.instance.settings.authorName,
+            },
+          ], password: host.session.password),
+        );
       default:
         break;
     }
@@ -202,11 +236,8 @@ class _CommentLayerState extends State<CommentLayer> {
     }
     final author = AppServices.instance.settings.authorName;
     final Map<String, Object?> annot = switch (tool) {
-      CommentTool.rect || CommentTool.ellipse => {
-        'type': tool.annotationType,
-        'rect': rectToList(rect),
-        'strokeWidth': vs.strokeWidth,
-      },
+      CommentTool.rect ||
+      CommentTool.ellipse => {'type': tool.annotationType, 'rect': rectToList(rect), 'strokeWidth': vs.strokeWidth},
       _ => {
         'type': tool.annotationType,
         'points': [a.dx, a.dy, b.dx, b.dy],
@@ -214,7 +245,10 @@ class _CommentLayerState extends State<CommentLayer> {
       },
     };
     annot.addAll({'page': pageIndex, 'color': colorToInt(vs.inkColor), 'opacity': vs.opacity, 'author': author});
-    await host.edit('Add ${tool.label.toLowerCase()}', (i, o) => PdfEngine.instance.addAnnotations(i, o, [annot], password: host.session.password));
+    await host.edit(
+      'Add ${tool.label.toLowerCase()}',
+      (i, o) => PdfEngine.instance.addAnnotations(i, o, [annot], password: host.session.password),
+    );
   }
 
   Future<void> _updateMarkupPreview() async {
@@ -243,7 +277,15 @@ class _CommentLayerState extends State<CommentLayer> {
       setState(() => _markupPreview = const []);
       return;
     }
-    final s = math.min(i0, i1), e = math.max(i0, i1) + 1;
+    var s = math.min(i0, i1), e = math.max(i0, i1) + 1;
+    // Snap to whole words like Acrobat.
+    bool isWord(int i) => i >= 0 && i < text.fullText.length && _wordChar.hasMatch(text.fullText[i]);
+    while (isWord(s - 1)) {
+      s--;
+    }
+    while (isWord(e)) {
+      e++;
+    }
     if (_markupRange == (s, e)) return;
     _markupRange = (s, e);
     final range = PdfPageTextRange(pageText: text, start: s, end: e);
@@ -254,16 +296,19 @@ class _CommentLayerState extends State<CommentLayer> {
   Future<void> _commitMarkup(CommentTool tool, List<Rect> rects) async {
     _markupRange = null;
     final color = tool == CommentTool.highlight ? vs.color : vs.inkColor;
-    await host.edit('Add ${tool.label.toLowerCase()}', (i, o) => PdfEngine.instance.addAnnotations(i, o, [
-      {
-        'type': tool.annotationType,
-        'page': pageIndex,
-        'rects': rects.map(rectToList).toList(),
-        'color': colorToInt(color),
-        'opacity': tool == CommentTool.highlight ? 0.45 : 1.0,
-        'author': AppServices.instance.settings.authorName,
-      },
-    ], password: host.session.password));
+    await host.edit(
+      'Add ${tool.label.toLowerCase()}',
+      (i, o) => PdfEngine.instance.addAnnotations(i, o, [
+        {
+          'type': tool.annotationType,
+          'page': pageIndex,
+          'rects': rects.map(rectToList).toList(),
+          'color': colorToInt(color),
+          'opacity': 1.0,
+          'author': AppServices.instance.settings.authorName,
+        },
+      ], password: host.session.password),
+    );
   }
 
   // ---------------------------------------------------------------- selection actions
@@ -278,13 +323,33 @@ class _CommentLayerState extends State<CommentLayer> {
             ListTile(
               leading: Icon(a.icon, color: a.color),
               title: Text(a.typeLabel),
-              subtitle: Text([if (a.author != null) a.author!, if (a.contents?.isNotEmpty == true) a.contents!].join(' · '), maxLines: 2),
+              subtitle: Text(
+                [if (a.author != null) a.author!, if (a.contents?.isNotEmpty == true) a.contents!].join(' · '),
+                maxLines: 2,
+              ),
             ),
             const Divider(),
-            ListTile(leading: const Icon(Icons.edit_note), title: Text(a.type == 'FreeText' ? 'Edit text' : 'Edit comment'), onTap: () => Navigator.pop(ctx, 'comment')),
-            ListTile(leading: const Icon(Icons.palette_outlined), title: const Text('Change color'), onTap: () => Navigator.pop(ctx, 'color')),
-            ListTile(leading: const Icon(Icons.open_with), title: const Text('Move or resize'), subtitle: const Text('Drag the box or its corners'), onTap: () => Navigator.pop(ctx, 'move')),
-            ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(ctx).colorScheme.error), title: const Text('Delete'), onTap: () => Navigator.pop(ctx, 'delete')),
+            ListTile(
+              leading: const Icon(Symbols.edit_note),
+              title: Text(a.type == 'FreeText' ? 'Edit text' : 'Edit comment'),
+              onTap: () => Navigator.pop(ctx, 'comment'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.palette),
+              title: const Text('Change color'),
+              onTap: () => Navigator.pop(ctx, 'color'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.open_with),
+              title: const Text('Move or resize'),
+              subtitle: const Text('Drag the box or its corners'),
+              onTap: () => Navigator.pop(ctx, 'move'),
+            ),
+            ListTile(
+              leading: Icon(Symbols.delete_outline, color: Theme.of(ctx).colorScheme.error),
+              title: const Text('Delete'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
           ],
         ),
       ),
@@ -296,17 +361,42 @@ class _CommentLayerState extends State<CommentLayer> {
           vs.select(null);
           await showNoteDialog(host, a);
         } else {
-          final text = await showTextInputDialog(context, title: a.type == 'FreeText' ? 'Edit text' : 'Comment', initial: a.contents ?? '', maxLines: 6);
+          final text = await showTextInputDialog(
+            context,
+            title: a.type == 'FreeText' ? 'Edit text' : 'Comment',
+            initial: a.contents ?? '',
+            maxLines: 6,
+          );
           vs.select(null);
           if (text == null) return;
-          await host.edit('Edit comment', (i, o) => PdfEngine.instance.updateAnnotation(i, o, page: a.page, id: a.id, contents: text, password: host.session.password));
+          await host.edit(
+            'Edit comment',
+            (i, o) => PdfEngine.instance.updateAnnotation(
+              i,
+              o,
+              page: a.page,
+              id: a.id,
+              contents: text,
+              password: host.session.password,
+            ),
+          );
         }
       case 'color':
         Color? chosen;
         await showStyleSheet(context, color: a.color ?? vs.color, onColor: (c) => chosen = c);
         vs.select(null);
         if (chosen != null) {
-          await host.edit('Change color', (i, o) => PdfEngine.instance.updateAnnotation(i, o, page: a.page, id: a.id, color: chosen, password: host.session.password));
+          await host.edit(
+            'Change color',
+            (i, o) => PdfEngine.instance.updateAnnotation(
+              i,
+              o,
+              page: a.page,
+              id: a.id,
+              color: chosen,
+              password: host.session.password,
+            ),
+          );
         }
       case 'delete':
         await deleteAnnotation(host, a);
@@ -319,7 +409,17 @@ class _CommentLayerState extends State<CommentLayer> {
 
   Future<void> _moveSelected(AnnotInfo a, Rect rect) async {
     vs.select(null);
-    await host.edit('Move ${a.typeLabel.toLowerCase()}', (i, o) => PdfEngine.instance.updateAnnotation(i, o, page: a.page, id: a.id, rect: rect, password: host.session.password));
+    await host.edit(
+      'Move ${a.typeLabel.toLowerCase()}',
+      (i, o) => PdfEngine.instance.updateAnnotation(
+        i,
+        o,
+        page: a.page,
+        id: a.id,
+        rect: rect,
+        password: host.session.password,
+      ),
+    );
   }
 
   @override
@@ -347,31 +447,31 @@ class _CommentLayerState extends State<CommentLayer> {
             ),
           ),
           Positioned.fill(
-              child: GestureDetector(
-                behavior: tool == CommentTool.select ? HitTestBehavior.deferToChild : HitTestBehavior.opaque,
-                onTapUp: _onTapUp,
-                onPanStart: tool.isDrag || tool.isTextMarkup ? _onPanStart : null,
-                onPanUpdate: tool.isDrag || tool.isTextMarkup ? _onPanUpdate : null,
-                onPanEnd: tool.isDrag || tool.isTextMarkup ? _onPanEnd : null,
-                child: tool == CommentTool.select
-                    ? Stack(
-                        children: [
-                          for (final a in host.annotations.where((a) => a.page == pageIndex && !a.isLink))
-                            Positioned.fromRect(
-                              rect: scaleRect(a.rect.inflate(4), s),
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () {
-                                  vs.select(a);
-                                  _showAnnotationActions(a);
-                                },
-                              ),
+            child: GestureDetector(
+              behavior: tool == CommentTool.select ? HitTestBehavior.deferToChild : HitTestBehavior.opaque,
+              onTapUp: _onTapUp,
+              onPanStart: tool.isDrag || tool.isTextMarkup ? _onPanStart : null,
+              onPanUpdate: tool.isDrag || tool.isTextMarkup ? _onPanUpdate : null,
+              onPanEnd: tool.isDrag || tool.isTextMarkup ? _onPanEnd : null,
+              child: tool == CommentTool.select
+                  ? Stack(
+                      children: [
+                        for (final a in host.annotations.where((a) => a.page == pageIndex && !a.isLink))
+                          Positioned.fromRect(
+                            rect: scaleRect(a.rect.inflate(4), s),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                vs.select(a);
+                                _showAnnotationActions(a);
+                              },
                             ),
-                        ],
-                      )
-                    : const SizedBox.expand(),
-              ),
+                          ),
+                      ],
+                    )
+                  : const SizedBox.expand(),
             ),
+          ),
           if (selected != null && selected.page == pageIndex)
             SelectionBox(
               key: ValueKey(selected.id),
@@ -436,9 +536,13 @@ class _CommentPainter extends CustomPainter {
         canvas.drawRect(rr, Paint()..color = markupColor);
       } else {
         final y = tool == CommentTool.strikeout ? rr.center.dy : rr.bottom - 1;
-        canvas.drawLine(Offset(rr.left, y), Offset(rr.right, y), Paint()
-          ..color = markupColor
-          ..strokeWidth = 2);
+        canvas.drawLine(
+          Offset(rr.left, y),
+          Offset(rr.right, y),
+          Paint()
+            ..color = markupColor
+            ..strokeWidth = 2,
+        );
       }
     }
     final a = dragStart, b = dragEnd;
@@ -517,7 +621,7 @@ class CommentToolbar extends StatelessWidget {
                     if (tool.isDrag)
                       IconButton(
                         tooltip: vs.panLocked ? 'Scroll the page' : 'Draw',
-                        icon: Icon(vs.panLocked ? Icons.pan_tool_outlined : Icons.edit),
+                        icon: Icon(vs.panLocked ? Symbols.pan_tool : Symbols.edit),
                         onPressed: vs.togglePanLock,
                       ),
                     if (tool != CommentTool.note)
@@ -566,7 +670,7 @@ class CommentToolbar extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.tune, size: 18),
+                              const Icon(Symbols.tune, size: 18),
                             ],
                           ),
                         ),
@@ -579,7 +683,11 @@ class CommentToolbar extends StatelessWidget {
                         },
                         child: const Text('Undo stroke'),
                       ),
-                      FilledButton.icon(onPressed: () => commitInk(host), icon: const Icon(Icons.check), label: const Text('Save')),
+                      FilledButton.icon(
+                        onPressed: () => commitInk(host),
+                        icon: const Icon(Symbols.check),
+                        label: const Text('Save'),
+                      ),
                     ],
                   ],
                 ),
@@ -636,11 +744,7 @@ Future<void> showCommentsList(ViewerHost host) async {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
-                children: [
-                  Text('Comments (${annots.length})', style: Theme.of(ctx).textTheme.titleMedium),
-                ],
-              ),
+              child: Row(children: [Text('Comments (${annots.length})', style: Theme.of(ctx).textTheme.titleMedium)]),
             ),
             const Divider(),
             Expanded(
@@ -651,14 +755,18 @@ Future<void> showCommentsList(ViewerHost host) async {
                         for (final a in annots)
                           ListTile(
                             leading: Icon(a.icon, color: a.color),
-                            title: Text(a.contents?.isNotEmpty == true ? a.contents! : a.typeLabel, maxLines: 2, overflow: TextOverflow.ellipsis),
+                            title: Text(
+                              a.contents?.isNotEmpty == true ? a.contents! : a.typeLabel,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             subtitle: Text('Page ${a.page + 1}${a.author != null ? ' · ${a.author}' : ''}'),
                             onTap: () {
                               Navigator.pop(ctx);
                               host.controller.goToPage(pageNumber: a.page + 1);
                             },
                             trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline),
+                              icon: const Icon(Symbols.delete_outline),
                               onPressed: () {
                                 Navigator.pop(ctx);
                                 deleteAnnotation(host, a);

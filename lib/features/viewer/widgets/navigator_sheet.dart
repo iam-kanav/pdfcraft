@@ -7,6 +7,7 @@ import '../../../core/native/pdf_engine.dart';
 import '../../common/dialogs.dart';
 import '../viewer_screen.dart';
 import '../viewer_state.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Thumbnails, bookmarks, outline and comments in a tabbed sheet.
 Future<void> showNavigatorSheet(BuildContext context, ViewerHost host, {required int currentPage, int initialTab = 0}) {
@@ -61,10 +62,7 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
           ],
         ),
         Expanded(
-          child: TabBarView(
-            controller: _tabs,
-            children: [_thumbnails(), _bookmarks(), _outlineView(), _comments()],
-          ),
+          child: TabBarView(controller: _tabs, children: [_thumbnails(), _bookmarks(), _outlineView(), _comments()]),
         ),
       ],
     );
@@ -75,7 +73,12 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
     if (doc == null) return const SizedBox();
     return GridView.builder(
       padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 130, childAspectRatio: 0.66, mainAxisSpacing: 12, crossAxisSpacing: 12),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 130,
+        childAspectRatio: 0.66,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
       itemCount: doc.pages.length,
       itemBuilder: (context, i) {
         final selected = i + 1 == widget.currentPage;
@@ -87,7 +90,10 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 2.5),
+                    border: Border.all(
+                      color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                      width: 2.5,
+                    ),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   padding: const EdgeInsets.all(2),
@@ -110,11 +116,21 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
     return Column(
       children: [
         ListTile(
-          leading: const Icon(Icons.bookmark_add_outlined),
+          leading: const Icon(Symbols.bookmark_add),
           title: Text('Bookmark page ${widget.currentPage}'),
           onTap: () async {
-            final label = await showTextInputDialog(context, title: 'Add bookmark', initial: 'Page ${widget.currentPage}', confirmLabel: 'Add');
-            if (label != null) lib.addBookmark(path, widget.currentPage, label.trim().isEmpty ? 'Page ${widget.currentPage}' : label.trim());
+            final label = await showTextInputDialog(
+              context,
+              title: 'Add bookmark',
+              initial: 'Page ${widget.currentPage}',
+              confirmLabel: 'Add',
+            );
+            if (label != null)
+              lib.addBookmark(
+                path,
+                widget.currentPage,
+                label.trim().isEmpty ? 'Page ${widget.currentPage}' : label.trim(),
+              );
           },
         ),
         const Divider(),
@@ -125,7 +141,7 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
                   children: [
                     for (final b in marks)
                       ListTile(
-                        leading: const Icon(Icons.bookmark),
+                        leading: const Icon(Symbols.bookmark),
                         title: Text(b.label, maxLines: 2, overflow: TextOverflow.ellipsis),
                         subtitle: Text('Page ${b.page}'),
                         onTap: () => _go(b.page),
@@ -158,7 +174,9 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
         if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
         final nodes = snap.data ?? const [];
         if (nodes.isEmpty) return const Center(child: Text('This document has no outline'));
-        return ListView(children: [for (final n in nodes) _OutlineTile(node: n, depth: 0, onTap: _goDest)]);
+        return ListView(
+          children: [for (final n in nodes) _OutlineTile(node: n, depth: 0, onTap: _goDest)],
+        );
       },
     );
   }
@@ -177,7 +195,11 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
         for (final a in annots)
           ListTile(
             leading: Icon(a.icon, color: a.color),
-            title: Text(a.contents?.isNotEmpty == true ? a.contents! : a.typeLabel, maxLines: 2, overflow: TextOverflow.ellipsis),
+            title: Text(
+              a.contents?.isNotEmpty == true ? a.contents! : a.typeLabel,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             subtitle: Text('${a.typeLabel} · Page ${a.page + 1}${a.author != null ? ' · ${a.author}' : ''}'),
             onTap: () {
               Navigator.pop(context);
@@ -200,7 +222,13 @@ class _OutlineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final pad = EdgeInsets.only(left: 16.0 + depth * 16, right: 16);
     if (node.children.isEmpty) {
-      return ListTile(contentPadding: pad, dense: true, title: Text(node.title), onTap: () => onTap(node.dest), trailing: Text('${node.dest?.pageNumber ?? ''}'));
+      return ListTile(
+        contentPadding: pad,
+        dense: true,
+        title: Text(node.title),
+        onTap: () => onTap(node.dest),
+        trailing: Text('${node.dest?.pageNumber ?? ''}'),
+      );
     }
     return ExpansionTile(
       tilePadding: pad,
@@ -218,7 +246,12 @@ Future<void> showNoteDialog(ViewerHost host, AnnotInfo a) async {
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(a.author ?? 'Note'),
-      content: TextField(controller: controller, maxLines: 6, minLines: 3, decoration: const InputDecoration(hintText: 'Add a comment')),
+      content: TextField(
+        controller: controller,
+        maxLines: 6,
+        minLines: 3,
+        decoration: const InputDecoration(hintText: 'Add a comment'),
+      ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, '__delete__'), child: const Text('Delete')),
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -232,6 +265,9 @@ Future<void> showNoteDialog(ViewerHost host, AnnotInfo a) async {
   if (result == '__delete__') {
     await host.edit('Delete note', (i, o) => engine.deleteAnnotations(i, o, [(page: a.page, id: a.id)], password: pw));
   } else if (result != a.contents) {
-    await host.edit('Edit note', (i, o) => engine.updateAnnotation(i, o, page: a.page, id: a.id, contents: result, password: pw));
+    await host.edit(
+      'Edit note',
+      (i, o) => engine.updateAnnotation(i, o, page: a.page, id: a.id, contents: result, password: pw),
+    );
   }
 }

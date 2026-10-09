@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 const kAnnotationColors = <Color>[
-  Color(0xFFFFD400),
+  Color(0xFFFFE94D),
   Color(0xFF7CFC00),
   Color(0xFF00E5FF),
   Color(0xFFFF6FD8),
@@ -29,7 +29,10 @@ class ColorDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: selected ? Theme.of(context).colorScheme.onSurface : Colors.black12, width: selected ? 3 : 1),
+        border: Border.all(
+          color: selected ? Theme.of(context).colorScheme.onSurface : Colors.black12,
+          width: selected ? 3 : 1,
+        ),
       ),
     ),
   );

@@ -11,11 +11,7 @@ import 'package:pdfcraft/core/models/raw_page_content.dart';
 
 /// Switches for optional analysis stages.
 class ReflowOptions {
-  const ReflowOptions({
-    this.removeHeadersFooters = true,
-    this.detectTables = true,
-    this.includeImages = true,
-  });
+  const ReflowOptions({this.removeHeadersFooters = true, this.detectTables = true, this.includeImages = true});
 
   final bool removeHeadersFooters;
   final bool detectTables;
@@ -277,9 +273,7 @@ class DocumentStats {
     // Typical line pitch for body-sized lines.
     final pitches = <double>[];
     for (final page in pages) {
-      final bodyLines = page.lines
-          .where((l) => l.text.trim().isNotEmpty && (l.fontSize - body).abs() <= 0.6)
-          .toList()
+      final bodyLines = page.lines.where((l) => l.text.trim().isNotEmpty && (l.fontSize - body).abs() <= 0.6).toList()
         ..sort((a, b) => a.y0.compareTo(b.y0));
       for (var i = 0; i < bodyLines.length; i++) {
         final a = bodyLines[i];
@@ -446,18 +440,12 @@ class _Cell {
 /// A positioned piece of page content: a (possibly partial) text line or an image.
 class _Item {
   _Item.text(List<RawTextSpan> spans, this.y0, this.y1)
-      : spans = List.of(spans)..sort((a, b) => a.x0.compareTo(b.x0)),
-        image = null,
-        x0 = spans.map((s) => s.x0).reduce(math.min),
-        x1 = spans.map((s) => s.x1).reduce(math.max);
+    : spans = List.of(spans)..sort((a, b) => a.x0.compareTo(b.x0)),
+      image = null,
+      x0 = spans.map((s) => s.x0).reduce(math.min),
+      x1 = spans.map((s) => s.x1).reduce(math.max);
 
-  _Item.image(RawImage img)
-      : spans = const [],
-        image = img,
-        x0 = img.x0,
-        x1 = img.x1,
-        y0 = img.y0,
-        y1 = img.y1;
+  _Item.image(RawImage img) : spans = const [], image = img, x0 = img.x0, x1 = img.x1, y0 = img.y0, y1 = img.y1;
 
   final List<RawTextSpan> spans;
   final RawImage? image;
@@ -930,10 +918,8 @@ class _PageAnalyzer {
     // horizontally contained in it, continues the same flow even when the two
     // were assigned different column extents (e.g. the short last line of a
     // full-width paragraph sitting above a two-column body).
-    final stacked = n.y0 > p.y0 &&
-        n.y0 - p.y0 <= _pitch(size) * 1.45 &&
-        (n.x0 - p.x0).abs() <= 0.6 * em &&
-        n.x1 <= p.x1 + 0.6 * em;
+    final stacked =
+        n.y0 > p.y0 && n.y0 - p.y0 <= _pitch(size) * 1.45 && (n.x0 - p.x0).abs() <= 0.6 * em && n.x1 <= p.x1 + 0.6 * em;
     if (!_sameColumn(p, n) && !stacked) {
       // Paragraph flowing from the bottom of one column to the top of the next.
       if (_endsSentence(p.text)) return false;
@@ -948,7 +934,11 @@ class _PageAnalyzer {
     var edgeOk = false;
     if (dx.abs() <= tol) {
       edgeOk = true;
-    } else if (dx < -tol && para.length == 1 && -dx <= 5 * em && p.italic == n.italic && (n.x0 - n.colX0).abs() <= tol) {
+    } else if (dx < -tol &&
+        para.length == 1 &&
+        -dx <= 5 * em &&
+        p.italic == n.italic &&
+        (n.x0 - n.colX0).abs() <= tol) {
       edgeOk = true; // first-line indent
     } else if (_isCentered(p) && _isCentered(n)) {
       edgeOk = true;
@@ -1068,12 +1058,14 @@ class _PageAnalyzer {
       if (table != null) {
         flush();
         final rows = items.sublist(i, table.end + 1);
-        out.add(_Blk(
-          table.block,
-          rows.map((r) => r.y0).reduce(math.min),
-          rows.map((r) => r.y1).reduce(math.max),
-          colX0: it.colX0,
-        ));
+        out.add(
+          _Blk(
+            table.block,
+            rows.map((r) => r.y0).reduce(math.min),
+            rows.map((r) => r.y1).reduce(math.max),
+            colX0: it.colX0,
+          ),
+        );
         i = table.end;
         continue;
       }
@@ -1099,16 +1091,14 @@ class _PageAnalyzer {
       if (hEnd != null) {
         flush();
         final group = items.sublist(i, hEnd + 1);
-        out.add(_Blk(
-          HeadingBlock(
-            level: _headingLevel,
-            spans: _joinLines(group.map((g) => g.textSpans)),
-            pageNumber: pageNo,
+        out.add(
+          _Blk(
+            HeadingBlock(level: _headingLevel, spans: _joinLines(group.map((g) => g.textSpans)), pageNumber: pageNo),
+            group.first.y0,
+            group.last.y1,
+            colX0: it.colX0,
           ),
-          group.first.y0,
-          group.last.y1,
-          colX0: it.colX0,
-        ));
+        );
         i = hEnd;
         continue;
       }
@@ -1118,7 +1108,8 @@ class _PageAnalyzer {
         var wrapped = false;
         if (!marker.glyph && para.isNotEmpty) {
           final p = para.last;
-          wrapped = _sameColumn(p, it) &&
+          wrapped =
+              _sameColumn(p, it) &&
               !_endsSentence(p.text) &&
               (it.x0 - p.x0).abs() <= 0.6 * p.fontSize &&
               p.colX1 - p.x1 < 3 * p.fontSize &&
@@ -1171,10 +1162,20 @@ class _PageAnalyzer {
           leftIndent <= 0.25 * first.colWidth &&
           rightIndent >= 1.5 * body &&
           (italicChars * 2 > totalChars || smaller)) {
-        return _Blk(QuoteBlock(spans: spans, pageNumber: page.pageNumber), y0, y1, colX0: first.colX0);
+        return _Blk(
+          QuoteBlock(spans: spans, pageNumber: page.pageNumber),
+          y0,
+          y1,
+          colX0: first.colX0,
+        );
       }
     }
-    return _Blk(ParagraphBlock(spans: spans, pageNumber: page.pageNumber), y0, y1, colX0: first.colX0);
+    return _Blk(
+      ParagraphBlock(spans: spans, pageNumber: page.pageNumber),
+      y0,
+      y1,
+      colX0: first.colX0,
+    );
   }
 
   _Blk _listBlk(_ListBuilder li) {

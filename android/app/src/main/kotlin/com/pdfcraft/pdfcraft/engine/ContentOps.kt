@@ -131,7 +131,17 @@ object ContentOps {
                 val firstBaseline = if (e["rect"] != null) rect.t + size * 0.9f else block.lines.first().baseline
                 val leading = if (block.lines.size > 1) block.leading else size * 1.25f
                 val font = od.font(bold, italic, serif)
-                writes.add(TextWrite(text, font, size, color, rect.l, firstBaseline, max(rect.width, size * 2), leading))
+                // Let the box grow to the right until the next text block on the same band (or the
+                // page margin) before wrapping — like Acrobat's text boxes, and safe for columns.
+                val g = PageGeom(page)
+                var rightLimit = g.width - max(18f, min(rect.l, 72f))
+                for (other in blocks) {
+                    if (other === block) continue
+                    val o = other.rect
+                    if (o.b > rect.t && o.t < rect.b && o.l >= rect.r - 1f) rightLimit = min(rightLimit, o.l - 6f)
+                }
+                val available = if (e["rect"] == null) rightLimit - rect.l else 0f
+                writes.add(TextWrite(text, font, size, color, rect.l, firstBaseline, max(max(rect.width, size * 2), available), leading))
             }
             ContentRewriter.apply(doc, page, scan, plan)
             if (writes.isNotEmpty()) {

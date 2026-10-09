@@ -15,6 +15,7 @@ import 'processing/filters.dart';
 import 'processing/geometry.dart';
 import 'processing/scan_pipeline.dart';
 import 'scanner_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// One captured page with its crop quad, filter and rotation.
 class ScanPage {
@@ -99,7 +100,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
   }
 
   Future<void> _addPages() async {
-    final r = await Navigator.of(context).push<List<ScanPage>>(MaterialPageRoute(builder: (_) => ScannerScreen(existing: _pages)));
+    final r = await Navigator.of(
+      context,
+    ).push<List<ScanPage>>(MaterialPageRoute(builder: (_) => ScannerScreen(existing: _pages)));
     if (r != null) {
       setState(() {
         _pages
@@ -110,7 +113,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
   }
 
   Future<void> _save() async {
-    final name = TextEditingController(text: 'Scan ${DateTime.now().toIso8601String().substring(0, 16).replaceAll('T', ' ').replaceAll(':', '.')}');
+    final name = TextEditingController(
+      text: 'Scan ${DateTime.now().toIso8601String().substring(0, 16).replaceAll('T', ' ').replaceAll(':', '.')}',
+    );
     var ocr = true;
     var size = ImagePageSize.fitImage;
     final ok = await showDialog<bool>(
@@ -121,7 +126,10 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'File name', suffixText: '.pdf')),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'File name', suffixText: '.pdf'),
+              ),
               const SizedBox(height: 12),
               DropdownButtonFormField<ImagePageSize>(
                 initialValue: size,
@@ -151,10 +159,18 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
     );
     if (ok != true || !mounted) return;
     final services = AppServices.instance;
-    final out = services.files.outputPath('${sanitizeFileName(name.text.trim().isEmpty ? 'Scan' : name.text.trim())}.pdf', dir: services.files.scansDir);
+    final out = services.files.outputPath(
+      '${sanitizeFileName(name.text.trim().isEmpty ? 'Scan' : name.text.trim())}.pdf',
+      dir: services.files.scansDir,
+    );
     final saved = await runWithProgress(context, ocr ? 'Saving and recognizing text…' : 'Saving…', () async {
       final images = [for (final pg in _pages) pg.processed!];
-      final pdf = await buildPdfFromImages(images, pageSize: size, margin: size == ImagePageSize.fitImage ? 0 : 18, title: name.text);
+      final pdf = await buildPdfFromImages(
+        images,
+        pageSize: size,
+        margin: size == ImagePageSize.fitImage ? 0 : 18,
+        title: name.text,
+      );
       await File(out).writeAsBytes(pdf, flush: true);
       if (ocr) await _ocr(out, images, size);
       return out;
@@ -186,7 +202,15 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
         final (words, _) = await ocr.recognizeImageFile(tmp.path);
         pages[i] = [
           for (final w in words)
-            (text: w.text, rect: Rect.fromLTRB(offX + w.rect.left * scale, offY + w.rect.top * scale, offX + w.rect.right * scale, offY + w.rect.bottom * scale)),
+            (
+              text: w.text,
+              rect: Rect.fromLTRB(
+                offX + w.rect.left * scale,
+                offY + w.rect.top * scale,
+                offX + w.rect.right * scale,
+                offY + w.rect.bottom * scale,
+              ),
+            ),
         ];
         await tmp.delete();
       }
@@ -204,7 +228,13 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
     if (_pages.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Review')),
-        body: Center(child: FilledButton.icon(onPressed: _addPages, icon: const Icon(Icons.add_a_photo), label: const Text('Scan a page'))),
+        body: Center(
+          child: FilledButton.icon(
+            onPressed: _addPages,
+            icon: const Icon(Symbols.add_a_photo),
+            label: const Text('Scan a page'),
+          ),
+        ),
       );
     }
     _index = _index.clamp(0, _pages.length - 1);
@@ -217,7 +247,10 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
         appBar: AppBar(
           leading: BackButton(onPressed: () => Navigator.pop(context, _pages)),
           title: Text('Page ${_index + 1} of ${_pages.length}'),
-          actions: [FilledButton(onPressed: _working ? null : _save, child: const Text('Save PDF')), const SizedBox(width: 12)],
+          actions: [
+            FilledButton(onPressed: _working ? null : _save, child: const Text('Save PDF')),
+            const SizedBox(width: 12),
+          ],
         ),
         body: Column(
           children: [
@@ -230,7 +263,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                     onPageChanged: (i) => setState(() => _index = i),
                     itemBuilder: (context, i) => Padding(
                       padding: const EdgeInsets.all(16),
-                      child: InteractiveViewer(child: Image.memory(_pages[i].processed!, fit: BoxFit.contain, gaplessPlayback: true)),
+                      child: InteractiveViewer(
+                        child: Image.memory(_pages[i].processed!, fit: BoxFit.contain, gaplessPlayback: true),
+                      ),
                     ),
                   ),
                   if (_working) const Center(child: CircularProgressIndicator()),
@@ -276,7 +311,12 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                   child: Container(
                     width: 56,
                     margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(border: Border.all(color: i == _index ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 2.5)),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: i == _index ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        width: 2.5,
+                      ),
+                    ),
                     child: Image.memory(_pages[i].thumbnail, fit: BoxFit.cover),
                   ),
                 ),
@@ -287,10 +327,10 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _Action(icon: Icons.add_a_photo_outlined, label: 'Add', onTap: _working ? null : _addPages),
-                  _Action(icon: Icons.crop, label: 'Crop', onTap: _working ? null : _crop),
+                  _Action(icon: Symbols.add_a_photo, label: 'Add', onTap: _working ? null : _addPages),
+                  _Action(icon: Symbols.crop, label: 'Crop', onTap: _working ? null : _crop),
                   _Action(
-                    icon: Icons.rotate_right,
+                    icon: Symbols.rotate_right,
                     label: 'Rotate',
                     onTap: _working
                         ? null
@@ -300,7 +340,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                           }),
                   ),
                   _Action(
-                    icon: Icons.delete_outline,
+                    icon: Symbols.delete_outline,
                     label: 'Delete',
                     onTap: _working
                         ? null
@@ -332,7 +372,14 @@ class _Action extends StatelessWidget {
     borderRadius: BorderRadius.circular(12),
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(icon), const SizedBox(height: 2), Text(label, style: const TextStyle(fontSize: 12))]),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
     ),
   );
 }
@@ -372,7 +419,10 @@ class _CropQuadScreenState extends State<CropQuadScreen> {
         foregroundColor: Colors.white,
         title: const Text('Adjust corners'),
         actions: [
-          TextButton(onPressed: () => setState(() => _pts = _fromQuad(Quad.full(page.width.toDouble(), page.height.toDouble()))), child: const Text('Full page', style: TextStyle(color: Colors.white))),
+          TextButton(
+            onPressed: () => setState(() => _pts = _fromQuad(Quad.full(page.width.toDouble(), page.height.toDouble()))),
+            child: const Text('Full page', style: TextStyle(color: Colors.white)),
+          ),
           TextButton(
             onPressed: () {
               final q = Quad.orderPoints([for (final o in _pts) math.Point(o.dx, o.dy)]);
@@ -408,7 +458,10 @@ class _CropQuadScreenState extends State<CropQuadScreen> {
                               child: GestureDetector(
                                 onPanUpdate: (d) => setState(() {
                                   final np = _pts[i] + d.delta / s;
-                                  _pts[i] = Offset(np.dx.clamp(0, page.width.toDouble()), np.dy.clamp(0, page.height.toDouble()));
+                                  _pts[i] = Offset(
+                                    np.dx.clamp(0, page.width.toDouble()),
+                                    np.dy.clamp(0, page.height.toDouble()),
+                                  );
                                 }),
                                 child: Container(
                                   width: 44,
@@ -417,7 +470,11 @@ class _CropQuadScreenState extends State<CropQuadScreen> {
                                   child: Container(
                                     width: 22,
                                     height: 22,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.4), border: Border.all(color: const Color(0xFF3B82F6), width: 3)),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withValues(alpha: 0.4),
+                                      border: Border.all(color: const Color(0xFF3B82F6), width: 3),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -441,11 +498,17 @@ class _CornersPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final path = Path()..addPolygon(pts, true);
-    canvas.drawPath(Path.combine(PathOperation.difference, Path()..addRect(Offset.zero & size), path), Paint()..color = Colors.black45);
-    canvas.drawPath(path, Paint()
-      ..color = const Color(0xFF3B82F6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5);
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, Path()..addRect(Offset.zero & size), path),
+      Paint()..color = Colors.black45,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = const Color(0xFF3B82F6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
   }
 
   @override

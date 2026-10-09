@@ -13,6 +13,7 @@ import 'analyzer/reflow_analyzer.dart';
 import 'reading_settings.dart';
 import 'widgets/reading_settings_sheet.dart';
 import 'widgets/reflow_view.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Smart reading mode (Liquid Mode alternative): reflowed, restyled content.
 /// Pops with a page number when the user asks to jump back to the original page.
@@ -83,7 +84,9 @@ class _ReflowScreenState extends State<ReflowScreen> {
       builder: (ctx) => SizedBox(
         height: MediaQuery.of(ctx).size.height * 0.75,
         child: doc.headings.isEmpty
-            ? Center(child: Text('No headings found', style: TextStyle(color: settings.colors.text)))
+            ? Center(
+                child: Text('No headings found', style: TextStyle(color: settings.colors.text)),
+              )
             : ReflowOutline(
                 doc: doc,
                 settings: settings,
@@ -120,7 +123,9 @@ class _ReflowScreenState extends State<ReflowScreen> {
   }
 
   Iterable<String> _chunks(String text) sync* {
-    final sentences = RegExp(r'[^.!?]+[.!?]*').allMatches(text).map((m) => m.group(0)!.trim()).where((s) => s.isNotEmpty);
+    final sentences = RegExp(
+      r'[^.!?]+[.!?]*',
+    ).allMatches(text).map((m) => m.group(0)!.trim()).where((s) => s.isNotEmpty);
     final buf = StringBuffer();
     for (final s in sentences) {
       if (buf.length + s.length > 400 && buf.isNotEmpty) {
@@ -140,7 +145,11 @@ class _ReflowScreenState extends State<ReflowScreen> {
     return Theme(
       data: Theme.of(context).copyWith(
         scaffoldBackgroundColor: colors.background,
-        appBarTheme: Theme.of(context).appBarTheme.copyWith(backgroundColor: colors.surface, foregroundColor: colors.text, titleTextStyle: TextStyle(color: colors.text, fontSize: 18, fontWeight: FontWeight.w600)),
+        appBarTheme: Theme.of(context).appBarTheme.copyWith(
+          backgroundColor: colors.surface,
+          foregroundColor: colors.text,
+          titleTextStyle: TextStyle(color: colors.text, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         iconTheme: IconThemeData(color: colors.text),
       ),
       child: Scaffold(
@@ -149,32 +158,51 @@ class _ReflowScreenState extends State<ReflowScreen> {
               ? TextField(
                   autofocus: true,
                   style: TextStyle(color: colors.text),
-                  decoration: InputDecoration(hintText: 'Find in text', filled: false, border: InputBorder.none, hintStyle: TextStyle(color: colors.secondaryText)),
+                  decoration: InputDecoration(
+                    hintText: 'Find in text',
+                    filled: false,
+                    border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
+                    hintStyle: TextStyle(color: colors.secondaryText),
+                  ),
                   onChanged: (v) => setState(() => _query = v.trim().isEmpty ? null : v.trim()),
                 )
               : const Text('Smart reading'),
           actions: [
             IconButton(
               tooltip: 'Search',
-              icon: Icon(_searching ? Icons.close : Icons.search),
+              icon: Icon(_searching ? Symbols.close : Symbols.search),
               onPressed: () => setState(() {
                 _searching = !_searching;
                 if (!_searching) _query = null;
               }),
             ),
-            IconButton(tooltip: 'Outline', icon: const Icon(Icons.toc), onPressed: () => _openOutline(settings)),
-            IconButton(tooltip: 'Read aloud', icon: Icon(_speaking ? Icons.stop_circle_outlined : Icons.record_voice_over_outlined), onPressed: _toggleSpeak),
-            IconButton(tooltip: 'Text & theme', icon: const Icon(Icons.text_format), onPressed: () => ReadingSettingsSheet.show(context, settings)),
+            IconButton(tooltip: 'Outline', icon: const Icon(Symbols.toc), onPressed: () => _openOutline(settings)),
+            IconButton(
+              tooltip: 'Read aloud',
+              icon: Icon(_speaking ? Symbols.stop_circle : Symbols.record_voice_over),
+              onPressed: _toggleSpeak,
+            ),
+            IconButton(
+              tooltip: 'Text & theme',
+              icon: const Icon(Symbols.text_format),
+              onPressed: () => ReadingSettingsSheet.show(context, settings),
+            ),
           ],
           bottom: _loading
               ? PreferredSize(
                   preferredSize: const Size.fromHeight(3),
-                  child: LinearProgressIndicator(value: _total == 0 ? null : _raw.length / _total, minHeight: 3, color: colors.accent),
+                  child: LinearProgressIndicator(
+                    value: _total == 0 ? null : _raw.length / _total,
+                    minHeight: 3,
+                    color: colors.accent,
+                  ),
                 )
               : null,
         ),
         body: _error != null
-            ? Center(child: Text(friendlyError(_error!), style: TextStyle(color: colors.text)))
+            ? Center(
+                child: Text(friendlyError(_error!), style: TextStyle(color: colors.text)),
+              )
             : doc == null
             ? Center(child: CircularProgressIndicator(color: colors.accent))
             : doc.blocks.isEmpty && !_loading

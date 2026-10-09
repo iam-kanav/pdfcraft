@@ -20,16 +20,28 @@ class PdfEngineException implements Exception {
 
 List<double> rectToList(Rect r) => [r.left, r.top, r.right, r.bottom];
 
-Rect listToRect(List<dynamic> l) =>
-    Rect.fromLTRB((l[0] as num).toDouble(), (l[1] as num).toDouble(), (l[2] as num).toDouble(), (l[3] as num).toDouble());
+Rect listToRect(List<dynamic> l) => Rect.fromLTRB(
+  (l[0] as num).toDouble(),
+  (l[1] as num).toDouble(),
+  (l[2] as num).toDouble(),
+  (l[3] as num).toDouble(),
+);
 
 int colorToInt(Color c) => c.toARGB32();
 
 /// Page specification for [PdfEngine.organize].
 class PageSpec {
-  const PageSpec.page(this.index, {this.rotate = 0}) : file = null, password = null, blank = false, width = null, height = null;
+  const PageSpec.page(this.index, {this.rotate = 0})
+    : file = null,
+      password = null,
+      blank = false,
+      width = null,
+      height = null;
 
-  const PageSpec.fromFile(this.file, this.index, {this.password, this.rotate = 0}) : blank = false, width = null, height = null;
+  const PageSpec.fromFile(this.file, this.index, {this.password, this.rotate = 0})
+    : blank = false,
+      width = null,
+      height = null;
 
   const PageSpec.blank({this.width = 595.28, this.height = 841.89})
     : index = 0,
@@ -47,7 +59,11 @@ class PageSpec {
   final double? height;
 
   Map<String, Object?> toMap() => {
-    if (blank) ...{'blank': true, 'width': width, 'height': height} else ...{
+    if (blank) ...{
+      'blank': true,
+      'width': width,
+      'height': height,
+    } else ...{
       'index': index,
       'rotate': rotate,
       'file': ?file,
@@ -75,7 +91,8 @@ class DocumentInfo {
   int get fieldCount => raw['fieldCount'] as int? ?? 0;
   int get fileSize => raw['fileSize'] as int? ?? 0;
   DateTime? get created => raw['created'] == null ? null : DateTime.fromMillisecondsSinceEpoch(raw['created'] as int);
-  DateTime? get modified => raw['modified'] == null ? null : DateTime.fromMillisecondsSinceEpoch(raw['modified'] as int);
+  DateTime? get modified =>
+      raw['modified'] == null ? null : DateTime.fromMillisecondsSinceEpoch(raw['modified'] as int);
   Map<String, bool> get permissions => (raw['permissions'] as Map).map((k, v) => MapEntry(k as String, v as bool));
 
   /// Display sizes (points) of each page with rotation applied.
@@ -112,8 +129,13 @@ class PdfEngine {
   Future<DocumentInfo> info(String path, {String? password}) async =>
       DocumentInfo((await _call<Map>('info', _base(path, password)))!);
 
-  Future<void> setMetadata(String path, String out, Map<String, String?> fields, {String? password, bool stripXmp = false}) =>
-      _call('setMetadata', {..._base(path, password, out), 'fields': fields, 'stripXmp': stripXmp});
+  Future<void> setMetadata(
+    String path,
+    String out,
+    Map<String, String?> fields, {
+    String? password,
+    bool stripXmp = false,
+  }) => _call('setMetadata', {..._base(path, password, out), 'fields': fields, 'stripXmp': stripXmp});
 
   Future<void> protect(
     String path,
@@ -142,7 +164,13 @@ class PdfEngine {
     return r!['pageCount'] as int;
   }
 
-  Future<List<String>> split(String path, String outDir, String baseName, List<(int, int)> ranges, {String? password}) async {
+  Future<List<String>> split(
+    String path,
+    String outDir,
+    String baseName,
+    List<(int, int)> ranges, {
+    String? password,
+  }) async {
     final r = await _call<List>('split', {
       ..._base(path, password),
       'outDir': outDir,
@@ -181,7 +209,12 @@ class PdfEngine {
   Future<void> flatten(String path, String out, {String? password, bool annotations = true}) =>
       _call('flatten', {..._base(path, password, out), 'annotations': annotations});
 
-  Future<List<String>> addAnnotations(String path, String out, List<Map<String, Object?>> annotations, {String? password}) async {
+  Future<List<String>> addAnnotations(
+    String path,
+    String out,
+    List<Map<String, Object?>> annotations, {
+    String? password,
+  }) async {
     final r = await _call<List>('addAnnotations', {..._base(path, password, out), 'annotations': annotations});
     return r!.cast<String>();
   }
@@ -224,16 +257,26 @@ class PdfEngine {
     return [for (final m in r!) (m as Map).cast<String, dynamic>()];
   }
 
-  Future<void> fillForm(String path, String out, Map<String, Object?> values, {String? password, bool flatten = false}) =>
-      _call('fillForm', {..._base(path, password, out), 'values': values, 'flatten': flatten});
+  Future<void> fillForm(
+    String path,
+    String out,
+    Map<String, Object?> values, {
+    String? password,
+    bool flatten = false,
+  }) => _call('fillForm', {..._base(path, password, out), 'values': values, 'flatten': flatten});
 
   Future<List<Map<String, dynamic>>> getTextBlocks(String path, int page, {String? password}) async {
     final r = await _call<List>('getTextBlocks', {..._base(path, password), 'page': page});
     return [for (final m in r!) (m as Map).cast<String, dynamic>()];
   }
 
-  Future<void> editTextBlocks(String path, String out, int page, List<Map<String, Object?>> edits, {String? password}) =>
-      _call('editTextBlocks', {..._base(path, password, out), 'page': page, 'edits': edits});
+  Future<void> editTextBlocks(
+    String path,
+    String out,
+    int page,
+    List<Map<String, Object?>> edits, {
+    String? password,
+  }) => _call('editTextBlocks', {..._base(path, password, out), 'page': page, 'edits': edits});
 
   Future<List<Map<String, dynamic>>> getImageObjects(String path, int page, {String? password}) async {
     final r = await _call<List>('getImageObjects', {..._base(path, password), 'page': page});
@@ -332,25 +375,38 @@ class PdfEngine {
     'pages': ?pages,
   });
 
-  Future<int> removeArtifacts(String path, String out, {String? password, List<String> kinds = const ['Watermark']}) async =>
-      (await _call<int>('removeArtifacts', {..._base(path, password, out), 'kinds': kinds}))!;
+  Future<int> removeArtifacts(
+    String path,
+    String out, {
+    String? password,
+    List<String> kinds = const ['Watermark'],
+  }) async => (await _call<int>('removeArtifacts', {..._base(path, password, out), 'kinds': kinds}))!;
 
-  Future<List<RawPageContent>> extractPages(String path, {String? password, List<int>? pages, bool images = true}) async {
+  Future<List<RawPageContent>> extractPages(
+    String path, {
+    String? password,
+    List<int>? pages,
+    bool images = true,
+  }) async {
     final r = await _call<List>('extractPages', {..._base(path, password), 'pages': ?pages, 'images': images});
     return [for (final m in r!) RawPageContent.fromMap(m as Map)];
   }
 
-  Future<int> addOcrLayer(String path, String out, Map<int, List<({String text, Rect rect})>> pages, {String? password}) async =>
-      (await _call<int>('addOcrLayer', {
-        ..._base(path, password, out),
-        'pages': [
-          for (final e in pages.entries)
-            {
-              'page': e.key,
-              'words': [
-                for (final w in e.value) {'text': w.text, 'rect': rectToList(w.rect)},
-              ],
-            },
-        ],
-      }))!;
+  Future<int> addOcrLayer(
+    String path,
+    String out,
+    Map<int, List<({String text, Rect rect})>> pages, {
+    String? password,
+  }) async => (await _call<int>('addOcrLayer', {
+    ..._base(path, password, out),
+    'pages': [
+      for (final e in pages.entries)
+        {
+          'page': e.key,
+          'words': [
+            for (final w in e.value) {'text': w.text, 'rect': rectToList(w.rect)},
+          ],
+        },
+    ],
+  }))!;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdfcraft/features/reflow/reading_settings.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// The "Aa" panel of Smart Reading Mode: text size, spacing, font, alignment,
 /// margins and color theme.
@@ -29,9 +30,9 @@ class ReadingSettingsSheet extends StatelessWidget {
         final theme = Theme.of(context);
         final labelStyle = theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant);
         Widget label(String text) => Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 6),
-              child: Text(text, style: labelStyle),
-            );
+          padding: const EdgeInsets.only(top: 16, bottom: 6),
+          child: Text(text, style: labelStyle),
+        );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -80,7 +81,7 @@ class ReadingSettingsSheet extends StatelessWidget {
               label('Line spacing  ${settings.lineHeight.toStringAsFixed(1)}'),
               Row(
                 children: [
-                  const Icon(Icons.density_small, size: 20),
+                  const Icon(Symbols.density_small, size: 20),
                   Expanded(
                     child: Slider(
                       value: settings.lineHeight,
@@ -91,7 +92,7 @@ class ReadingSettingsSheet extends StatelessWidget {
                       onChanged: settings.setLineHeight,
                     ),
                   ),
-                  const Icon(Icons.density_large, size: 20),
+                  const Icon(Symbols.density_large, size: 20),
                 ],
               ),
               label('Font'),
@@ -102,11 +103,13 @@ class ReadingSettingsSheet extends StatelessWidget {
                     ChoiceChip(
                       label: Text(
                         _familyLabels[f]!,
-                        style: TextStyle(fontFamily: switch (f) {
-                          'serif' => 'serif',
-                          'mono' => 'monospace',
-                          _ => null,
-                        }),
+                        style: TextStyle(
+                          fontFamily: switch (f) {
+                            'serif' => 'serif',
+                            'mono' => 'monospace',
+                            _ => null,
+                          },
+                        ),
                       ),
                       selected: settings.fontFamily == f,
                       onSelected: (_) => settings.setFontFamily(f),
@@ -116,17 +119,19 @@ class ReadingSettingsSheet extends StatelessWidget {
               label('Alignment'),
               SegmentedButton<TextAlign>(
                 segments: const [
-                  ButtonSegment(value: TextAlign.left, icon: Icon(Icons.format_align_left), label: Text('Left')),
-                  ButtonSegment(value: TextAlign.justify, icon: Icon(Icons.format_align_justify), label: Text('Justify')),
+                  ButtonSegment(value: TextAlign.left, icon: Icon(Symbols.format_align_left), label: Text('Left')),
+                  ButtonSegment(
+                    value: TextAlign.justify,
+                    icon: Icon(Symbols.format_align_justify),
+                    label: Text('Justify'),
+                  ),
                 ],
                 selected: {settings.textAlign},
                 onSelectionChanged: (s) => settings.setTextAlign(s.first),
               ),
               label('Margins'),
               SegmentedButton<ReadingMargin>(
-                segments: [
-                  for (final m in ReadingMargin.values) ButtonSegment(value: m, label: Text(m.label)),
-                ],
+                segments: [for (final m in ReadingMargin.values) ButtonSegment(value: m, label: Text(m.label))],
                 selected: {settings.margin},
                 onSelectionChanged: (s) => settings.setMargin(s.first),
               ),
@@ -135,11 +140,7 @@ class ReadingSettingsSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   for (final t in ReadingTheme.values)
-                    _ThemeSwatch(
-                      theme: t,
-                      selected: settings.theme == t,
-                      onTap: () => settings.setTheme(t),
-                    ),
+                    _ThemeSwatch(theme: t, selected: settings.theme == t, onTap: () => settings.setTheme(t)),
                 ],
               ),
             ],
@@ -182,7 +183,10 @@ class _ThemeSwatch extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: selected ? ring : c.divider, width: selected ? 3 : 1),
               ),
-              child: Text('Aa', style: TextStyle(color: c.text, fontWeight: FontWeight.w600, fontSize: 16)),
+              child: Text(
+                'Aa',
+                style: TextStyle(color: c.text, fontWeight: FontWeight.w600, fontSize: 16),
+              ),
             ),
             const SizedBox(height: 4),
             Text(theme.label, style: Theme.of(context).textTheme.labelSmall),

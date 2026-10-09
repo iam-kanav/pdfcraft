@@ -7,8 +7,7 @@ import 'package:pdfcraft/features/scanner/processing/geometry.dart';
 
 import 'synthetic.dart';
 
-bool _inFrame(Quad q, int w, int h) =>
-    q.points.every((p) => p.x >= 4 && p.y >= 4 && p.x <= w - 4 && p.y <= h - 4);
+bool _inFrame(Quad q, int w, int h) => q.points.every((p) => p.x >= 4 && p.y >= 4 && p.x <= w - 4 && p.y <= h - 4);
 
 void main() {
   test('random pages on flat, striped, blotchy and unevenly lit desks', () {
@@ -30,10 +29,7 @@ void main() {
       final jit = 0.15 * min(pw, ph);
       final truth = Quad.orderPoints([
         for (final p in base.points)
-          Point(
-            p.x + (rnd.nextDouble() - 0.5) * 2 * jit,
-            p.y + (rnd.nextDouble() - 0.5) * 2 * jit,
-          ),
+          Point(p.x + (rnd.nextDouble() - 0.5) * 2 * jit, p.y + (rnd.nextDouble() - 0.5) * 2 * jit),
       ]);
       if (!_inFrame(truth, w, h)) continue;
       final kind = cases % 4;
@@ -45,9 +41,7 @@ void main() {
           var v = bg.toDouble();
           if (kind == 1) v += 30 * sin(y * 0.2 + 2 * sin(x * 0.01) + phase);
           if (kind == 2) {
-            v +=
-                20 * sin(x * 0.05 + phase) * cos(y * 0.06) +
-                12 * sin((x - y) * 0.3);
+            v += 20 * sin(x * 0.05 + phase) * cos(y * 0.06) + 12 * sin((x - y) * 0.3);
           }
           return ((v * 1.1).round(), v.round(), (v * 0.8).round());
         });
@@ -55,17 +49,13 @@ void main() {
       drawFakeText(c, truth, rnd, lines: 8 + rnd.nextInt(12));
       if (kind == 3) {
         final gx = rnd.nextDouble(), gy = rnd.nextDouble();
-        c.applyLighting(
-          (x, y) => 1.1 - 0.5 * ((x / w - gx).abs() + (y / h - gy).abs()) / 2,
-        );
+        c.applyLighting((x, y) => 1.1 - 0.5 * ((x / w - gx).abs() + (y / h - gy).abs()) / 2);
       }
       c.addNoise(rnd, 3 + rnd.nextDouble() * 12);
 
       final found = detectDocumentQuad(c.toImage());
       final tol = 0.03 * sqrt(w * w + h * h);
-      final err = found == null
-          ? double.infinity
-          : maxCornerError(found, truth);
+      final err = found == null ? double.infinity : maxCornerError(found, truth);
       if (err >= tol) {
         failures.add(
           'case $cases (kind $kind, bg $bg, paper $paper): '
@@ -98,21 +88,16 @@ void main() {
       if (!_inFrame(truth, w, h)) continue;
       final bg = 50 + rnd.nextInt(100);
       final paper = min(250, bg + 40 + rnd.nextInt(100));
-      final c = Canvas(w, h)
-        ..fill(solid(bg, (bg * 0.9).round(), (bg * 0.8).round()));
+      final c = Canvas(w, h)..fill(solid(bg, (bg * 0.9).round(), (bg * 0.8).round()));
       c.fillPolygon(truth.points, solid(paper));
       drawFakeText(c, truth, rnd, lines: 20);
       final gx = rnd.nextDouble(), gy = rnd.nextDouble();
-      c.applyLighting(
-        (x, y) => 1.15 - 0.6 * ((x / w - gx).abs() + (y / h - gy).abs()) / 2,
-      );
+      c.applyLighting((x, y) => 1.15 - 0.6 * ((x / w - gx).abs() + (y / h - gy).abs()) / 2);
       c.addNoise(rnd, 4 + rnd.nextDouble() * 10);
 
       final found = detectDocumentQuad(c.toImage());
       final tol = 0.03 * sqrt(w * w + h * h);
-      final err = found == null
-          ? double.infinity
-          : maxCornerError(found, truth);
+      final err = found == null ? double.infinity : maxCornerError(found, truth);
       if (err >= tol) failures.add('case $cases: error $err, found $found');
       cases++;
     }
@@ -132,9 +117,7 @@ void main() {
           var v = base.toDouble();
           if (kind == 0) v += 30 * sin(y * 0.2 + 2 * sin(x * 0.01) + phase);
           if (kind == 1) {
-            v +=
-                20 * sin(x * 0.05 + phase) * cos(y * 0.06) +
-                12 * sin((x - y) * 0.3);
+            v += 20 * sin(x * 0.05 + phase) * cos(y * 0.06) + 12 * sin((x - y) * 0.3);
           }
           if (kind == 2) v += 80 * (x / w - 0.5) + 40 * (y / h - 0.5);
           if (kind == 3) v += 25 * sin(x * 0.02 + phase) + 25 * sin(y * 0.03);

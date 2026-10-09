@@ -51,6 +51,7 @@ dependencies:
   intl: ^0.20.3
   url_launcher: ^6.3.3
   crypto: ^3.0.7
+  material_symbols_icons: ^4.2960.0
 
 dev_dependencies:
   flutter_test:
@@ -81,6 +82,15 @@ flutter:
     - assets/icon.svg
 
   fonts:
+    - family: SourceSans
+      fonts:
+        - asset: assets/fonts/SourceSans3-Regular.ttf
+        - asset: assets/fonts/SourceSans3-It.ttf
+          style: italic
+        - asset: assets/fonts/SourceSans3-Semibold.ttf
+          weight: 600
+        - asset: assets/fonts/SourceSans3-Bold.ttf
+          weight: 700
     - family: Signature
       fonts:
         - asset: assets/fonts/DancingScript.ttf

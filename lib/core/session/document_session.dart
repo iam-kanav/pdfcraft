@@ -45,7 +45,11 @@ class DocumentSession extends ChangeNotifier {
 
   /// Runs [op] producing a new version of the document at `out`, then makes it current.
   /// If [newPassword] is provided it replaces the session password (e.g. after protecting).
-  Future<T> apply<T>(String label, Future<T> Function(String input, String out) op, {String? Function()? newPassword}) async {
+  Future<T> apply<T>(
+    String label,
+    Future<T> Function(String input, String out) op, {
+    String? Function()? newPassword,
+  }) async {
     if (_busyLabel != null) throw StateError('Another operation is in progress');
     _busyLabel = label;
     notifyListeners();

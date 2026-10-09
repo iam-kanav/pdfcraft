@@ -7,39 +7,48 @@ import 'fixtures.dart';
 
 /// Compact, exact description of a block for sequence assertions.
 String d(DocBlock b) => switch (b) {
-      HeadingBlock h => 'H${h.level}:${h.text}',
-      ParagraphBlock p => 'P:${p.text}',
-      ListItemBlock l => 'LI${l.indent}${l.ordered ? '#' : '*'}[${l.marker}]:${l.text}',
-      QuoteBlock q => 'Q:${q.text}',
-      ImageBlock i => 'IMG(${i.width}x${i.height}):${i.caption ?? ''}',
-      TableBlock t => 'T${t.hasHeader ? 'h' : ''}:${t.rows.map((r) => r.join('|')).join(' / ')}',
-      PageBreakBlock _ => 'BR',
-    };
+  HeadingBlock h => 'H${h.level}:${h.text}',
+  ParagraphBlock p => 'P:${p.text}',
+  ListItemBlock l => 'LI${l.indent}${l.ordered ? '#' : '*'}[${l.marker}]:${l.text}',
+  QuoteBlock q => 'Q:${q.text}',
+  ImageBlock i => 'IMG(${i.width}x${i.height}):${i.caption ?? ''}',
+  TableBlock t => 'T${t.hasHeader ? 'h' : ''}:${t.rows.map((r) => r.join('|')).join(' / ')}',
+  PageBreakBlock _ => 'BR',
+};
 
 List<String> describe(DocStructure doc) => doc.blocks.map(d).toList();
 
 const double r = 540; // right edge of a full-width single-column line
 
 RawPageContent articlePage() => page(1, [
-      tl('A Study of Things and', 72, size: 24),
-      tl('Their Many Properties', 100, size: 24),
-      // Paragraph 1: hyphenated word and a real hyphenated compound.
-      tl('This article examines the nature of things in great detail and gives an exam-', 150, right: r),
-      tl('ple of the many ways in which the famous and frequently discussed Franco-', 162, right: r),
-      tl('Prussian conflict shaped modern research on the subject of things.', 174),
-      // Paragraph 2: mixed styles.
-      ln(seq([('Some findings are ', ''), ('very important', 'b'), (' for the field, and ', ''), ('others', 'i'), (' are less so but still', '')], right: r), 196),
-      tl('worth noting in a short summary.', 208),
-      tl('Background', 236, size: 16, bold: true),
-      tl('Earlier work on things was limited to small samples and narrow research', 262, right: r),
-      tl('questions about their properties.', 274),
-      tl('Key observations', 296, bold: true),
-      tl('Things are never quite what they seem to be, and every', 316, x: 108, italic: true, right: 504),
-      tl('observer sees them differently.', 328, x: 108, italic: true),
-      tl('After the quote the text resumes at the normal margin.', 350),
-      tl('2.1 Methods', 378, size: 16, bold: true),
-      tl('We measured everything twice.', 402),
-    ]);
+  tl('A Study of Things and', 72, size: 24),
+  tl('Their Many Properties', 100, size: 24),
+  // Paragraph 1: hyphenated word and a real hyphenated compound.
+  tl('This article examines the nature of things in great detail and gives an exam-', 150, right: r),
+  tl('ple of the many ways in which the famous and frequently discussed Franco-', 162, right: r),
+  tl('Prussian conflict shaped modern research on the subject of things.', 174),
+  // Paragraph 2: mixed styles.
+  ln(
+    seq([
+      ('Some findings are ', ''),
+      ('very important', 'b'),
+      (' for the field, and ', ''),
+      ('others', 'i'),
+      (' are less so but still', ''),
+    ], right: r),
+    196,
+  ),
+  tl('worth noting in a short summary.', 208),
+  tl('Background', 236, size: 16, bold: true),
+  tl('Earlier work on things was limited to small samples and narrow research', 262, right: r),
+  tl('questions about their properties.', 274),
+  tl('Key observations', 296, bold: true),
+  tl('Things are never quite what they seem to be, and every', 316, x: 108, italic: true, right: 504),
+  tl('observer sees them differently.', 328, x: 108, italic: true),
+  tl('After the quote the text resumes at the normal margin.', 350),
+  tl('2.1 Methods', 378, size: 16, bold: true),
+  tl('We measured everything twice.', 402),
+]);
 
 /// Two-column academic page. When [grouped], the extractor merged left and
 /// right column text sharing a baseline into a single line (with a gap).
@@ -67,12 +76,14 @@ RawPageContent twoColumnPage({required bool grouped}) {
   if (grouped) {
     final ys = {...left.map((e) => e.$1), ...right.map((e) => e.$1)}.toList()..sort();
     for (final y in ys) {
-      lines.add(ln([
-        for (final e in left)
-          if (e.$1 == y) e.$2,
-        for (final e in right)
-          if (e.$1 == y) e.$2,
-      ], y));
+      lines.add(
+        ln([
+          for (final e in left)
+            if (e.$1 == y) e.$2,
+          for (final e in right)
+            if (e.$1 == y) e.$2,
+        ], y),
+      );
     }
   } else {
     for (final e in [...left, ...right]) {
@@ -172,10 +183,12 @@ void main() {
         'A second paragraph follows in this column.',
       ];
       for (var k = 0; k < 3; k++) {
-        lines.add(ln([
-          sp(left[k], 72, x1: lr),
-          if (k == 1) sp(right[k], rx) else sp(right[k], rx, x1: k == 2 ? rx + advance(right[k], 10) : rr),
-        ], 166.0 + 12 * k));
+        lines.add(
+          ln([
+            sp(left[k], 72, x1: lr),
+            if (k == 1) sp(right[k], rx) else sp(right[k], rx, x1: k == 2 ? rx + advance(right[k], 10) : rr),
+          ], 166.0 + 12 * k),
+        );
       }
       // The second right-column paragraph starts with a first-line indent.
       final fixed = [
@@ -205,9 +218,7 @@ void main() {
       ];
       final lines = [
         for (var row = 0; row < 3; row++)
-          ln([
-            for (var c = 0; c < 3; c++) sp(cols[c][row], xs[c], x1: row < 2 ? xs[c] + w : null),
-          ], 100.0 + 12 * row),
+          ln([for (var c = 0; c < 3; c++) sp(cols[c][row], xs[c], x1: row < 2 ? xs[c] + w : null)], 100.0 + 12 * row),
       ];
       final doc = analyzeDocument([page(1, lines)]);
       expect(describe(doc), [
@@ -220,15 +231,25 @@ void main() {
     test('figure inside one column of a two-column page, and a line poking into the gutter', () {
       const lr = 296.0, rx = 316.0, rr = 540.0;
       final doc = analyzeDocument([
-        page(1, [
-          ln([sp('The left column opens with a short paragraph', 72, x1: lr), sp('The right column text keeps flowing along', rx, x1: rr)], 100),
-          ln([sp('that introduces the figure shown below.', 72), sp('the page while the figure sits on the left', rx, x1: rr)], 112),
-          // Slightly over-wide justified line in the right column (starts in the gutter).
-          ln([sp('side of the page, and it does not interrupt', rx - 4, x1: rr)], 124),
-          ln([sp('this column at all because figures float.', rx)], 136),
-          tl('Figure 2: Column figure.', 262, size: 9),
-          tl('After the figure the left column resumes.', 290),
-        ], images: [img(72, 130, 296, 255, pw: 448, ph: 250)]),
+        page(
+          1,
+          [
+            ln([
+              sp('The left column opens with a short paragraph', 72, x1: lr),
+              sp('The right column text keeps flowing along', rx, x1: rr),
+            ], 100),
+            ln([
+              sp('that introduces the figure shown below.', 72),
+              sp('the page while the figure sits on the left', rx, x1: rr),
+            ], 112),
+            // Slightly over-wide justified line in the right column (starts in the gutter).
+            ln([sp('side of the page, and it does not interrupt', rx - 4, x1: rr)], 124),
+            ln([sp('this column at all because figures float.', rx)], 136),
+            tl('Figure 2: Column figure.', 262, size: 9),
+            tl('After the figure the left column resumes.', 290),
+          ],
+          images: [img(72, 130, 296, 255, pw: 448, ph: 250)],
+        ),
       ]);
       expect(describe(doc), [
         'P:The left column opens with a short paragraph that introduces the figure shown below.',
@@ -311,13 +332,13 @@ void main() {
     });
 
     RawPageContent tablePage() => page(1, [
-          tl('The prices are listed below.', 72),
-          ln([sp('Fruit', 72, bold: true), sp('Color', 200, bold: true), sp('Price', 375, bold: true)], 100),
-          ln([sp('Apple', 72), sp('Red', 200), sp('1.20', 380)], 116),
-          ln([sp('Banana', 72), sp('Yellow', 200), sp('0.50', 380)], 132),
-          ln([sp('Cherry', 72), sp('Dark red', 200), sp('3.75', 380)], 148),
-          tl('Prices may change without notice.', 176),
-        ]);
+      tl('The prices are listed below.', 72),
+      ln([sp('Fruit', 72, bold: true), sp('Color', 200, bold: true), sp('Price', 375, bold: true)], 100),
+      ln([sp('Apple', 72), sp('Red', 200), sp('1.20', 380)], 116),
+      ln([sp('Banana', 72), sp('Yellow', 200), sp('0.50', 380)], 132),
+      ln([sp('Cherry', 72), sp('Dark red', 200), sp('3.75', 380)], 148),
+      tl('Prices may change without notice.', 176),
+    ]);
 
     test('table of aligned spans with bold header', () {
       final doc = analyzeDocument([tablePage()]);
@@ -352,14 +373,15 @@ void main() {
 
     test('image with a Figure caption; tiny images are skipped', () {
       final doc = analyzeDocument([
-        page(1, [
-          tl('The diagram below shows the process.', 72),
-          tl('Figure 1: A diagram of things.', 310, size: 9, italic: true),
-          tl('As the figure shows, things are connected.', 340),
-        ], images: [
-          img(72, 100, 400, 300, pw: 656, ph: 400),
-          img(500, 360, 510, 370, pw: 10, ph: 10),
-        ]),
+        page(
+          1,
+          [
+            tl('The diagram below shows the process.', 72),
+            tl('Figure 1: A diagram of things.', 310, size: 9, italic: true),
+            tl('As the figure shows, things are connected.', 340),
+          ],
+          images: [img(72, 100, 400, 300, pw: 656, ph: 400), img(500, 360, 510, 370, pw: 10, ph: 10)],
+        ),
       ]);
       expect(describe(doc), [
         'P:The diagram below shows the process.',
@@ -382,10 +404,7 @@ void main() {
           tl('This paragraph starts on the first page and keeps going until it reaches', 680, right: r),
           tl('the very bottom of the page where it is interrupted by the follow-', 692, right: r),
         ]),
-        page(2, [
-          tl('ing page, on which it finally ends.', 72),
-          tl('A new paragraph begins here.', 96),
-        ]),
+        page(2, [tl('ing page, on which it finally ends.', 72), tl('A new paragraph begins here.', 96)]),
       ]);
       expect(describe(doc), [
         'H1:Introduction',
@@ -402,10 +421,7 @@ void main() {
         page(1, [], images: [img(0, 0, 612, 792, pw: 1224, ph: 1584)]),
         page(2, [tl('Searchable text over a scan.', 100)], images: [img(0, 0, 612, 792, pw: 1224, ph: 1584)]),
       ]);
-      expect(describe(doc), [
-        'IMG(1224x1584):',
-        'P:Searchable text over a scan.',
-      ]);
+      expect(describe(doc), ['IMG(1224x1584):', 'P:Searchable text over a scan.']);
       expect(doc.blocks.first.pageNumber, 1);
     });
 

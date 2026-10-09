@@ -9,29 +9,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'fixtures.dart';
 
 Finder selectable(String text) => find.byWidgetPredicate(
-      (w) => w is SelectableText && (w.data ?? w.textSpan?.toPlainText()) == text,
-      description: 'SelectableText "$text"',
-    );
+  (w) => w is SelectableText && (w.data ?? w.textSpan?.toPlainText()) == text,
+  description: 'SelectableText "$text"',
+);
 
 DocStructure sampleDoc() => DocStructure(
-      title: 'Guide',
-      blocks: [
-        const HeadingBlock(level: 1, spans: [TextSpanData('Guide')], pageNumber: 1),
-        const ParagraphBlock(spans: [TextSpanData('Intro text with '), TextSpanData('bold', bold: true)], pageNumber: 1),
-        const HeadingBlock(level: 2, spans: [TextSpanData('Setup')], pageNumber: 1),
-        const ParagraphBlock(spans: [TextSpanData('Install the tool.')], pageNumber: 1),
-        const ListItemBlock(spans: [TextSpanData('Step one')], ordered: true, marker: '1.', pageNumber: 2),
-        const HeadingBlock(level: 2, spans: [TextSpanData('Usage')], pageNumber: 2),
-        const QuoteBlock(spans: [TextSpanData('Quoted wisdom.')], pageNumber: 2),
-        const TableBlock(rows: [
-          ['Name', 'Value'],
-          ['a', '1'],
-        ], hasHeader: true, pageNumber: 2),
-        ImageBlock(bytes: tinyPng, width: 40, height: 30, caption: 'Figure 1: Pixel', pageNumber: 2),
-        const HeadingBlock(level: 1, spans: [TextSpanData('Appendix')], pageNumber: 3),
-        const ParagraphBlock(spans: [TextSpanData('The end.')], pageNumber: 3),
+  title: 'Guide',
+  blocks: [
+    const HeadingBlock(level: 1, spans: [TextSpanData('Guide')], pageNumber: 1),
+    const ParagraphBlock(spans: [TextSpanData('Intro text with '), TextSpanData('bold', bold: true)], pageNumber: 1),
+    const HeadingBlock(level: 2, spans: [TextSpanData('Setup')], pageNumber: 1),
+    const ParagraphBlock(spans: [TextSpanData('Install the tool.')], pageNumber: 1),
+    const ListItemBlock(spans: [TextSpanData('Step one')], ordered: true, marker: '1.', pageNumber: 2),
+    const HeadingBlock(level: 2, spans: [TextSpanData('Usage')], pageNumber: 2),
+    const QuoteBlock(spans: [TextSpanData('Quoted wisdom.')], pageNumber: 2),
+    const TableBlock(
+      rows: [
+        ['Name', 'Value'],
+        ['a', '1'],
       ],
-    );
+      hasHeader: true,
+      pageNumber: 2,
+    ),
+    ImageBlock(bytes: tinyPng, width: 40, height: 30, caption: 'Figure 1: Pixel', pageNumber: 2),
+    const HeadingBlock(level: 1, spans: [TextSpanData('Appendix')], pageNumber: 3),
+    const ParagraphBlock(spans: [TextSpanData('The end.')], pageNumber: 3),
+  ],
+);
 
 Future<ReadingSettings> loadedSettings() async {
   SharedPreferences.setMockInitialValues({});
@@ -196,7 +200,10 @@ void main() {
   testWidgets('ReflowOutline lists headings with indentation and reports selection', (tester) async {
     final doc = sampleDoc();
     final outline = buildOutline(doc);
-    expect([for (final e in outline) '${e.level}:${e.text}@${e.blockIndex}'], ['1:Guide@0', '2:Setup@2', '2:Usage@5', '1:Appendix@9']);
+    expect(
+      [for (final e in outline) '${e.level}:${e.text}@${e.blockIndex}'],
+      ['1:Guide@0', '2:Setup@2', '2:Usage@5', '1:Appendix@9'],
+    );
 
     final selected = <int>[];
     await tester.pumpWidget(host(ReflowOutline(doc: doc, onSelect: selected.add)));
@@ -261,18 +268,20 @@ void main() {
 
   testWidgets('settings sheet adjusts font size and theme', (tester) async {
     final settings = await loadedSettings();
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () => ReadingSettingsSheet.show(context, settings),
-              child: const Text('Aa'),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => ReadingSettingsSheet.show(context, settings),
+                child: const Text('Aa'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('Aa'));
     await tester.pumpAndSettle();
 

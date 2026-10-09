@@ -76,11 +76,7 @@ ImageKind detectImageKind(List<int> b) {
   if (b.length >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) {
     return ImageKind.jpeg;
   }
-  if (b.length >= 6 &&
-      b[0] == 0x47 &&
-      b[1] == 0x49 &&
-      b[2] == 0x46 &&
-      b[3] == 0x38) {
+  if (b.length >= 6 && b[0] == 0x47 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x38) {
     return ImageKind.gif;
   }
   if (b.length >= 2 && b[0] == 0x42 && b[1] == 0x4D) return ImageKind.bmp;
@@ -147,18 +143,9 @@ List<TextSpanData> mergeSpans(Iterable<TextSpanData> spans) {
 }
 
 bool sameSpanStyle(TextSpanData a, TextSpanData b) =>
-    a.bold == b.bold &&
-    a.italic == b.italic &&
-    a.underline == b.underline &&
-    a.link == b.link;
+    a.bold == b.bold && a.italic == b.italic && a.underline == b.underline && a.link == b.link;
 
-TextSpanData spanWith(
-  TextSpanData s, {
-  String? text,
-  bool? bold,
-  bool? italic,
-  bool? underline,
-}) => TextSpanData(
+TextSpanData spanWith(TextSpanData s, {String? text, bool? bold, bool? italic, bool? underline}) => TextSpanData(
   text ?? s.text,
   bold: bold ?? s.bold,
   italic: italic ?? s.italic,
@@ -169,19 +156,10 @@ TextSpanData spanWith(
 /// Number formats used for ordered lists by nesting level, shared by the
 /// DOCX writer, PDF builder and text exporter so numbering looks the same in
 /// every output.
-enum ListNumberFormat {
-  decimal,
-  lowerLetter,
-  lowerRoman,
-  upperLetter,
-  upperRoman,
-}
+enum ListNumberFormat { decimal, lowerLetter, lowerRoman, upperLetter, upperRoman }
 
-ListNumberFormat orderedFormatForLevel(int level) => const [
-  ListNumberFormat.decimal,
-  ListNumberFormat.lowerLetter,
-  ListNumberFormat.lowerRoman,
-][level % 3];
+ListNumberFormat orderedFormatForLevel(int level) =>
+    const [ListNumberFormat.decimal, ListNumberFormat.lowerLetter, ListNumberFormat.lowerRoman][level % 3];
 
 String formatListNumber(int n, ListNumberFormat format) {
   switch (format) {
@@ -214,21 +192,7 @@ String toAlpha(int n) {
 String toRoman(int n) {
   if (n <= 0 || n >= 4000) return '$n';
   const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
-  const symbols = [
-    'M',
-    'CM',
-    'D',
-    'CD',
-    'C',
-    'XC',
-    'L',
-    'XL',
-    'X',
-    'IX',
-    'V',
-    'IV',
-    'I',
-  ];
+  const symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
   final sb = StringBuffer();
   var v = n;
   for (var i = 0; i < values.length; i++) {
@@ -275,8 +239,7 @@ class ListCounter {
 /// Bullet glyphs per nesting level; all exist in Noto Sans.
 const List<String> bulletGlyphs = ['•', '–', '‣'];
 
-String bulletForLevel(int level) =>
-    bulletGlyphs[(level < 0 ? 0 : level) % bulletGlyphs.length];
+String bulletForLevel(int level) => bulletGlyphs[(level < 0 ? 0 : level) % bulletGlyphs.length];
 
 /// Marker text ("3.", "b.", "•") for a list item at its running [number].
 String listMarker(ListItemBlock item, int number) => item.ordered

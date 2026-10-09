@@ -35,7 +35,12 @@ class _SelectionBoxState extends State<SelectionBox> {
     if (!_dragging && old.rect != widget.rect) _rect = widget.rect;
   }
 
-  Rect get _scaled => Rect.fromLTRB(_rect.left * widget.scale, _rect.top * widget.scale, _rect.right * widget.scale, _rect.bottom * widget.scale);
+  Rect get _scaled => Rect.fromLTRB(
+    _rect.left * widget.scale,
+    _rect.top * widget.scale,
+    _rect.right * widget.scale,
+    _rect.bottom * widget.scale,
+  );
 
   void _move(Offset delta) {
     setState(() => _rect = _rect.shift(delta / widget.scale));
@@ -44,21 +49,35 @@ class _SelectionBoxState extends State<SelectionBox> {
   void _resize(Alignment corner, Offset delta) {
     final d = delta / widget.scale;
     var l = _rect.left, t = _rect.top, r = _rect.right, b = _rect.bottom;
-    if (corner.x < 0) l += d.dx; else r += d.dx;
-    if (corner.y < 0) t += d.dy; else b += d.dy;
+    if (corner.x < 0)
+      l += d.dx;
+    else
+      r += d.dx;
+    if (corner.y < 0)
+      t += d.dy;
+    else
+      b += d.dy;
     const minSize = 8.0;
     if (r - l < minSize) {
-      if (corner.x < 0) l = r - minSize; else r = l + minSize;
+      if (corner.x < 0)
+        l = r - minSize;
+      else
+        r = l + minSize;
     }
     if (b - t < minSize) {
-      if (corner.y < 0) t = b - minSize; else b = t + minSize;
+      if (corner.y < 0)
+        t = b - minSize;
+      else
+        b = t + minSize;
     }
     var next = Rect.fromLTRB(l, t, r, b);
     if (widget.keepAspect) {
       final aspect = _rect.width / _rect.height;
       final w = next.width;
       final h = w / aspect;
-      next = corner.y < 0 ? Rect.fromLTRB(next.left, next.bottom - h, next.right, next.bottom) : Rect.fromLTWH(next.left, next.top, w, h);
+      next = corner.y < 0
+          ? Rect.fromLTRB(next.left, next.bottom - h, next.right, next.bottom)
+          : Rect.fromLTWH(next.left, next.top, w, h);
     }
     setState(() => _rect = next);
   }
@@ -115,7 +134,11 @@ class _SelectionBoxState extends State<SelectionBox> {
                       child: Container(
                         width: 12,
                         height: 12,
-                        decoration: BoxDecoration(color: Colors.white, border: Border.all(color: widget.color, width: 2), shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: widget.color, width: 2),
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),

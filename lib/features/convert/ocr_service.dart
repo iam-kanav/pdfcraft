@@ -41,7 +41,9 @@ class OcrService {
       for (final line in block.lines) {
         for (final el in line.elements) {
           final r = el.boundingBox;
-          words.add(OcrWord(el.text, Rect.fromLTRB(r.left * scaleX, r.top * scaleY, r.right * scaleX, r.bottom * scaleY)));
+          words.add(
+            OcrWord(el.text, Rect.fromLTRB(r.left * scaleX, r.top * scaleY, r.right * scaleX, r.bottom * scaleY)),
+          );
         }
       }
     }

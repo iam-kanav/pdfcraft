@@ -120,7 +120,14 @@ void main() {
     expect(hello, isNotEmpty);
     final png = File(out('sig.png'))..writeAsBytesSync(samples.testImage(w: 120, h: 40));
     final ids = await engine.addAnnotations(sample, o, [
-      {'type': 'highlight', 'page': 0, 'rects': hello.map(rectToList).toList(), 'color': 0xFFFFD400, 'opacity': 0.4, 'contents': 'important'},
+      {
+        'type': 'highlight',
+        'page': 0,
+        'rects': hello.map(rectToList).toList(),
+        'color': 0xFFFFD400,
+        'opacity': 0.4,
+        'contents': 'important',
+      },
       {'type': 'underline', 'page': 0, 'rects': hello.map(rectToList).toList(), 'color': 0xFF2563EB},
       {'type': 'strikeout', 'page': 0, 'rects': hello.map(rectToList).toList(), 'color': 0xFFE11D48},
       {
@@ -132,19 +139,74 @@ void main() {
         'color': 0xFFE11D48,
         'strokeWidth': 3,
       },
-      {'type': 'square', 'page': 1, 'rect': [100, 100, 200, 160], 'color': 0xFF16A34A, 'strokeWidth': 2},
-      {'type': 'circle', 'page': 1, 'rect': [250, 100, 350, 160], 'color': 0xFF16A34A, 'fillColor': 0xFFFFD400},
-      {'type': 'arrow', 'page': 1, 'points': [100, 300, 300, 350], 'color': 0xFF000000, 'strokeWidth': 2},
-      {'type': 'freetext', 'page': 1, 'rect': [100, 400, 350, 450], 'text': 'Typed comment', 'fontSize': 14, 'color': 0xFF000000},
+      {
+        'type': 'square',
+        'page': 1,
+        'rect': [100, 100, 200, 160],
+        'color': 0xFF16A34A,
+        'strokeWidth': 2,
+      },
+      {
+        'type': 'circle',
+        'page': 1,
+        'rect': [250, 100, 350, 160],
+        'color': 0xFF16A34A,
+        'fillColor': 0xFFFFD400,
+      },
+      {
+        'type': 'arrow',
+        'page': 1,
+        'points': [100, 300, 300, 350],
+        'color': 0xFF000000,
+        'strokeWidth': 2,
+      },
+      {
+        'type': 'freetext',
+        'page': 1,
+        'rect': [100, 400, 350, 450],
+        'text': 'Typed comment',
+        'fontSize': 14,
+        'color': 0xFF000000,
+      },
       {'type': 'note', 'page': 2, 'x': 400, 'y': 100, 'contents': 'Sticky note text'},
-      {'type': 'stamp', 'page': 2, 'rect': [100, 600, 250, 650], 'imagePath': png.path},
-      {'type': 'link', 'page': 2, 'rect': [100, 700, 300, 720], 'url': 'https://example.com'},
-      {'type': 'link', 'page': 2, 'rect': [100, 730, 300, 750], 'targetPage': 0},
+      {
+        'type': 'stamp',
+        'page': 2,
+        'rect': [100, 600, 250, 650],
+        'imagePath': png.path,
+      },
+      {
+        'type': 'link',
+        'page': 2,
+        'rect': [100, 700, 300, 720],
+        'url': 'https://example.com',
+      },
+      {
+        'type': 'link',
+        'page': 2,
+        'rect': [100, 730, 300, 750],
+        'targetPage': 0,
+      },
     ]);
     expect(ids.length, 12);
     var list = await engine.listAnnotations(o);
     final types = list.map((a) => a['type']).toList();
-    expect(types, containsAll(['Highlight', 'Underline', 'StrikeOut', 'Ink', 'Square', 'Circle', 'Line', 'FreeText', 'Text', 'Stamp', 'Link']));
+    expect(
+      types,
+      containsAll([
+        'Highlight',
+        'Underline',
+        'StrikeOut',
+        'Ink',
+        'Square',
+        'Circle',
+        'Line',
+        'FreeText',
+        'Text',
+        'Stamp',
+        'Link',
+      ]),
+    );
     final note = list.firstWhere((a) => a['type'] == 'Text');
     expect(note['contents'], 'Sticky note text');
     expect((list.firstWhere((a) => a['type'] == 'Link' && a['url'] != null))['url'], 'https://example.com');
@@ -157,7 +219,14 @@ void main() {
 
     // Move the square and change a note.
     final o2 = out('annotated2.pdf');
-    await engine.updateAnnotation(o, o2, page: 1, id: square['id'] as String, rect: const Rect.fromLTWH(300, 300, 120, 80), contents: 'moved');
+    await engine.updateAnnotation(
+      o,
+      o2,
+      page: 1,
+      id: square['id'] as String,
+      rect: const Rect.fromLTWH(300, 300, 120, 80),
+      contents: 'moved',
+    );
     final o3 = out('annotated3.pdf');
     await engine.updateAnnotation(o2, o3, page: 2, id: note['id'] as String, contents: 'Edited note');
     list = await engine.listAnnotations(o3);
@@ -250,10 +319,34 @@ void main() {
     final png = File(out('add.png'))..writeAsBytesSync(samples.testImage());
     final o = out('content_added.pdf');
     await engine.addContent(sample, o, [
-      {'type': 'text', 'page': 1, 'x': 72, 'y': 600, 'text': 'Inserted line of text', 'fontSize': 14, 'color': 0xFF000000},
-      {'type': 'image', 'page': 1, 'rect': [72, 650, 172, 716], 'imagePath': png.path},
-      {'type': 'rect', 'page': 1, 'rect': [300, 600, 400, 650], 'strokeColor': 0xFFE11D48, 'strokeWidth': 2},
-      {'type': 'arrow', 'page': 1, 'points': [300, 700, 450, 750], 'strokeColor': 0xFF000000},
+      {
+        'type': 'text',
+        'page': 1,
+        'x': 72,
+        'y': 600,
+        'text': 'Inserted line of text',
+        'fontSize': 14,
+        'color': 0xFF000000,
+      },
+      {
+        'type': 'image',
+        'page': 1,
+        'rect': [72, 650, 172, 716],
+        'imagePath': png.path,
+      },
+      {
+        'type': 'rect',
+        'page': 1,
+        'rect': [300, 600, 400, 650],
+        'strokeColor': 0xFFE11D48,
+        'strokeWidth': 2,
+      },
+      {
+        'type': 'arrow',
+        'page': 1,
+        'points': [300, 700, 450, 750],
+        'strokeColor': 0xFF000000,
+      },
     ]);
     expect((await pageTexts(o))[1], contains('Inserted line of text'));
     expect((await engine.getImageObjects(o, 1)).length, 1);
@@ -275,7 +368,9 @@ void main() {
     // Image redaction: cover part of the image.
     final img = listToRect((await engine.getImageObjects(sample, 0))[0]['rect'] as List);
     final o2 = out('redacted_img.pdf');
-    final r2 = await engine.redact(sample, o2, {0: [Rect.fromLTWH(img.left + 10, img.top + 10, 60, 40)]});
+    final r2 = await engine.redact(sample, o2, {
+      0: [Rect.fromLTWH(img.left + 10, img.top + 10, 60, 40)],
+    });
     expect(r2['images'], 1);
     expect((await engine.getImageObjects(o2, 0)).length, 1);
     final info = await engine.info(o);
@@ -305,8 +400,17 @@ void main() {
 
   test('security: protect with passwords and permissions, open, remove', () async {
     final o = out('protected.pdf');
-    await engine.protect(sample, o, userPassword: 'open123', ownerPassword: 'owner456', permissions: {'print': false, 'copy': false, 'modify': false});
-    await expectLater(engine.info(o), throwsA(isA<PdfEngineException>().having((e) => e.isPasswordError, 'password', isTrue)));
+    await engine.protect(
+      sample,
+      o,
+      userPassword: 'open123',
+      ownerPassword: 'owner456',
+      permissions: {'print': false, 'copy': false, 'modify': false},
+    );
+    await expectLater(
+      engine.info(o),
+      throwsA(isA<PdfEngineException>().having((e) => e.isPasswordError, 'password', isTrue)),
+    );
     final info = await engine.info(o, password: 'open123');
     expect(info.encrypted, isTrue);
     expect(info.keyLength, 256);
@@ -330,7 +434,12 @@ void main() {
 
   test('metadata editing', () async {
     final o = out('meta.pdf');
-    await engine.setMetadata(sample, o, {'title': 'New Title', 'author': 'Someone', 'subject': 'Testing', 'keywords': 'a, b'});
+    await engine.setMetadata(sample, o, {
+      'title': 'New Title',
+      'author': 'Someone',
+      'subject': 'Testing',
+      'keywords': 'a, b',
+    });
     final info = await engine.info(o);
     expect(info.title, 'New Title');
     expect(info.author, 'Someone');
@@ -354,7 +463,10 @@ void main() {
     await engine.organize(sample, blank, const [PageSpec.blank()]);
     final o = out('ocr_layer.pdf');
     final n = await engine.addOcrLayer(blank, o, {
-      0: [(text: 'Recognized', rect: const Rect.fromLTWH(72, 100, 90, 14)), (text: 'words', rect: const Rect.fromLTWH(170, 100, 40, 14))],
+      0: [
+        (text: 'Recognized', rect: const Rect.fromLTWH(72, 100, 90, 14)),
+        (text: 'words', rect: const Rect.fromLTWH(170, 100, 40, 14)),
+      ],
     });
     expect(n, 2);
     final text = (await pageTexts(o))[0];

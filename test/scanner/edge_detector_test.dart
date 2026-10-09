@@ -76,11 +76,7 @@ void main() {
         Point(140.0, 530.0),
       ]);
       final rnd = Random(7);
-      final c = _scene(
-        truth,
-        background: solid(95, 85, 75),
-        paperShade: solid(230, 228, 220),
-      );
+      final c = _scene(truth, background: solid(95, 85, 75), paperShade: solid(230, 228, 220));
       drawFakeText(c, truth, rnd, lines: 16);
       // Light falls off strongly towards the bottom-right corner.
       c.applyLighting((x, y) => 1.1 - 0.55 * (x / _w + y / _h) / 2);
@@ -111,10 +107,7 @@ void main() {
       final c = _scene(
         truth,
         background: (x, y) {
-          final v =
-              105 +
-              25 * sin(x * 0.05) * cos(y * 0.07) +
-              15 * sin((x + y) * 0.21);
+          final v = 105 + 25 * sin(x * 0.05) * cos(y * 0.07) + 15 * sin((x + y) * 0.21);
           return (v.round(), v.round(), v.round());
         },
       );
@@ -141,8 +134,7 @@ void main() {
       ]);
       final c = _scene(page);
       // Intersections of the left/right sides with y = height.
-      double xAt(Point<double> a, Point<double> b, double y) =>
-          a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x);
+      double xAt(Point<double> a, Point<double> b, double y) => a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x);
       final truth = Quad.fromList([
         page.tl,
         page.tr,
@@ -160,10 +152,7 @@ void main() {
       final found = detectDocumentQuad(c.toImage());
       expectQuadNear(found, truth, w, h);
       // Accuracy should be far better than the 3% bound.
-      expect(
-        maxCornerError(found!, truth),
-        lessThan(0.01 * sqrt(w * w + h * h)),
-      );
+      expect(maxCornerError(found!, truth), lessThan(0.01 * sqrt(w * w + h * h)));
     });
 
     test('returns null for pure noise', () {
@@ -178,10 +167,7 @@ void main() {
 
     test('returns null for colored noise and a uniform image', () {
       final rnd = Random(2);
-      final noise = Canvas(
-        _w,
-        _h,
-      )..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
+      final noise = Canvas(_w, _h)..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
       expect(detectDocumentQuad(noise.toImage()), isNull);
       final flat = Canvas(_w, _h)..fill(solid(128));
       expect(detectDocumentQuad(flat.toImage()), isNull);
@@ -207,12 +193,8 @@ void main() {
         for (var x = 0; x < 400; x++) {
           if (edges.getPixel(x, y).r == 0) continue;
           final nearSide =
-              ((x - 90).abs() <= 2 || (x - 310).abs() <= 2) &&
-                  y >= 68 &&
-                  y <= 232 ||
-              ((y - 70).abs() <= 2 || (y - 230).abs() <= 2) &&
-                  x >= 88 &&
-                  x <= 312;
+              ((x - 90).abs() <= 2 || (x - 310).abs() <= 2) && y >= 68 && y <= 232 ||
+              ((y - 70).abs() <= 2 || (y - 230).abs() <= 2) && x >= 88 && x <= 312;
           if (nearSide) {
             onBorder++;
           } else {

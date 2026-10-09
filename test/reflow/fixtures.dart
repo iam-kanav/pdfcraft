@@ -39,18 +39,36 @@ RawTextLine ln(List<RawTextSpan> spans, double y) {
 }
 
 /// A single-span text line. [right] stretches the line to a justified edge.
-RawTextLine tl(String text, double y,
-        {double x = 72, double size = 10, bool bold = false, bool italic = false, double? right}) =>
-    ln([sp(text, x, size: size, bold: bold, italic: italic, x1: right)], y);
+RawTextLine tl(
+  String text,
+  double y, {
+  double x = 72,
+  double size = 10,
+  bool bold = false,
+  bool italic = false,
+  double? right,
+}) => ln([sp(text, x, size: size, bold: bold, italic: italic, x1: right)], y);
 
 /// A line centered on [center].
-RawTextLine centered(String text, double y, {double center = 306, double size = 10, bool bold = false, bool italic = false}) {
+RawTextLine centered(
+  String text,
+  double y, {
+  double center = 306,
+  double size = 10,
+  bool bold = false,
+  bool italic = false,
+}) {
   final w = advance(text, size);
   return tl(text, y, x: center - w / 2, size: size, bold: bold, italic: italic);
 }
 
-RawPageContent page(int n, List<RawTextLine> lines, {List<RawImage> images = const [], double w = 612, double h = 792}) =>
-    RawPageContent(pageNumber: n, width: w, height: h, lines: lines, images: images);
+RawPageContent page(
+  int n,
+  List<RawTextLine> lines, {
+  List<RawImage> images = const [],
+  double w = 612,
+  double h = 792,
+}) => RawPageContent(pageNumber: n, width: w, height: h, lines: lines, images: images);
 
 /// A valid 1x1 transparent PNG.
 final Uint8List tinyPng = Uint8List.fromList(const [

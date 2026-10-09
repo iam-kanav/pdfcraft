@@ -11,9 +11,15 @@ import '../tools/tool_registry.dart';
 import 'dialogs.dart';
 import 'doc_widgets.dart';
 import 'open_actions.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Bottom sheet with actions for a document (Acrobat's file "…" menu).
-Future<void> showFileActions(BuildContext context, String path, {bool fromRecents = false, VoidCallback? onChanged}) async {
+Future<void> showFileActions(
+  BuildContext context,
+  String path, {
+  bool fromRecents = false,
+  VoidCallback? onChanged,
+}) async {
   final services = AppServices.instance;
   final lib = services.library;
   final stat = File(path).statSync();
@@ -35,39 +41,44 @@ Future<void> showFileActions(BuildContext context, String path, {bool fromRecent
                 subtitle: Text('${formatBytes(stat.size)} · ${formatRelativeDate(stat.modified)}'),
               ),
               const Divider(),
-              _action(ctx, Icons.open_in_new, 'Open', () {
+              _action(ctx, Symbols.open_in_new, 'Open', () {
                 close();
                 openDocument(context, path);
               }),
-              _action(ctx, Icons.share_outlined, 'Share', () {
+              _action(ctx, Symbols.share, 'Share', () {
                 close();
                 shareFiles([path]);
               }),
-              _action(ctx, starred ? Icons.star_rounded : Icons.star_border_rounded, starred ? 'Unstar' : 'Star', () {
-                close();
-                lib.toggleStar(path);
-              }),
-              _action(ctx, Icons.drive_file_rename_outline, 'Rename', () async {
+              _action(
+                ctx,
+                starred ? Symbols.star_rounded : Symbols.star_border_rounded,
+                starred ? 'Unstar' : 'Star',
+                () {
+                  close();
+                  lib.toggleStar(path);
+                },
+              ),
+              _action(ctx, Symbols.drive_file_rename_outline, 'Rename', () async {
                 close();
                 await renameFile(context, path);
                 onChanged?.call();
               }),
-              _action(ctx, Icons.drive_file_move_outline, 'Move', () async {
+              _action(ctx, Symbols.drive_file_move_outline, 'Move', () async {
                 close();
                 await moveFile(context, path);
                 onChanged?.call();
               }),
-              _action(ctx, Icons.copy_outlined, 'Duplicate', () async {
+              _action(ctx, Symbols.content_copy, 'Duplicate', () async {
                 close();
                 await services.files.duplicate(path);
                 onChanged?.call();
                 if (context.mounted) showSnack(context, 'Duplicated');
               }),
-              _action(ctx, Icons.download_outlined, 'Save a copy to Downloads', () {
+              _action(ctx, Symbols.download, 'Save a copy to Downloads', () {
                 close();
                 saveCopyToDownloads(context, path);
               }),
-              _action(ctx, Icons.info_outline, 'Document properties', () {
+              _action(ctx, Symbols.info, 'Document properties', () {
                 close();
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => PropertiesScreen(path: path)));
               }),
@@ -95,12 +106,12 @@ Future<void> showFileActions(BuildContext context, String path, {bool fromRecent
               ),
               const Divider(),
               if (fromRecents)
-                _action(ctx, Icons.history_toggle_off, 'Remove from recent', () {
+                _action(ctx, Symbols.history_toggle_off, 'Remove from recent', () {
                   close();
                   lib.removeFromRecents(path);
                   onChanged?.call();
                 }),
-              _action(ctx, Icons.delete_outline, 'Delete', () async {
+              _action(ctx, Symbols.delete_outline, 'Delete', () async {
                 close();
                 await deleteFile(context, path);
                 onChanged?.call();
@@ -236,9 +247,14 @@ class _FolderPickerScreenState extends State<_FolderPickerScreen> {
           actions: [
             IconButton(
               tooltip: 'New folder',
-              icon: const Icon(Icons.create_new_folder_outlined),
+              icon: const Icon(Symbols.create_new_folder),
               onPressed: () async {
-                final name = await showTextInputDialog(context, title: 'New folder', hint: 'Folder name', confirmLabel: 'Create');
+                final name = await showTextInputDialog(
+                  context,
+                  title: 'New folder',
+                  hint: 'Folder name',
+                  confirmLabel: 'Create',
+                );
                 if (name == null || name.trim().isEmpty) return;
                 await files.createFolder(_dir, name.trim());
                 _load();
@@ -258,7 +274,10 @@ class _FolderPickerScreenState extends State<_FolderPickerScreen> {
                 },
               ),
             if (_folders.isEmpty)
-              const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('No subfolders'))),
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: Text('No subfolders')),
+              ),
           ],
         ),
         bottomNavigationBar: SafeArea(

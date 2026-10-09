@@ -96,7 +96,15 @@ class RawTextSpan {
 }
 
 class RawImage {
-  RawImage({required this.x0, required this.y0, required this.x1, required this.y1, this.bytes, this.pixelWidth = 0, this.pixelHeight = 0});
+  RawImage({
+    required this.x0,
+    required this.y0,
+    required this.x1,
+    required this.y1,
+    this.bytes,
+    this.pixelWidth = 0,
+    this.pixelHeight = 0,
+  });
 
   final double x0, y0, x1, y1;
 

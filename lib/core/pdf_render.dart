@@ -25,7 +25,13 @@ Future<ui.Image?> renderPageImage(PdfPage page, {double? maxSide, double? dpi, i
   final scale = dpi != null ? dpi / 72.0 : (maxSide! / (page.width > page.height ? page.width : page.height));
   final w = (page.width * scale).roundToDouble();
   final h = (page.height * scale).roundToDouble();
-  final img = await page.render(fullWidth: w, fullHeight: h, width: w.toInt(), height: h.toInt(), backgroundColor: background);
+  final img = await page.render(
+    fullWidth: w,
+    fullHeight: h,
+    width: w.toInt(),
+    height: h.toInt(),
+    backgroundColor: background,
+  );
   if (img == null) return null;
   try {
     return await img.createImage();

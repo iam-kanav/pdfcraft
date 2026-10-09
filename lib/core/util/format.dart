@@ -44,7 +44,8 @@ List<int> parsePageRanges(String text, int pageCount) {
     if (m == null) throw FormatException('Invalid range "$t"');
     final a = int.parse(m.group(1)!);
     final b = m.group(2) == null ? a : int.parse(m.group(2)!);
-    if (a < 1 || b < 1 || a > pageCount || b > pageCount) throw FormatException('Pages must be between 1 and $pageCount');
+    if (a < 1 || b < 1 || a > pageCount || b > pageCount)
+      throw FormatException('Pages must be between 1 and $pageCount');
     final lo = a <= b ? a : b;
     final hi = a <= b ? b : a;
     for (var i = lo; i <= hi; i++) {

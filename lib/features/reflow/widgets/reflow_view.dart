@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:pdfcraft/core/models/doc_structure.dart';
 import 'package:pdfcraft/features/reflow/reading_settings.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Imperative control over a [ReflowView]: jumping to blocks and
 /// collapsing/expanding sections.
@@ -354,7 +355,10 @@ class _ReflowViewState extends State<ReflowView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
-      children: [_PageMarker(page: block.pageNumber!, styles: st, onTap: widget.onOpenPage), child],
+      children: [
+        _PageMarker(page: block.pageNumber!, styles: st, onTap: widget.onOpenPage),
+        child,
+      ],
     );
   }
 
@@ -391,7 +395,7 @@ class _ReflowViewState extends State<ReflowView> {
                         child: AnimatedRotation(
                           turns: collapsed ? -0.25 : 0,
                           duration: const Duration(milliseconds: 150),
-                          child: Icon(Icons.expand_more, size: 24, color: st.colors.secondaryText),
+                          child: Icon(Symbols.expand_more, size: 24, color: st.colors.secondaryText),
                         ),
                       ),
                   ],
@@ -441,7 +445,9 @@ class _ReflowViewState extends State<ReflowView> {
         return Padding(
           padding: EdgeInsets.only(bottom: gap, top: gap * 0.3),
           child: Container(
-            decoration: BoxDecoration(border: Border(left: BorderSide(color: st.colors.accent, width: 4))),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: st.colors.accent, width: 4)),
+            ),
             padding: const EdgeInsets.only(left: 16, top: 2, bottom: 2),
             child: _RichParagraph(
               spans: q.spans,
@@ -537,15 +543,15 @@ class _RenderSizeReporter extends RenderProxyBox {
 /// Resolved text styles for the current settings.
 class _Styles {
   _Styles(ReadingSettings s)
-      : colors = s.colors,
-        align = s.textAlign,
-        body = TextStyle(
-          fontSize: s.fontSize,
-          height: s.lineHeight,
-          fontFamily: s.flutterFontFamily,
-          color: s.colors.text,
-          letterSpacing: 0.1,
-        );
+    : colors = s.colors,
+      align = s.textAlign,
+      body = TextStyle(
+        fontSize: s.fontSize,
+        height: s.lineHeight,
+        fontFamily: s.flutterFontFamily,
+        color: s.colors.text,
+        letterSpacing: 0.1,
+      );
 
   final ReadingThemeColors colors;
   final TextAlign align;
@@ -607,11 +613,13 @@ List<InlineSpan> buildHighlightedSpans(
       }
       if (r < ranges.length && ranges[r].$1 <= pos) {
         final stop = ranges[r].$2 < end ? ranges[r].$2 : end;
-        out.add(TextSpan(
-          text: plain.substring(pos, stop),
-          style: style.copyWith(backgroundColor: highlight),
-          recognizer: recognizer,
-        ));
+        out.add(
+          TextSpan(
+            text: plain.substring(pos, stop),
+            style: style.copyWith(backgroundColor: highlight),
+            recognizer: recognizer,
+          ),
+        );
         pos = stop;
       } else {
         final next = r < ranges.length && ranges[r].$1 < end ? ranges[r].$1 : end;
@@ -747,7 +755,7 @@ class _ReflowImage extends StatelessWidget {
             gaplessPlayback: true,
             errorBuilder: (context, error, stack) => ColoredBox(
               color: c.surface,
-              child: Center(child: Icon(Icons.broken_image_outlined, color: c.secondaryText)),
+              child: Center(child: Icon(Symbols.broken_image, color: c.secondaryText)),
             ),
           ),
         ),
@@ -762,10 +770,12 @@ class _ReflowImage extends StatelessWidget {
           label: block.caption ?? 'Image',
           button: true,
           child: GestureDetector(
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              fullscreenDialog: true,
-              builder: (_) => _FullScreenImage(bytes: block.bytes, caption: block.caption),
-            )),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                fullscreenDialog: true,
+                builder: (_) => _FullScreenImage(bytes: block.bytes, caption: block.caption),
+              ),
+            ),
             child: image,
           ),
         ),
@@ -804,7 +814,7 @@ class _FullScreenImage extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Symbols.close),
           tooltip: 'Close',
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -821,7 +831,7 @@ class _FullScreenImage extends StatelessWidget {
                   bytes,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stack) =>
-                      const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+                      const Icon(Symbols.broken_image, color: Colors.white54, size: 48),
                 ),
               ),
             ),
@@ -831,7 +841,11 @@ class _FullScreenImage extends StatelessWidget {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(caption!, style: const TextStyle(color: Colors.white70), textAlign: TextAlign.center),
+                child: Text(
+                  caption!,
+                  style: const TextStyle(color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
         ],
@@ -910,10 +924,10 @@ class OutlineEntry {
 
 /// Headings of [doc] in order, with their block indices.
 List<OutlineEntry> buildOutline(DocStructure doc) => [
-      for (var i = 0; i < doc.blocks.length; i++)
-        if (doc.blocks[i] case HeadingBlock h when h.text.trim().isNotEmpty)
-          OutlineEntry(blockIndex: i, level: h.level, text: h.text.trim(), pageNumber: h.pageNumber),
-    ];
+  for (var i = 0; i < doc.blocks.length; i++)
+    if (doc.blocks[i] case HeadingBlock h when h.text.trim().isNotEmpty)
+      OutlineEntry(blockIndex: i, level: h.level, text: h.text.trim(), pageNumber: h.pageNumber),
+];
 
 /// Indented list of headings, e.g. for a navigation drawer.
 class ReflowOutline extends StatelessWidget {

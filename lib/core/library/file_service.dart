@@ -7,7 +7,13 @@ import '../util/format.dart';
 enum SortField { name, date, size }
 
 class FileEntry {
-  FileEntry({required this.path, required this.isDirectory, required this.size, required this.modified, this.childCount = 0});
+  FileEntry({
+    required this.path,
+    required this.isDirectory,
+    required this.size,
+    required this.modified,
+    this.childCount = 0,
+  });
 
   final String path;
   final bool isDirectory;
@@ -87,7 +93,8 @@ class FileService {
       return descending ? -r : r;
     }
 
-    final dirs = entries.where((e) => e.isDirectory).toList()..sort(sort == SortField.size ? (a, b) => a.name.compareTo(b.name) : cmp);
+    final dirs = entries.where((e) => e.isDirectory).toList()
+      ..sort(sort == SortField.size ? (a, b) => a.name.compareTo(b.name) : cmp);
     final files = entries.where((e) => !e.isDirectory).toList()..sort(cmp);
     return [...dirs, ...files];
   }
@@ -181,10 +188,38 @@ class FileService {
   }
 
   /// Copies an external file into the library (root or [into]). Returns the new path.
+  /// If an identical file with the same name (or a numbered variant) already exists, it is reused.
   Future<String> import(String source, {Directory? into, String? name}) async {
     final dest = into ?? root;
     await dest.create(recursive: true);
-    return copy(source, dest, name: name ?? p.basename(source));
+    final fileName = sanitizeFileName(name ?? p.basename(source));
+    final existing = await _findIdentical(source, dest, fileName);
+    if (existing != null) return existing;
+    return copy(source, dest, name: fileName);
+  }
+
+  Future<String?> _findIdentical(String source, Directory dest, String fileName) async {
+    final src = File(source);
+    final size = await src.length();
+    final stem = p.basenameWithoutExtension(fileName);
+    final ext = p.extension(fileName);
+    final candidates = [p.join(dest.path, fileName), for (var i = 2; i < 20; i++) p.join(dest.path, '$stem ($i)$ext')];
+    List<int>? srcBytes;
+    for (final c in candidates) {
+      final f = File(c);
+      if (!await f.exists() || await f.length() != size) continue;
+      srcBytes ??= await src.readAsBytes();
+      final other = await f.readAsBytes();
+      var same = true;
+      for (var i = 0; i < other.length; i++) {
+        if (other[i] != srcBytes[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return c;
+    }
+    return null;
   }
 
   /// Path for a new output document (e.g. "Report_compressed.pdf") next to the library root.

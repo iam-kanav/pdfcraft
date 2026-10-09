@@ -35,22 +35,8 @@ _Page _makePage(
       Point(w.toDouble(), h * (i + 1) / inks.length),
       Point(0.0, h * (i + 1) / inks.length),
     ]);
-    drawFakeText(
-      canvas,
-      band,
-      Random(seed + i),
-      lines: 10,
-      color: inks[i],
-      thickness: 4,
-    );
-    drawFakeText(
-      mask,
-      band,
-      Random(seed + i),
-      lines: 10,
-      color: (255, 255, 255),
-      thickness: 4,
-    );
+    drawFakeText(canvas, band, Random(seed + i), lines: 10, color: inks[i], thickness: 4);
+    drawFakeText(mask, band, Random(seed + i), lines: 10, color: (255, 255, 255), thickness: 4);
   }
   expect(page.area, w * h);
   canvas.applyLighting(lighting);
@@ -87,11 +73,7 @@ Uint8List _inkCore(Uint8List ink, int w, int h) {
   for (var y = 1; y < h - 1; y++) {
     for (var x = 1; x < w - 1; x++) {
       final i = y * w + x;
-      if (ink[i] == 1 &&
-          ink[i - 1] == 1 &&
-          ink[i + 1] == 1 &&
-          ink[i - w] == 1 &&
-          ink[i + w] == 1) {
+      if (ink[i] == 1 && ink[i - 1] == 1 && ink[i + 1] == 1 && ink[i - w] == 1 && ink[i + w] == 1) {
         core[i] = 1;
       }
     }
@@ -142,10 +124,7 @@ void main() {
         paper: (232, 228, 215),
         inks: [(35, 35, 45), (60, 40, 120)],
         // Strong falloff: corner at ~45% brightness, plus a soft shadow.
-        lighting: (x, y) =>
-            1.05 -
-            0.6 * (x / w * 0.5 + y / h * 0.5) -
-            (x < w * 0.3 ? 0.12 : 0.0),
+        lighting: (x, y) => 1.05 - 0.6 * (x / w * 0.5 + y / h * 0.5) - (x < w * 0.3 ? 0.12 : 0.0),
       );
       final out = applyScanFilter(page.canvas.toImage(), ScanFilter.blackWhite);
       expect(out.width, w);
@@ -166,37 +145,15 @@ void main() {
           if (v == 0) coreBlack++;
         }
       }
-      expect(
-        bgWhite / bgTotal,
-        greaterThan(0.95),
-        reason: 'background white ratio ${bgWhite / bgTotal}',
-      );
-      expect(
-        coreBlack / coreTotal,
-        greaterThan(0.9),
-        reason: 'ink black ratio ${coreBlack / coreTotal}',
-      );
+      expect(bgWhite / bgTotal, greaterThan(0.95), reason: 'background white ratio ${bgWhite / bgTotal}');
+      expect(coreBlack / coreTotal, greaterThan(0.9), reason: 'ink black ratio ${coreBlack / coreTotal}');
     });
 
     test('brightness lightens the binarised result', () {
       const w = 300, h = 400;
-      final page = _makePage(
-        w,
-        h,
-        paper: (220, 220, 220),
-        inks: [(90, 90, 90)],
-        lighting: (x, y) => 1.0,
-      );
-      final dark = applyScanFilter(
-        page.canvas.toImage(),
-        ScanFilter.blackWhite,
-        brightness: -0.4,
-      );
-      final light = applyScanFilter(
-        page.canvas.toImage(),
-        ScanFilter.blackWhite,
-        brightness: 0.6,
-      );
+      final page = _makePage(w, h, paper: (220, 220, 220), inks: [(90, 90, 90)], lighting: (x, y) => 1.0);
+      final dark = applyScanFilter(page.canvas.toImage(), ScanFilter.blackWhite, brightness: -0.4);
+      final light = applyScanFilter(page.canvas.toImage(), ScanFilter.blackWhite, brightness: 0.6);
       expect(_lumaMean(light), greaterThanOrEqualTo(_lumaMean(dark)));
     });
   });
@@ -244,13 +201,7 @@ void main() {
     test('stretches a low-contrast image', () {
       const w = 400, h = 300;
       final c = Canvas(w, h)..fill(solid(150, 148, 145));
-      drawFakeText(
-        c,
-        Quad.full(w, h),
-        Random(2),
-        color: (105, 104, 102),
-        thickness: 5,
-      );
+      drawFakeText(c, Quad.full(w, h), Random(2), color: (105, 104, 102), thickness: 5);
       c.addNoise(Random(2), 2);
       final input = c.toImage();
       final out = applyScanFilter(input, ScanFilter.autoColor);
@@ -273,8 +224,7 @@ void main() {
   });
 
   test('grayscale is neutral and contrast stretched', () {
-    final c = Canvas(200, 100)
-      ..fill((x, y) => (100 + x ~/ 4, 120 + x ~/ 4, 80 + x ~/ 4));
+    final c = Canvas(200, 100)..fill((x, y) => (100 + x ~/ 4, 120 + x ~/ 4, 80 + x ~/ 4));
     final out = applyScanFilter(c.toImage(), ScanFilter.grayscale);
     var lo = 255, hi = 0;
     for (var y = 0; y < 100; y += 7) {
@@ -309,8 +259,7 @@ void main() {
 
   test('original is unchanged without adjustments', () {
     final rnd = Random(4);
-    final c = Canvas(50, 40)
-      ..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
+    final c = Canvas(50, 40)..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
     final src = c.toImage();
     final out = applyScanFilter(src, ScanFilter.original);
     expect(out.getBytes(), src.getBytes());
@@ -320,22 +269,15 @@ void main() {
   test('brightness and contrast are monotonic', () {
     final c = Canvas(256, 64)..fill((x, y) => (x, x, x));
     final src = c.toImage();
-    for (final f in [
-      ScanFilter.original,
-      ScanFilter.grayscale,
-      ScanFilter.autoColor,
-      ScanFilter.photo,
-    ]) {
+    for (final f in [ScanFilter.original, ScanFilter.grayscale, ScanFilter.autoColor, ScanFilter.photo]) {
       final means = [
-        for (final b in [-0.6, -0.2, 0.0, 0.3, 0.7])
-          _lumaMean(applyScanFilter(src, f, brightness: b)),
+        for (final b in [-0.6, -0.2, 0.0, 0.3, 0.7]) _lumaMean(applyScanFilter(src, f, brightness: b)),
       ];
       for (var i = 1; i < means.length; i++) {
         expect(means[i], greaterThan(means[i - 1]), reason: '${f.name} $means');
       }
       final stds = [
-        for (final k in [-0.8, -0.3, 0.0, 0.4])
-          _lumaStd(applyScanFilter(src, f, contrast: k)),
+        for (final k in [-0.8, -0.3, 0.0, 0.4]) _lumaStd(applyScanFilter(src, f, contrast: k)),
       ];
       for (var i = 1; i < stds.length; i++) {
         expect(stds[i], greaterThan(stds[i - 1]), reason: '${f.name} $stds');
@@ -356,8 +298,7 @@ void main() {
     }
 
     List<List<int>> grid(img.Image im) => [
-      for (var y = 0; y < im.height; y++)
-        [for (var x = 0; x < im.width; x++) im.getPixel(x, y).r.toInt()],
+      for (var y = 0; y < im.height; y++) [for (var x = 0; x < im.width; x++) im.getPixel(x, y).r.toInt()],
     ];
 
     test('quarter turns clockwise', () {
@@ -380,27 +321,15 @@ void main() {
       ]);
       expect(grid(rotateImage(src, -1)), grid(rotateImage(src, 3)));
       expect(grid(rotateImage(src, 4)), grid(src));
-      expect(
-        grid(rotateImage(rotateImage(src, 1), 1)),
-        grid(rotateImage(src, 2)),
-      );
+      expect(grid(rotateImage(rotateImage(src, 1), 1)), grid(rotateImage(src, 2)));
     });
 
     test('matches package:image copyRotate', () {
       final rnd = Random(8);
-      final c = Canvas(
-        31,
-        17,
-      )..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
+      final c = Canvas(31, 17)..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
       final src = c.toImage();
-      expect(
-        rotateImage(src, 1).getBytes(),
-        img.copyRotate(src, angle: 90).getBytes(),
-      );
-      expect(
-        rotateImage(src, 3).getBytes(),
-        img.copyRotate(src, angle: 270).getBytes(),
-      );
+      expect(rotateImage(src, 1).getBytes(), img.copyRotate(src, angle: 90).getBytes());
+      expect(rotateImage(src, 3).getBytes(), img.copyRotate(src, angle: 270).getBytes());
     });
   });
 }

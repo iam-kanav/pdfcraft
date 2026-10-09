@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
+import '../../common/brand_widgets.dart';
 import '../../convert/export_screen.dart';
 import '../../convert/ocr_screen.dart';
 import '../../organize/organize_screen.dart';
@@ -10,6 +11,7 @@ import '../../tools/compress_screen.dart';
 import '../../tools/stamp_dialogs.dart';
 import '../viewer_screen.dart';
 import '../viewer_state.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class _ViewerTool {
   const _ViewerTool(this.label, this.icon, this.color, this.onTap);
@@ -21,18 +23,43 @@ class _ViewerTool {
 }
 
 final _tools = <_ViewerTool>[
-  _ViewerTool('Comment', Icons.chat_bubble_outline, Brand.comment, (c, h) => h.setMode(ViewerMode.comment)),
-  _ViewerTool('Edit PDF', Icons.edit_note, Brand.edit, (c, h) => h.setMode(ViewerMode.edit)),
-  _ViewerTool('Fill & Sign', Icons.draw_outlined, Brand.sign, (c, h) => h.setMode(ViewerMode.fillSign)),
-  _ViewerTool('Organize pages', Icons.grid_view, Brand.organize, (c, h) => _push(c, h, OrganizeScreen(session: h.session))),
-  _ViewerTool('Smart reading', Icons.chrome_reader_mode_outlined, Brand.convert, (c, h) => _push(c, h, ReflowScreen(path: h.session.path, password: h.session.password))),
-  _ViewerTool('Recognize text', Icons.document_scanner_outlined, Brand.scan, (c, h) => _push(c, h, OcrScreen(session: h.session))),
-  _ViewerTool('Export PDF', Icons.ios_share, Brand.convert, (c, h) => _push(c, h, ExportScreen(path: h.session.path, password: h.session.password))),
-  _ViewerTool('Compress', Icons.compress, Brand.compress, (c, h) => _push(c, h, CompressScreen(session: h.session))),
-  _ViewerTool('Protect', Icons.lock_outline, Brand.protect, (c, h) => _push(c, h, ProtectScreen(session: h.session))),
-  _ViewerTool('Redact', Icons.format_color_fill, Colors.black87, (c, h) => h.setMode(ViewerMode.redact)),
-  _ViewerTool('Watermark', Icons.water_drop_outlined, Brand.edit, (c, h) => showWatermarkDialog(c, session: h.session)),
-  _ViewerTool('Page numbers', Icons.format_list_numbered, Brand.edit, (c, h) => showPageNumbersDialog(c, session: h.session)),
+  _ViewerTool('Comment', Symbols.chat_bubble_outline, Brand.comment, (c, h) => h.setMode(ViewerMode.comment)),
+  _ViewerTool('Edit PDF', Symbols.edit_note, Brand.edit, (c, h) => h.setMode(ViewerMode.edit)),
+  _ViewerTool('Fill & Sign', Symbols.draw, Brand.sign, (c, h) => h.setMode(ViewerMode.fillSign)),
+  _ViewerTool(
+    'Organize pages',
+    Symbols.grid_view,
+    Brand.organize,
+    (c, h) => _push(c, h, OrganizeScreen(session: h.session)),
+  ),
+  _ViewerTool(
+    'Smart reading',
+    Symbols.chrome_reader_mode,
+    Brand.convert,
+    (c, h) => _push(c, h, ReflowScreen(path: h.session.path, password: h.session.password)),
+  ),
+  _ViewerTool(
+    'Recognize text',
+    Symbols.document_scanner,
+    Brand.scan,
+    (c, h) => _push(c, h, OcrScreen(session: h.session)),
+  ),
+  _ViewerTool(
+    'Export PDF',
+    Symbols.ios_share,
+    Brand.convert,
+    (c, h) => _push(c, h, ExportScreen(path: h.session.path, password: h.session.password)),
+  ),
+  _ViewerTool('Compress', Symbols.compress, Brand.compress, (c, h) => _push(c, h, CompressScreen(session: h.session))),
+  _ViewerTool('Protect', Symbols.lock_outline, Brand.protect, (c, h) => _push(c, h, ProtectScreen(session: h.session))),
+  _ViewerTool('Redact', Symbols.format_color_fill, Colors.black87, (c, h) => h.setMode(ViewerMode.redact)),
+  _ViewerTool('Watermark', Symbols.water_drop, Brand.edit, (c, h) => showWatermarkDialog(c, session: h.session)),
+  _ViewerTool(
+    'Page numbers',
+    Symbols.format_list_numbered,
+    Brand.edit,
+    (c, h) => showPageNumbersDialog(c, session: h.session),
+  ),
 ];
 
 Future<void> _push(BuildContext context, ViewerHost host, Widget screen) async {
@@ -53,7 +80,7 @@ Future<void> showViewerTools(BuildContext context, ViewerHost host) => showModal
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-            child: Text('All tools', style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text('More tools', style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
           ),
           GridView.count(
             crossAxisCount: 4,
@@ -73,12 +100,7 @@ Future<void> showViewerTools(BuildContext context, ViewerHost host) => showModal
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(color: t.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
-                        child: Icon(t.icon, color: t.color),
-                      ),
+                      ToolIconTile(icon: t.icon, color: t.color, size: 52),
                       const SizedBox(height: 6),
                       Text(t.label, textAlign: TextAlign.center, maxLines: 2, style: const TextStyle(fontSize: 12)),
                     ],

@@ -8,6 +8,7 @@ import '../../core/library/library_store.dart';
 import '../../core/services.dart';
 import '../../core/util/format.dart';
 import 'file_actions.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// First-page thumbnail of a PDF, cached on disk.
 class DocThumbnail extends StatefulWidget {
@@ -49,8 +50,8 @@ class _DocThumbnailState extends State<DocThumbnail> {
       height: widget.height,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
       child: FutureBuilder<File?>(
@@ -59,7 +60,11 @@ class _DocThumbnailState extends State<DocThumbnail> {
           final f = snap.data;
           if (f != null) return Image.file(f, fit: BoxFit.cover, alignment: Alignment.topCenter, gaplessPlayback: true);
           return Center(
-            child: Icon(Icons.picture_as_pdf, color: snap.connectionState == ConnectionState.done ? scheme.primary : scheme.outline, size: widget.width * 0.5),
+            child: Icon(
+              Symbols.picture_as_pdf,
+              color: snap.connectionState == ConnectionState.done ? scheme.primary : scheme.outline,
+              size: widget.width * 0.5,
+            ),
           );
         },
       ),
@@ -67,9 +72,18 @@ class _DocThumbnailState extends State<DocThumbnail> {
   }
 }
 
-/// List row for a document (Acrobat-style: thumbnail, name, date · size, star, overflow).
+/// List row for a document (Acrobat-style: small thumbnail, name, "PDF · date · size", overflow).
 class DocListTile extends StatelessWidget {
-  const DocListTile({super.key, required this.path, this.subtitle, this.onTap, this.showRecentActions = false, this.onChanged, this.selected = false, this.onLongPress});
+  const DocListTile({
+    super.key,
+    required this.path,
+    this.subtitle,
+    this.onTap,
+    this.showRecentActions = false,
+    this.onChanged,
+    this.selected = false,
+    this.onLongPress,
+  });
 
   final String path;
   final String? subtitle;
@@ -82,35 +96,62 @@ class DocListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lib = context.watch<LibraryStore>();
+    final theme = Theme.of(context);
     final file = File(path);
     final stat = file.existsSync() ? file.statSync() : null;
     final starred = lib.isStarred(path);
     final rec = lib.peek(path);
-    final sub = subtitle ??
+    final inLibrary = AppServices.instance.files.isInLibrary(path);
+    final sub =
+        subtitle ??
         [
+          'PDF',
           if (rec?.lastOpened != null) formatRelativeDate(rec!.lastOpened!) else if (stat != null) formatRelativeDate(stat.modified),
           if (stat != null) formatBytes(stat.size),
-          if (rec?.pageCount != null) '${rec!.pageCount} pages',
-        ].join(' · ');
-    return ListTile(
-      selected: selected,
+        ].join('  ·  ');
+    final secondary = theme.colorScheme.onSurfaceVariant;
+    return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
-      leading: selected
-          ? const SizedBox(width: 44, height: 56, child: Icon(Icons.check_circle, size: 30))
-          : DocThumbnail(path: path),
-      title: Text(p.basename(path), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (starred) Icon(Icons.star_rounded, color: Colors.amber.shade600, size: 20),
-          IconButton(
-            tooltip: 'More',
-            icon: const Icon(Icons.more_vert),
-            onPressed: () => showFileActions(context, path, fromRecents: showRecentActions, onChanged: onChanged),
-          ),
-        ],
+      child: Container(
+        color: selected ? theme.colorScheme.primaryContainer : null,
+        padding: const EdgeInsets.fromLTRB(16, 10, 4, 10),
+        child: Row(
+          children: [
+            selected
+                ? SizedBox(width: 36, height: 44, child: Icon(Symbols.check_circle, fill: 1, color: theme.colorScheme.primary))
+                : DocThumbnail(path: path, width: 36, height: 44),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(baseName(path), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16)),
+                      ),
+                      if (starred) ...[const SizedBox(width: 6), Icon(Symbols.star, fill: 1, size: 16, color: theme.colorScheme.primary)],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(inLibrary ? Symbols.smartphone : Symbols.folder, size: 14, color: secondary),
+                      const SizedBox(width: 4),
+                      Expanded(child: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: secondary))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'More',
+              icon: const Icon(Symbols.more_vert),
+              onPressed: () => showFileActions(context, path, fromRecents: showRecentActions, onChanged: onChanged),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -126,16 +167,32 @@ class FolderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return InkWell(
       onTap: onTap,
-      leading: SizedBox(width: 44, height: 56, child: Icon(Icons.folder_rounded, size: 40, color: Colors.amber.shade700)),
-      title: Text(p.basename(path), style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(itemCount == 1 ? '1 item' : '$itemCount items'),
-      trailing: onMore == null ? null : IconButton(icon: const Icon(Icons.more_vert), onPressed: onMore),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 4, 10),
+        child: Row(
+          children: [
+            const SizedBox(width: 36, height: 44, child: Icon(Symbols.folder, size: 30)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.basename(path), style: const TextStyle(fontSize: 16)),
+                  Text(itemCount == 1 ? '1 item' : '$itemCount items', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            if (onMore != null) IconButton(icon: const Icon(Symbols.more_vert), onPressed: onMore),
+          ],
+        ),
+      ),
     );
   }
 }
 
+/// Acrobat-style empty state: grey line illustration, bold title, secondary message.
 class EmptyState extends StatelessWidget {
   const EmptyState({super.key, required this.icon, required this.title, this.message, this.action});
 
@@ -153,18 +210,14 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: t.colorScheme.primary.withValues(alpha: 0.08), shape: BoxShape.circle),
-              child: Icon(icon, size: 40, color: t.colorScheme.primary),
-            ),
+            Icon(icon, size: 72, weight: 200, color: t.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
-            Text(title, style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+            Text(title, style: t.textTheme.titleSmall?.copyWith(fontSize: 17), textAlign: TextAlign.center),
             if (message != null) ...[
               const SizedBox(height: 6),
               Text(message!, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
             ],
-            if (action != null) ...[const SizedBox(height: 16), action!],
+            if (action != null) ...[const SizedBox(height: 20), action!],
           ],
         ),
       ),

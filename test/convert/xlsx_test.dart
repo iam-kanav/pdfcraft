@@ -8,8 +8,7 @@ import 'package:pdfcraft/features/convert/engine/xlsx_reader.dart';
 const _ns =
     'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
     'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
-const _relNs =
-    'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const _relNs = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
 Uint8List buildXlsx({bool date1904 = false}) {
   final archive = Archive()
@@ -100,10 +99,7 @@ Uint8List buildXlsx({bool date1904 = false}) {
       ),
     )
     ..addFile(
-      ArchiveFile.string(
-        'xl/worksheets/sheet4.xml',
-        '<?xml version="1.0"?><worksheet $_ns><sheetData/></worksheet>',
-      ),
+      ArchiveFile.string('xl/worksheets/sheet4.xml', '<?xml version="1.0"?><worksheet $_ns><sheetData/></worksheet>'),
     );
   return ZipEncoder().encodeBytes(archive);
 }
@@ -119,11 +115,7 @@ void main() {
 
   test('parses sheets, value types, formats and places cells by reference', () {
     final sheets = parseXlsx(buildXlsx());
-    expect(sheets.map((s) => s.name).toList(), [
-      'Data & Stuff',
-      'Second',
-      'Empty',
-    ]);
+    expect(sheets.map((s) => s.name).toList(), ['Data & Stuff', 'Second', 'Empty']);
 
     final t1 = sheets[0].table;
     expect(t1.rows, [
@@ -166,13 +158,8 @@ void main() {
   });
 
   test('invalid data throws FormatException', () {
-    expect(
-      () => parseXlsx(Uint8List.fromList([0, 1, 2])),
-      throwsFormatException,
-    );
-    final noWorkbook = ZipEncoder().encodeBytes(
-      Archive()..addFile(ArchiveFile.string('a.txt', 'x')),
-    );
+    expect(() => parseXlsx(Uint8List.fromList([0, 1, 2])), throwsFormatException);
+    final noWorkbook = ZipEncoder().encodeBytes(Archive()..addFile(ArchiveFile.string('a.txt', 'x')));
     expect(() => parseXlsx(noWorkbook), throwsFormatException);
   });
 }

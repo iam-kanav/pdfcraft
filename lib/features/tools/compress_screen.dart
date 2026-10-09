@@ -9,6 +9,7 @@ import '../../core/session/document_session.dart';
 import '../../core/util/format.dart';
 import '../common/dialogs.dart';
 import '../common/open_actions.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 enum CompressLevel {
   low('Low', 'Best quality, smaller savings', 220, 0.85),
@@ -46,13 +47,30 @@ class _CompressScreenState extends State<CompressScreen> {
     try {
       if (_saveCopy) {
         final out = FileService.uniquePath(p.dirname(s.path), '${p.basenameWithoutExtension(s.path)}_compressed.pdf');
-        final r = await PdfEngine.instance.compress(s.path, out, password: s.password, dpi: _level.dpi, quality: _level.quality, grayscale: _grayscale);
+        final r = await PdfEngine.instance.compress(
+          s.path,
+          out,
+          password: s.password,
+          dpi: _level.dpi,
+          quality: _level.quality,
+          grayscale: _grayscale,
+        );
         setState(() {
           _result = r;
           _outPath = out;
         });
       } else {
-        final r = await s.apply('Compress', (i, o) => PdfEngine.instance.compress(i, o, password: s.password, dpi: _level.dpi, quality: _level.quality, grayscale: _grayscale));
+        final r = await s.apply(
+          'Compress',
+          (i, o) => PdfEngine.instance.compress(
+            i,
+            o,
+            password: s.password,
+            dpi: _level.dpi,
+            quality: _level.quality,
+            grayscale: _grayscale,
+          ),
+        );
         setState(() {
           _result = r;
           _outPath = s.path;
@@ -76,7 +94,7 @@ class _CompressScreenState extends State<CompressScreen> {
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.picture_as_pdf, size: 36),
+            leading: const Icon(Symbols.picture_as_pdf, size: 36),
             title: Text(widget.session.name),
             subtitle: Text('Current size: ${formatBytes(r?.before ?? size)}'),
           ),
@@ -89,12 +107,27 @@ class _CompressScreenState extends State<CompressScreen> {
               title: Text(l.label),
               subtitle: Text('${l.description} · images at ${l.dpi.round()} dpi'),
             ),
-          SwitchListTile(value: _grayscale, onChanged: _running ? null : (v) => setState(() => _grayscale = v), title: const Text('Convert images to grayscale')),
-          SwitchListTile(value: _saveCopy, onChanged: _running ? null : (v) => setState(() => _saveCopy = v), title: const Text('Save as a new file'), subtitle: const Text('Keep the original unchanged')),
+          SwitchListTile(
+            value: _grayscale,
+            onChanged: _running ? null : (v) => setState(() => _grayscale = v),
+            title: const Text('Convert images to grayscale'),
+          ),
+          SwitchListTile(
+            value: _saveCopy,
+            onChanged: _running ? null : (v) => setState(() => _saveCopy = v),
+            title: const Text('Save as a new file'),
+            subtitle: const Text('Keep the original unchanged'),
+          ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _running ? null : _run,
-            icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.compress),
+            icon: _running
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Symbols.compress),
             label: Text(_running ? 'Compressing…' : 'Compress'),
           ),
           if (r != null) ...[
@@ -112,7 +145,9 @@ class _CompressScreenState extends State<CompressScreen> {
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
-                    Text('${formatBytes(r.before)} → ${formatBytes(r.after)} · ${r.images} image${r.images == 1 ? '' : 's'} re-encoded'),
+                    Text(
+                      '${formatBytes(r.before)} → ${formatBytes(r.after)} · ${r.images} image${r.images == 1 ? '' : 's'} re-encoded',
+                    ),
                     if (_outPath != null && _outPath != widget.session.path) ...[
                       const SizedBox(height: 12),
                       Row(

@@ -39,11 +39,7 @@ const double kMinDocumentArea = 0.15;
 Quad? detectDocumentQuad(img.Image image) {
   if (image.width < 16 || image.height < 16) return null;
   final small = fitRaster(Raster.fromImage(image), kDetectionSize);
-  final detector = DocumentDetector(
-    paperFeatureMap(small),
-    small.width,
-    small.height,
-  );
+  final detector = DocumentDetector(paperFeatureMap(small), small.width, small.height);
   final q = detector.detect();
   if (q == null) return null;
   return q
@@ -83,12 +79,8 @@ Float32List paperFeatureMap(Raster r) {
 /// Gradient and Canny edge analysis of a single-channel float plane.
 class EdgeAnalysis {
   /// Blurs [feature] and computes gradients and Canny edges.
-  EdgeAnalysis(
-    Float32List feature,
-    this.width,
-    this.height, {
-    double sigma = 1.4,
-  }) : g = gaussianBlurF32(feature, width, height, sigma) {
+  EdgeAnalysis(Float32List feature, this.width, this.height, {double sigma = 1.4})
+    : g = gaussianBlurF32(feature, width, height, sigma) {
     final w = width, h = height, n = w * h;
     gx = Float32List(n);
     gy = Float32List(n);
@@ -96,12 +88,8 @@ class EdgeAnalysis {
     for (var y = 1; y < h - 1; y++) {
       for (var x = 1; x < w - 1; x++) {
         final i = y * w + x;
-        final dx =
-            (g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1]) -
-            (g[i - w - 1] + 2 * g[i - 1] + g[i + w - 1]);
-        final dy =
-            (g[i + w - 1] + 2 * g[i + w] + g[i + w + 1]) -
-            (g[i - w - 1] + 2 * g[i - w] + g[i - w + 1]);
+        final dx = (g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1]) - (g[i - w - 1] + 2 * g[i - 1] + g[i + w - 1]);
+        final dy = (g[i + w - 1] + 2 * g[i + w] + g[i + w + 1]) - (g[i - w - 1] + 2 * g[i - w] + g[i - w + 1]);
         gx[i] = dx / 8;
         gy[i] = dy / 8;
         mag[i] = math.sqrt(dx * dx + dy * dy) / 8;
@@ -267,11 +255,7 @@ class EdgeAnalysis {
 class _Line {
   _Line(this.nx, this.ny, this.rho, {this.border = false});
 
-  factory _Line.through(
-    math.Point<double> p,
-    math.Point<double> q, {
-    bool border = false,
-  }) {
+  factory _Line.through(math.Point<double> p, math.Point<double> q, {bool border = false}) {
     final dx = q.x - p.x, dy = q.y - p.y;
     final len = math.sqrt(dx * dx + dy * dy);
     final nx = dy / len, ny = -dx / len;
@@ -285,10 +269,7 @@ class _Line {
     final det = nx * o.ny - ny * o.nx;
     // Reject nearly parallel lines (< ~10 degrees apart).
     if (det.abs() < 0.17) return null;
-    return math.Point(
-      (rho * o.ny - ny * o.rho) / det,
-      (nx * o.rho - rho * o.nx) / det,
-    );
+    return math.Point((rho * o.ny - ny * o.rho) / det, (nx * o.rho - rho * o.nx) / det);
   }
 }
 
@@ -305,8 +286,7 @@ class _Scored {
 /// coordinates of the analysis plane.
 class DocumentDetector {
   /// Prepares the gradient/edge analysis for [feature] (`width x height`).
-  DocumentDetector(Float32List feature, this.width, this.height)
-    : analysis = EdgeAnalysis(feature, width, height);
+  DocumentDetector(Float32List feature, this.width, this.height) : analysis = EdgeAnalysis(feature, width, height);
 
   /// Plane width.
   final int width;
@@ -407,8 +387,7 @@ class DocumentDetector {
       var similar = false;
       for (final k in kept) {
         final dt = (t - k.$1).abs();
-        if ((dt <= 6 && (r - k.$2).abs() <= 8) ||
-            (dt >= nTheta - 6 && (r + k.$2).abs() <= 8)) {
+        if ((dt <= 6 && (r - k.$2).abs() <= 8) || (dt >= nTheta - 6 && (r + k.$2).abs() <= 8)) {
           similar = true;
           break;
         }
@@ -493,12 +472,7 @@ class DocumentDetector {
     final t1 = otsuThreshold(hist);
     final upper = [for (var i = 0; i < 256; i++) i > t1 ? hist[i] : 0.0];
     final lower = [for (var i = 0; i < 256; i++) i <= t1 ? hist[i] : 0.0];
-    final splits = <(int, bool)>[
-      (t1, true),
-      (t1, false),
-      (otsuThreshold(upper), true),
-      (otsuThreshold(lower), false),
-    ];
+    final splits = <(int, bool)>[(t1, true), (t1, false), (otsuThreshold(upper), true), (otsuThreshold(lower), false)];
     for (final (t, bright) in splits) {
       var mask = Uint8List(n);
       var on = 0;
@@ -628,10 +602,7 @@ class DocumentDetector {
     if (q.area < (kMinDocumentArea - 0.02) * _imageArea) return false;
     final margin = 0.04 * math.max(width, height);
     for (final p in q.points) {
-      if (p.x < -margin ||
-          p.y < -margin ||
-          p.x > width - 1 + margin ||
-          p.y > height - 1 + margin) {
+      if (p.x < -margin || p.y < -margin || p.x > width - 1 + margin || p.y > height - 1 + margin) {
         return false;
       }
     }
@@ -747,10 +718,7 @@ class DocumentDetector {
     // Sides on the image border carry no evidence, so the remaining sides
     // must be convincing on their own.
     final minRealRequired = borders == 0 ? 0.45 : (borders == 1 ? 0.55 : 0.65);
-    final valid =
-        minReal >= minRealRequired &&
-        mean >= 0.55 &&
-        areaFrac >= kMinDocumentArea;
+    final valid = minReal >= minRealRequired && mean >= 0.55 && areaFrac >= kMinDocumentArea;
     return _Scored(q, score, valid);
   }
 
@@ -835,10 +803,7 @@ class DocumentDetector {
     var line = _fitLine(xs, ys, ws);
     if (line == null) return null;
     // One round of outlier rejection.
-    final res = <double>[
-      for (var i = 0; i < xs.length; i++)
-        (xs[i] * line.nx + ys[i] * line.ny - line.rho).abs(),
-    ];
+    final res = <double>[for (var i = 0; i < xs.length; i++) (xs[i] * line.nx + ys[i] * line.ny - line.rho).abs()];
     final sorted = List.of(res)..sort();
     final cut = math.max(0.75, 2.5 * sorted[sorted.length ~/ 2]);
     final fx = <double>[], fy = <double>[], fw = <double>[];
@@ -896,16 +861,14 @@ class DocumentDetector {
         (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
     final lower = <math.Point<int>>[];
     for (final p in s) {
-      while (lower.length >= 2 &&
-          cross(lower[lower.length - 2], lower.last, p) <= 0) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower.last, p) <= 0) {
         lower.removeLast();
       }
       lower.add(p);
     }
     final upper = <math.Point<int>>[];
     for (final p in s.reversed) {
-      while (upper.length >= 2 &&
-          cross(upper[upper.length - 2], upper.last, p) <= 0) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper.last, p) <= 0) {
         upper.removeLast();
       }
       upper.add(p);
@@ -913,8 +876,7 @@ class DocumentDetector {
     lower.removeLast();
     upper.removeLast();
     return [
-      for (final p in [...lower, ...upper])
-        math.Point(p.x.toDouble(), p.y.toDouble()),
+      for (final p in [...lower, ...upper]) math.Point(p.x.toDouble(), p.y.toDouble()),
     ];
   }
 
@@ -927,11 +889,7 @@ class DocumentDetector {
       var minA = double.infinity;
       var minI = 0;
       for (var i = 0; i < pts.length; i++) {
-        final a = _tri(
-          pts[(i - 1 + pts.length) % pts.length],
-          pts[i],
-          pts[(i + 1) % pts.length],
-        );
+        final a = _tri(pts[(i - 1 + pts.length) % pts.length], pts[i], pts[(i + 1) % pts.length]);
         if (a < minA) {
           minA = a;
           minI = i;
@@ -973,9 +931,6 @@ class DocumentDetector {
     return Quad.orderPoints([for (final i in bestIdx) pts[i]]);
   }
 
-  static double _tri(
-    math.Point<double> a,
-    math.Point<double> b,
-    math.Point<double> c,
-  ) => ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)).abs() / 2;
+  static double _tri(math.Point<double> a, math.Point<double> b, math.Point<double> c) =>
+      ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)).abs() / 2;
 }

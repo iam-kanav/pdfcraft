@@ -25,9 +25,7 @@ DocStructure parsePlainText(String text) {
 }
 
 final RegExp _bullet = RegExp(r'^([ \t]*)([-*+•‣◦▪▫●○■□–·⁃])[ \t]+(\S.*)$');
-final RegExp _numbered = RegExp(
-  r'^([ \t]*)(\d{1,4}|[a-zA-Z])([.)])[ \t]+(\S.*)$',
-);
+final RegExp _numbered = RegExp(r'^([ \t]*)(\d{1,4}|[a-zA-Z])([.)])[ \t]+(\S.*)$');
 
 int _indentWidth(String ws) {
   var w = 0;
@@ -108,12 +106,7 @@ void _parsePage(String page, List<DocBlock> blocks) {
 }
 
 class _Item {
-  _Item({
-    required this.ordered,
-    required this.marker,
-    required this.level,
-    required this.lines,
-  });
+  _Item({required this.ordered, required this.marker, required this.level, required this.lines});
   final bool ordered;
   final String marker;
   final int level;

@@ -49,32 +49,15 @@ enum ScanFilter {
 /// Applies [filter] to [src] and returns a new 8-bit RGB image of the same
 /// size. [brightness] and [contrast] are in `[-1, 1]` (0 = unchanged) and
 /// are applied on top of every filter.
-img.Image applyScanFilter(
-  img.Image src,
-  ScanFilter filter, {
-  double brightness = 0,
-  double contrast = 0,
-}) {
+img.Image applyScanFilter(img.Image src, ScanFilter filter, {double brightness = 0, double contrast = 0}) {
   // Without allowAlpha the raster is always 3-channel RGB.
   final r = Raster.fromImage(src);
-  return Raster(
-    r.width,
-    r.height,
-    3,
-    filterRgb(r.data, r.width, r.height, filter, brightness, contrast),
-  ).toImage();
+  return Raster(r.width, r.height, 3, filterRgb(r.data, r.width, r.height, filter, brightness, contrast)).toImage();
 }
 
 /// Raw-buffer implementation of [applyScanFilter]. [rgb] is never modified;
 /// a new interleaved RGB buffer is returned.
-Uint8List filterRgb(
-  Uint8List rgb,
-  int w,
-  int h,
-  ScanFilter filter,
-  double brightness,
-  double contrast,
-) {
+Uint8List filterRgb(Uint8List rgb, int w, int h, ScanFilter filter, double brightness, double contrast) {
   final lut = brightnessContrastLut(brightness, contrast);
   switch (filter) {
     case ScanFilter.original:
@@ -142,10 +125,7 @@ Uint8List _grayscale(Uint8List rgb, int w, int h, Uint8List? lut) {
   final n = w * h;
   final l = lumaOf(rgb, n, 3);
   final hist = histogram(l);
-  final stretch = _stretchLut(
-    histogramPercentile(hist, 0.01),
-    histogramPercentile(hist, 0.99),
-  );
+  final stretch = _stretchLut(histogramPercentile(hist, 0.01), histogramPercentile(hist, 0.99));
   final finalLut = _composeLut(stretch, lut);
   for (var i = 0; i < n; i++) {
     l[i] = finalLut[l[i]];
@@ -417,12 +397,7 @@ Float32List _fitLightingSurface(Float32List plane, int w, int h) {
 double _evalQuadratic(List<double> c, double x, double y) =>
     c[0] + c[1] * x + c[2] * y + c[3] * x * x + c[4] * x * y + c[5] * y * y;
 
-List<double>? _solveQuadratic(
-  List<double> xs,
-  List<double> ys,
-  List<double> vs,
-  List<bool> keep,
-) {
+List<double>? _solveQuadratic(List<double> xs, List<double> ys, List<double> vs, List<bool> keep) {
   // Normal equations (6x6) solved by Gaussian elimination.
   final a = List.generate(6, (_) => List<double>.filled(7, 0));
   var count = 0;

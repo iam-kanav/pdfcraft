@@ -100,7 +100,8 @@ class ConvertService {
             bytes = await _encodeJpeg(rgba, img.width, img.height);
           }
           img.dispose();
-          final name = '${base}_page${(i + 1).toString().padLeft(3, '0')}.${format == ExportFormat.png ? 'png' : 'jpg'}';
+          final name =
+              '${base}_page${(i + 1).toString().padLeft(3, '0')}.${format == ExportFormat.png ? 'png' : 'jpg'}';
           archive.addFile(ArchiveFile(name, bytes.length, bytes));
           onProgress?.call((k + 1) / targets.length);
         }
@@ -173,7 +174,12 @@ class ConvertService {
       _ => throw FormatException('Unsupported file type: $ext'),
     };
     final fonts = await ConvertService.fonts();
-    return buildPdfFromStructure(doc, fonts: fonts, title: title ?? p.basenameWithoutExtension(path), pageNumbers: false);
+    return buildPdfFromStructure(
+      doc,
+      fonts: fonts,
+      title: title ?? p.basenameWithoutExtension(path),
+      pageNumbers: false,
+    );
   }
 
   static const documentExtensions = ['docx', 'txt', 'md', 'markdown', 'xlsx', 'csv'];

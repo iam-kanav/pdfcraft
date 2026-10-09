@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
 import 'signature_store.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Create a signature or initials by drawing, typing, or importing an image.
 /// Pops with the saved [SavedSignature].
@@ -64,7 +65,10 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
   Future<Uint8List> _renderTyped() async {
     final text = _typed.text.trim();
     final style = TextStyle(fontFamily: 'Signature', fontSize: 120, color: _ink);
-    final tp = TextPainter(text: TextSpan(text: text, style: style), textDirection: TextDirection.ltr)..layout();
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     tp.paint(canvas, const Offset(16, 8));
@@ -137,10 +141,15 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        bottom: TabBar(controller: _tabs, tabs: const [Tab(text: 'Draw'), Tab(text: 'Type'), Tab(text: 'Image')]),
-        actions: [
-          TextButton(onPressed: _hasContent && !_saving ? _save : null, child: const Text('Done')),
-        ],
+        bottom: TabBar(
+          controller: _tabs,
+          tabs: const [
+            Tab(text: 'Draw'),
+            Tab(text: 'Type'),
+            Tab(text: 'Image'),
+          ],
+        ),
+        actions: [TextButton(onPressed: _hasContent && !_saving ? _save : null, child: const Text('Done'))],
       ),
       body: Column(
         children: [
@@ -168,7 +177,10 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
                           decoration: BoxDecoration(
                             color: c,
                             shape: BoxShape.circle,
-                            border: Border.all(color: _ink == c ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 3),
+                            border: Border.all(
+                              color: _ink == c ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                              width: 3,
+                            ),
                           ),
                         ),
                       ),
@@ -186,7 +198,11 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
       Expanded(
         child: Container(
           margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black12)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black12),
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: GestureDetector(
@@ -196,14 +212,11 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
                 painter: _PadPainter(_strokes, _ink, _smooth),
                 child: Stack(
                   children: [
-                    Positioned(
-                      left: 24,
-                      right: 24,
-                      bottom: 48,
-                      child: Container(height: 1, color: Colors.black26),
-                    ),
+                    Positioned(left: 24, right: 24, bottom: 48, child: Container(height: 1, color: Colors.black26)),
                     if (_strokes.isEmpty)
-                      const Center(child: Text('Sign here', style: TextStyle(color: Colors.black38, fontSize: 18))),
+                      const Center(
+                        child: Text('Sign here', style: TextStyle(color: Colors.black38, fontSize: 18)),
+                      ),
                   ],
                 ),
               ),
@@ -211,7 +224,11 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
           ),
         ),
       ),
-      TextButton.icon(onPressed: () => setState(_strokes.clear), icon: const Icon(Icons.clear), label: const Text('Clear')),
+      TextButton.icon(
+        onPressed: () => setState(_strokes.clear),
+        icon: const Icon(Symbols.clear),
+        label: const Text('Clear'),
+      ),
     ],
   );
 
@@ -221,7 +238,9 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
       children: [
         TextField(
           controller: _typed,
-          decoration: InputDecoration(hintText: widget.kind == SignatureKind.signature ? 'Your full name' : 'Your initials'),
+          decoration: InputDecoration(
+            hintText: widget.kind == SignatureKind.signature ? 'Your full name' : 'Your initials',
+          ),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 24),
@@ -229,11 +248,22 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
           height: 140,
           width: double.infinity,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black12)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black12),
+          ),
           child: FittedBox(
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(_typed.text.isEmpty ? 'Preview' : _typed.text, style: TextStyle(fontFamily: 'Signature', fontSize: 56, color: _typed.text.isEmpty ? Colors.black26 : _ink)),
+              child: Text(
+                _typed.text.isEmpty ? 'Preview' : _typed.text,
+                style: TextStyle(
+                  fontFamily: 'Signature',
+                  fontSize: 56,
+                  color: _typed.text.isEmpty ? Colors.black26 : _ink,
+                ),
+              ),
             ),
           ),
         ),
@@ -255,7 +285,10 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
               child: Image.memory(_imported!),
             )
           else
-            const Text('Import a photo of your signature on white paper.\nThe background is removed automatically.', textAlign: TextAlign.center),
+            const Text(
+              'Import a photo of your signature on white paper.\nThe background is removed automatically.',
+              textAlign: TextAlign.center,
+            ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () async {
@@ -269,7 +302,7 @@ class _SignaturePadScreenState extends State<SignaturePadScreen> with SingleTick
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
               }
             },
-            icon: const Icon(Icons.image_outlined),
+            icon: const Icon(Symbols.image),
             label: const Text('Choose image'),
           ),
         ],
@@ -317,7 +350,10 @@ Future<SavedSignature?> pickSignature(BuildContext context, SignatureKind kind) 
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text(kind == SignatureKind.signature ? 'Signatures' : 'Initials', style: Theme.of(ctx).textTheme.titleMedium),
+                child: Text(
+                  kind == SignatureKind.signature ? 'Signatures' : 'Initials',
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
               ),
               for (final s in saved)
                 ListTile(
@@ -329,7 +365,7 @@ Future<SavedSignature?> pickSignature(BuildContext context, SignatureKind kind) 
                     child: Image.file(s.file, fit: BoxFit.contain),
                   ),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const Icon(Symbols.delete_outline),
                     onPressed: () async {
                       await store.delete(s);
                       setState(() {});
@@ -338,10 +374,12 @@ Future<SavedSignature?> pickSignature(BuildContext context, SignatureKind kind) 
                   onTap: () => Navigator.pop(ctx, s),
                 ),
               ListTile(
-                leading: const Icon(Icons.add),
+                leading: const Icon(Symbols.add),
                 title: Text(kind == SignatureKind.signature ? 'Create new signature' : 'Create new initials'),
                 onTap: () async {
-                  final created = await Navigator.of(ctx).push<SavedSignature>(MaterialPageRoute(builder: (_) => SignaturePadScreen(kind: kind)));
+                  final created = await Navigator.of(
+                    ctx,
+                  ).push<SavedSignature>(MaterialPageRoute(builder: (_) => SignaturePadScreen(kind: kind)));
                   if (created != null && ctx.mounted) Navigator.pop(ctx, created);
                 },
               ),

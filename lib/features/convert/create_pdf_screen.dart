@@ -15,6 +15,7 @@ import '../common/open_actions.dart';
 import '../scanner/scanner_screen.dart';
 import 'convert_service.dart';
 import 'engine/convert_engine.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Create a PDF from images, documents (Word, text, Markdown, Excel) or a scan.
 class CreatePdfScreen extends StatefulWidget {
@@ -61,8 +62,16 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
     setState(() => _busy = true);
     try {
       final bytes = <Uint8List>[for (final f in _images) await File(f).readAsBytes()];
-      final pdf = await buildPdfFromImages(bytes, pageSize: _pageSize, orientation: _orientation, margin: _pageSize == ImagePageSize.fitImage ? 0 : _margin, title: _name.text);
-      final out = AppServices.instance.files.outputPath('${sanitizeFileName(_name.text.trim().isEmpty ? 'Images' : _name.text.trim())}.pdf');
+      final pdf = await buildPdfFromImages(
+        bytes,
+        pageSize: _pageSize,
+        orientation: _orientation,
+        margin: _pageSize == ImagePageSize.fitImage ? 0 : _margin,
+        title: _name.text,
+      );
+      final out = AppServices.instance.files.outputPath(
+        '${sanitizeFileName(_name.text.trim().isEmpty ? 'Images' : _name.text.trim())}.pdf',
+      );
       await File(out).writeAsBytes(pdf);
       if (!mounted) return;
       Navigator.pop(context);
@@ -76,7 +85,8 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
 
   Future<void> _blank() async {
     final out = await runWithProgress(context, 'Creating…', () async {
-      final doc = pw.Document(title: 'Blank', creator: 'PDFCraft')..addPage(pw.Page(pageFormat: PdfPageFormat.a4, build: (_) => pw.SizedBox()));
+      final doc = pw.Document(title: 'Blank', creator: 'PDFCraft')
+        ..addPage(pw.Page(pageFormat: PdfPageFormat.a4, build: (_) => pw.SizedBox()));
       final bytes = await doc.save();
       final target = AppServices.instance.files.outputPath('Blank.pdf');
       await File(target).writeAsBytes(bytes);
@@ -97,25 +107,48 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
         children: [
           Row(
             children: [
-              _SourceCard(icon: Icons.document_scanner_outlined, label: 'Scan', onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const ScannerScreen()))),
+              _SourceCard(
+                icon: Symbols.document_scanner,
+                label: 'Scan',
+                onTap: () =>
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const ScannerScreen())),
+              ),
               const SizedBox(width: 8),
-              _SourceCard(icon: Icons.description_outlined, label: 'Document', subtitle: 'Word, text, Markdown, Excel', onTap: _fromDocument),
+              _SourceCard(
+                icon: Symbols.description,
+                label: 'Document',
+                subtitle: 'Word, text, Markdown, Excel',
+                onTap: _fromDocument,
+              ),
               const SizedBox(width: 8),
-              _SourceCard(icon: Icons.note_add_outlined, label: 'Blank', onTap: _blank),
+              _SourceCard(icon: Symbols.note_add, label: 'Blank', onTap: _blank),
             ],
           ),
           const SizedBox(height: 24),
           Row(
             children: [
-              Text('From images', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                'From images',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
-              TextButton.icon(onPressed: _addImages, icon: const Icon(Icons.add_photo_alternate_outlined), label: const Text('Add')),
+              TextButton.icon(
+                onPressed: _addImages,
+                icon: const Icon(Symbols.add_photo_alternate),
+                label: const Text('Add'),
+              ),
             ],
           ),
           if (_images.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: OutlinedButton.icon(onPressed: _addImages, icon: const Icon(Icons.image_outlined), label: const Text('Choose images'))),
+              child: Center(
+                child: OutlinedButton.icon(
+                  onPressed: _addImages,
+                  icon: const Icon(Symbols.image),
+                  label: const Text('Choose images'),
+                ),
+              ),
             )
           else ...[
             SizedBox(
@@ -132,25 +165,45 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: Stack(
                     children: [
-                      ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_images[i]), width: 100, height: 140, fit: BoxFit.cover, cacheWidth: 200)),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(_images[i]),
+                          width: 100,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          cacheWidth: 200,
+                        ),
+                      ),
                       Positioned(
                         right: 0,
                         top: 0,
                         child: IconButton(
-                          style: IconButton.styleFrom(backgroundColor: Colors.black54, foregroundColor: Colors.white, minimumSize: const Size(28, 28)),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black54,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(28, 28),
+                          ),
                           iconSize: 16,
                           onPressed: () => setState(() => _images.removeAt(i)),
-                          icon: const Icon(Icons.close),
+                          icon: const Icon(Symbols.close),
                         ),
                       ),
-                      Positioned(left: 6, bottom: 6, child: CircleAvatar(radius: 11, child: Text('${i + 1}', style: const TextStyle(fontSize: 11)))),
+                      Positioned(
+                        left: 6,
+                        bottom: 6,
+                        child: CircleAvatar(radius: 11, child: Text('${i + 1}', style: const TextStyle(fontSize: 11))),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _name, decoration: const InputDecoration(labelText: 'File name', suffixText: '.pdf')),
+            TextField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'File name', suffixText: '.pdf'),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<ImagePageSize>(
               initialValue: _pageSize,
@@ -180,7 +233,7 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _busy ? null : _createFromImages,
-              icon: const Icon(Icons.picture_as_pdf),
+              icon: const Icon(Symbols.picture_as_pdf),
               label: Text(_busy ? 'Creating…' : 'Create PDF (${_images.length} page${_images.length == 1 ? '' : 's'})'),
             ),
           ],
@@ -211,7 +264,8 @@ class _SourceCard extends StatelessWidget {
               Icon(icon, size: 30, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 6),
               Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-              if (subtitle != null) Text(subtitle!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+              if (subtitle != null)
+                Text(subtitle!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),

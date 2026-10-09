@@ -33,7 +33,8 @@ class PlatformBridge {
   Future<List<IncomingFile>> takeInitialFiles() async => _parse(await _channel.invokeMethod('takeInitialIntent'));
 
   /// Files delivered while the app is running.
-  Stream<List<IncomingFile>> get incomingFiles => _events.receiveBroadcastStream().map(_parse).where((l) => l.isNotEmpty);
+  Stream<List<IncomingFile>> get incomingFiles =>
+      _events.receiveBroadcastStream().map(_parse).where((l) => l.isNotEmpty);
 
   /// Copies a file into Downloads/PDFCraft. Returns a user-facing location.
   Future<String> saveToDownloads(String path, String name, {String mime = 'application/pdf'}) async =>

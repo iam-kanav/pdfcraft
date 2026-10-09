@@ -2,34 +2,32 @@ import 'package:flutter/material.dart';
 
 import 'tool_registry.dart';
 
-/// "All tools" tab, grouped like Acrobat's tool center.
+/// "All tools" tab laid out like Acrobat's tool grid.
 class ToolsScreen extends StatelessWidget {
   const ToolsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('All tools')),
+      appBar: AppBar(toolbarHeight: 8),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
+          Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Text('All tools', style: theme.textTheme.headlineSmall)),
           for (final cat in ToolCategory.values) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-              child: Text(cat.label, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(cat.label, style: theme.textTheme.titleSmall),
             ),
             LayoutBuilder(
               builder: (context, c) {
                 final tools = ToolRegistry.all.where((t) => t.category == cat).toList();
-                final cols = c.maxWidth > 600 ? 3 : 2;
-                return GridView.count(
-                  crossAxisCount: cols,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: cols == 2 ? 2.15 : 2.6,
-                  children: [for (final t in tools) ToolTile(tool: t, onTap: () => t.launch(context))],
+                final cols = (c.maxWidth / 92).floor().clamp(3, 6);
+                final w = (c.maxWidth - 16) / cols;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Wrap(children: [for (final t in tools) ToolChip(tool: t, width: w, onTap: () => t.launch(context))]),
                 );
               },
             ),

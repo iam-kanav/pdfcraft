@@ -13,13 +13,19 @@ import '../viewer_state.dart';
 import '../widgets/color_palette.dart';
 import '../widgets/selection_box.dart';
 import 'comment_layer.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 final _fieldCache = <String, Future<List<Map<String, dynamic>>>>{};
 
 Future<List<Map<String, dynamic>>> loadFields(ViewerHost host) {
   final key = '${host.session.path}#${host.session.revision}';
   if (_fieldCache.length > 10) _fieldCache.clear();
-  return _fieldCache.putIfAbsent(key, () => PdfEngine.instance.listFields(host.session.path, password: host.session.password).catchError((_) => <Map<String, dynamic>>[]));
+  return _fieldCache.putIfAbsent(
+    key,
+    () => PdfEngine.instance
+        .listFields(host.session.path, password: host.session.password)
+        .catchError((_) => <Map<String, dynamic>>[]),
+  );
 }
 
 /// Places a signature/initials image as a stamp annotation inside [area] (fitted, centered).
@@ -32,16 +38,19 @@ Future<void> placeSignature(ViewerHost host, int pageIndex, SavedSignature sig, 
     w = h * ar;
   }
   final rect = Rect.fromCenter(center: area.center, width: w, height: h);
-  await host.edit(sig.kind == SignatureKind.signature ? 'Add signature' : 'Add initials', (i, o) => PdfEngine.instance.addAnnotations(i, o, [
-    {
-      'type': 'stamp',
-      'page': pageIndex,
-      'rect': rectToList(rect),
-      'imagePath': sig.file.path,
-      'name': sig.kind == SignatureKind.signature ? 'Signature' : 'Initials',
-      'author': AppServices.instance.settings.authorName,
-    },
-  ], password: host.session.password));
+  await host.edit(
+    sig.kind == SignatureKind.signature ? 'Add signature' : 'Add initials',
+    (i, o) => PdfEngine.instance.addAnnotations(i, o, [
+      {
+        'type': 'stamp',
+        'page': pageIndex,
+        'rect': rectToList(rect),
+        'imagePath': sig.file.path,
+        'name': sig.kind == SignatureKind.signature ? 'Signature' : 'Initials',
+        'author': AppServices.instance.settings.authorName,
+      },
+    ], password: host.session.password),
+  );
 }
 
 /// Per-page layer for Fill & Sign: interactive form fields plus free placement tools.
@@ -117,10 +126,12 @@ class _FillSignLayerState extends State<FillSignLayer> {
             child: ListView(
               shrinkWrap: true,
               children: [
-                ListTile(title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+                ListTile(
+                  title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
                 if (f['editable'] == true)
                   ListTile(
-                    leading: const Icon(Icons.edit),
+                    leading: const Icon(Symbols.edit),
                     title: const Text('Custom value…'),
                     onTap: () async {
                       final v = await showTextInputDialog(ctx, title: label);
@@ -130,7 +141,10 @@ class _FillSignLayerState extends State<FillSignLayer> {
                 for (var i = 0; i < options.length; i++)
                   ListTile(
                     title: Text(options[i]),
-                    trailing: current.contains(exports.length > i ? exports[i] : options[i]) || current.contains(options[i]) ? const Icon(Icons.check) : null,
+                    trailing:
+                        current.contains(exports.length > i ? exports[i] : options[i]) || current.contains(options[i])
+                        ? const Icon(Symbols.check)
+                        : null,
                     onTap: () => Navigator.pop(ctx, exports.length > i ? exports[i] : options[i]),
                   ),
               ],
@@ -152,7 +166,9 @@ class _FillSignLayerState extends State<FillSignLayer> {
     final color = vs.inkColor;
     switch (vs.fillTool) {
       case FillTool.select:
-        final hit = host.annotations.where((a) => a.page == pageIndex && !a.isLink && a.rect.inflate(4).contains(p)).toList();
+        final hit = host.annotations
+            .where((a) => a.page == pageIndex && !a.isLink && a.rect.inflate(4).contains(p))
+            .toList();
         if (hit.isNotEmpty) {
           final a = hit.last;
           vs.select(a);
@@ -162,8 +178,16 @@ class _FillSignLayerState extends State<FillSignLayer> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ListTile(leading: const Icon(Icons.open_with), title: const Text('Move or resize'), onTap: () => Navigator.pop(ctx, 'move')),
-                  ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(ctx).colorScheme.error), title: const Text('Delete'), onTap: () => Navigator.pop(ctx, 'delete')),
+                  ListTile(
+                    leading: const Icon(Symbols.open_with),
+                    title: const Text('Move or resize'),
+                    onTap: () => Navigator.pop(ctx, 'move'),
+                  ),
+                  ListTile(
+                    leading: Icon(Symbols.delete_outline, color: Theme.of(ctx).colorScheme.error),
+                    title: const Text('Delete'),
+                    onTap: () => Navigator.pop(ctx, 'delete'),
+                  ),
                 ],
               ),
             ),
@@ -181,17 +205,20 @@ class _FillSignLayerState extends State<FillSignLayer> {
         final longest = lines.fold<int>(0, (m, l) => math.max(m, l.length));
         final w = math.min(widget.page.width - p.dx - 2, longest * vs.fontSize * 0.58 + 10);
         final h = lines.length * vs.fontSize * 1.25 + 6;
-        await host.edit('Add text', (i, o) => PdfEngine.instance.addAnnotations(i, o, [
-          {
-            'type': 'freetext',
-            'page': pageIndex,
-            'rect': [p.dx, p.dy - h / 2, p.dx + w, p.dy + h / 2],
-            'text': text,
-            'fontSize': vs.fontSize,
-            'color': colorToInt(color),
-            'author': author,
-          },
-        ], password: pw));
+        await host.edit(
+          'Add text',
+          (i, o) => PdfEngine.instance.addAnnotations(i, o, [
+            {
+              'type': 'freetext',
+              'page': pageIndex,
+              'rect': [p.dx, p.dy - h / 2, p.dx + w, p.dy + h / 2],
+              'text': text,
+              'fontSize': vs.fontSize,
+              'color': colorToInt(color),
+              'author': author,
+            },
+          ], password: pw),
+        );
       case FillTool.check:
       case FillTool.cross:
       case FillTool.dot:
@@ -240,10 +267,14 @@ class _FillSignLayerState extends State<FillSignLayer> {
       child: FutureBuilder<List<Map<String, dynamic>>>(
         future: _fields,
         builder: (context, snap) {
-          final fields = (snap.data ?? const []).where((f) => f['page'] == pageIndex && f['hidden'] != true && f['type'] != 'button').toList();
+          final fields = (snap.data ?? const [])
+              .where((f) => f['page'] == pageIndex && f['hidden'] != true && f['type'] != 'button')
+              .toList();
           return Stack(
             children: [
-              Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTapUp: _onTapUp)),
+              Positioned.fill(
+                child: GestureDetector(behavior: HitTestBehavior.translucent, onTapUp: _onTapUp),
+              ),
               if (vs.fillTool == FillTool.select)
                 for (final f in fields)
                   Positioned.fromRect(
@@ -253,8 +284,14 @@ class _FillSignLayerState extends State<FillSignLayer> {
                       onTap: () => _onField(f),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: (f['readOnly'] == true ? Colors.grey : const Color(0xFF3B82F6)).withValues(alpha: 0.10),
-                          border: Border.all(color: f['required'] == true ? Colors.red.shade400 : const Color(0xFF3B82F6).withValues(alpha: 0.6)),
+                          color: (f['readOnly'] == true ? Colors.grey : const Color(0xFF3B82F6)).withValues(
+                            alpha: 0.10,
+                          ),
+                          border: Border.all(
+                            color: f['required'] == true
+                                ? Colors.red.shade400
+                                : const Color(0xFF3B82F6).withValues(alpha: 0.6),
+                          ),
                         ),
                       ),
                     ),
@@ -267,7 +304,17 @@ class _FillSignLayerState extends State<FillSignLayer> {
                   keepAspect: selected.type == 'Stamp',
                   onChanged: (r) async {
                     vs.select(null);
-                    await host.edit('Move', (i, o) => PdfEngine.instance.updateAnnotation(i, o, page: selected.page, id: selected.id, rect: r, password: pw));
+                    await host.edit(
+                      'Move',
+                      (i, o) => PdfEngine.instance.updateAnnotation(
+                        i,
+                        o,
+                        page: selected.page,
+                        id: selected.id,
+                        rect: r,
+                        password: pw,
+                      ),
+                    );
                   },
                 ),
             ],
@@ -295,11 +342,17 @@ class FillSignToolbar extends StatelessWidget {
         child: Container(
           width: 66,
           margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-          decoration: BoxDecoration(color: sel ? scheme.primary.withValues(alpha: 0.14) : null, borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: sel ? scheme.primary.withValues(alpha: 0.14) : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconTheme(data: IconThemeData(color: sel ? scheme.primary : scheme.onSurfaceVariant), child: icon),
+              IconTheme(
+                data: IconThemeData(color: sel ? scheme.primary : scheme.onSurfaceVariant),
+                child: icon,
+              ),
               const SizedBox(height: 2),
               Text(label, style: TextStyle(fontSize: 11, color: sel ? scheme.primary : scheme.onSurfaceVariant)),
             ],
@@ -322,13 +375,15 @@ class FillSignToolbar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      vs.fillTool == FillTool.select ? 'Tap a form field to fill it, or choose a tool' : 'Tap on the page to place',
+                      vs.fillTool == FillTool.select
+                          ? 'Tap a form field to fill it, or choose a tool'
+                          : 'Tap on the page to place',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
                   IconButton(
                     tooltip: 'Color and size',
-                    icon: Icon(Icons.circle, color: vs.inkColor),
+                    icon: Icon(Symbols.circle, color: vs.inkColor),
                     onPressed: () => showStyleSheet(
                       context,
                       color: vs.inkColor,
@@ -349,13 +404,20 @@ class FillSignToolbar extends StatelessWidget {
                         final ok = await confirmDialog(
                           context,
                           title: 'Flatten form?',
-                          message: 'Field values, signatures and comments become part of the page and can no longer be edited.',
+                          message:
+                              'Field values, signatures and comments become part of the page and can no longer be edited.',
                           confirmLabel: 'Flatten',
                         );
-                        if (ok) await host.edit('Flatten', (i, o) => PdfEngine.instance.flatten(i, o, password: host.session.password));
+                        if (ok)
+                          await host.edit(
+                            'Flatten',
+                            (i, o) => PdfEngine.instance.flatten(i, o, password: host.session.password),
+                          );
                       }
                     },
-                    itemBuilder: (_) => const [PopupMenuItem(value: 'flatten', child: Text('Flatten form and signatures'))],
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'flatten', child: Text('Flatten form and signatures')),
+                    ],
                   ),
                 ],
               ),
@@ -366,12 +428,12 @@ class FillSignToolbar extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 children: [
-                  btn(FillTool.text, const Icon(Icons.text_fields), 'Text'),
-                  btn(FillTool.check, const Icon(Icons.check), 'Check'),
-                  btn(FillTool.cross, const Icon(Icons.close), 'Cross'),
-                  btn(FillTool.dot, const Icon(Icons.circle, size: 12), 'Dot'),
-                  btn(FillTool.signature, const Icon(Icons.draw_outlined), 'Sign'),
-                  btn(FillTool.initials, const Icon(Icons.short_text), 'Initials'),
+                  btn(FillTool.text, const Icon(Symbols.text_fields), 'Text'),
+                  btn(FillTool.check, const Icon(Symbols.check), 'Check'),
+                  btn(FillTool.cross, const Icon(Symbols.close), 'Cross'),
+                  btn(FillTool.dot, const Icon(Symbols.circle, size: 12), 'Dot'),
+                  btn(FillTool.signature, const Icon(Symbols.draw), 'Sign'),
+                  btn(FillTool.initials, const Icon(Symbols.short_text), 'Initials'),
                 ],
               ),
             ),

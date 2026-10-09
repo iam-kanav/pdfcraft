@@ -29,12 +29,7 @@ Canvas _checkerScene(Quad quad, int w, int h) {
 }
 
 void main() {
-  final quad = Quad.fromList(const [
-    Point(180.0, 90.0),
-    Point(760.0, 140.0),
-    Point(850.0, 700.0),
-    Point(90.0, 620.0),
-  ]);
+  final quad = Quad.fromList(const [Point(180.0, 90.0), Point(760.0, 140.0), Point(850.0, 700.0), Point(90.0, 620.0)]);
 
   test('checkerboard is rectified with the expected cell colors', () {
     final src = _checkerScene(quad, 1000, 800).toImage();
@@ -46,21 +41,12 @@ void main() {
       for (var cx = 0; cx < _cols; cx++) {
         final expectWhite = (cx + cy).isEven;
         // Sample a 3x3 patch around the cell centre and near its corners.
-        for (final (fx, fy) in [
-          (0.5, 0.5),
-          (0.2, 0.2),
-          (0.8, 0.8),
-          (0.2, 0.8),
-        ]) {
+        for (final (fx, fy) in [(0.5, 0.5), (0.2, 0.2), (0.8, 0.8), (0.2, 0.8)]) {
           final px = ((cx + fx) * cellW).floor();
           final py = ((cy + fy) * cellH).floor();
           final v = out.getPixel(px, py);
           if (expectWhite) {
-            expect(
-              v.r,
-              greaterThan(230),
-              reason: 'cell ($cx,$cy) at ($px,$py)',
-            );
+            expect(v.r, greaterThan(230), reason: 'cell ($cx,$cy) at ($px,$py)');
           } else {
             expect(v.r, lessThan(30), reason: 'cell ($cx,$cy) at ($px,$py)');
           }
@@ -77,14 +63,8 @@ void main() {
   test('default size follows the longest opposite edges', () {
     final src = _checkerScene(quad, 1000, 800).toImage();
     final out = warpPerspective(src, quad);
-    final expW = max(
-      quad.tl.distanceTo(quad.tr),
-      quad.bl.distanceTo(quad.br),
-    ).round();
-    final expH = max(
-      quad.tl.distanceTo(quad.bl),
-      quad.tr.distanceTo(quad.br),
-    ).round();
+    final expW = max(quad.tl.distanceTo(quad.tr), quad.bl.distanceTo(quad.br)).round();
+    final expH = max(quad.tl.distanceTo(quad.bl), quad.tr.distanceTo(quad.br)).round();
     expect(out.width, expW);
     expect(out.height, expH);
     expect(out.numChannels, 3);
@@ -102,20 +82,14 @@ void main() {
   });
 
   test('output size is capped at 3000 px', () {
-    final big = Quad.fromList(const [
-      Point(0.0, 0.0),
-      Point(6000.0, 0.0),
-      Point(6000.0, 4000.0),
-      Point(0.0, 4000.0),
-    ]);
+    final big = Quad.fromList(const [Point(0.0, 0.0), Point(6000.0, 0.0), Point(6000.0, 4000.0), Point(0.0, 4000.0)]);
     expect(warpOutputSize(big), (3000, 2000));
     expect(warpOutputSize(Quad.full(1200, 900)), (1200, 900));
   });
 
   test('full-image quad reproduces the source', () {
     final rnd = Random(3);
-    final c = Canvas(64, 48)
-      ..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
+    final c = Canvas(64, 48)..fill((_, _) => (rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
     final src = c.toImage();
     final out = warpPerspective(src, Quad.full(64, 48));
     expect(out.width, 64);

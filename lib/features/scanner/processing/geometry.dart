@@ -26,11 +26,7 @@ class Quad {
   /// Use [orderPoints] when the order is unknown.
   factory Quad.fromList(List<Point<num>> pts) {
     if (pts.length != 4) {
-      throw ArgumentError.value(
-        pts.length,
-        'pts',
-        'Quad needs exactly 4 points',
-      );
+      throw ArgumentError.value(pts.length, 'pts', 'Quad needs exactly 4 points');
     }
     return Quad(_toD(pts[0]), _toD(pts[1]), _toD(pts[2]), _toD(pts[3]));
   }
@@ -48,12 +44,7 @@ class Quad {
       throw FormatException('Invalid quad corner "$key": $v');
     }
 
-    return Quad(
-      parse(json['tl'], 'tl'),
-      parse(json['tr'], 'tr'),
-      parse(json['br'], 'br'),
-      parse(json['bl'], 'bl'),
-    );
+    return Quad(parse(json['tl'], 'tl'), parse(json['tr'], 'tr'), parse(json['br'], 'br'), parse(json['bl'], 'bl'));
   }
 
   /// Top-left corner.
@@ -96,10 +87,7 @@ class Quad {
 
   /// Clamps every corner into `[0, width] x [0, height]`.
   Quad clampTo(num width, num height) {
-    Point<double> c(Point<double> p) => Point(
-      p.x.clamp(0.0, width.toDouble()),
-      p.y.clamp(0.0, height.toDouble()),
-    );
+    Point<double> c(Point<double> p) => Point(p.x.clamp(0.0, width.toDouble()), p.y.clamp(0.0, height.toDouble()));
     return Quad(c(tl), c(tr), c(br), c(bl));
   }
 
@@ -126,8 +114,7 @@ class Quad {
   }
 
   /// Average of the corners.
-  Point<double> get centroid =>
-      Point((tl.x + tr.x + br.x + bl.x) / 4, (tl.y + tr.y + br.y + bl.y) / 4);
+  Point<double> get centroid => Point((tl.x + tr.x + br.x + bl.x) / 4, (tl.y + tr.y + br.y + bl.y) / 4);
 
   /// True when the quad is a strictly convex, non-self-intersecting polygon.
   bool get isConvex {
@@ -173,19 +160,13 @@ class Quad {
   /// smallest `x + y` becomes the top-left corner.
   static Quad orderPoints(List<Point<num>> pts) {
     if (pts.length != 4) {
-      throw ArgumentError.value(
-        pts.length,
-        'pts',
-        'Quad needs exactly 4 points',
-      );
+      throw ArgumentError.value(pts.length, 'pts', 'Quad needs exactly 4 points');
     }
     final p = pts.map(_toD).toList();
     final cx = (p[0].x + p[1].x + p[2].x + p[3].x) / 4;
     final cy = (p[0].y + p[1].y + p[2].y + p[3].y) / 4;
     // atan2 grows clockwise on screen because y points down.
-    p.sort(
-      (a, b) => atan2(a.y - cy, a.x - cx).compareTo(atan2(b.y - cy, b.x - cx)),
-    );
+    p.sort((a, b) => atan2(a.y - cy, a.x - cx).compareTo(atan2(b.y - cy, b.x - cx)));
     var start = 0;
     var best = double.infinity;
     for (var i = 0; i < 4; i++) {
@@ -195,34 +176,23 @@ class Quad {
         start = i;
       }
     }
-    return Quad(
-      p[start],
-      p[(start + 1) % 4],
-      p[(start + 2) % 4],
-      p[(start + 3) % 4],
-    );
+    return Quad(p[start], p[(start + 1) % 4], p[(start + 2) % 4], p[(start + 3) % 4]);
   }
 
   @override
   bool operator ==(Object other) =>
-      other is Quad &&
-      other.tl == tl &&
-      other.tr == tr &&
-      other.br == br &&
-      other.bl == bl;
+      other is Quad && other.tl == tl && other.tr == tr && other.br == br && other.bl == bl;
 
   @override
   int get hashCode => Object.hash(tl, tr, br, bl);
 
   @override
   String toString() {
-    String f(Point<double> p) =>
-        '(${p.x.toStringAsFixed(1)}, ${p.y.toStringAsFixed(1)})';
+    String f(Point<double> p) => '(${p.x.toStringAsFixed(1)}, ${p.y.toStringAsFixed(1)})';
     return 'Quad(tl: ${f(tl)}, tr: ${f(tr)}, br: ${f(br)}, bl: ${f(bl)})';
   }
 
-  static Point<double> _toD(Point<num> p) =>
-      Point(p.x.toDouble(), p.y.toDouble());
+  static Point<double> _toD(Point<num> p) => Point(p.x.toDouble(), p.y.toDouble());
 }
 
 /// Computes the homography `H` (3x3, row-major, `H[8] == 1`) that maps each
@@ -273,10 +243,7 @@ Point<double> applyHomography(List<double> h, Point<num> p) {
   final x = p.x.toDouble();
   final y = p.y.toDouble();
   final w = h[6] * x + h[7] * y + h[8];
-  return Point(
-    (h[0] * x + h[1] * y + h[2]) / w,
-    (h[3] * x + h[4] * y + h[5]) / w,
-  );
+  return Point((h[0] * x + h[1] * y + h[2]) / w, (h[3] * x + h[4] * y + h[5]) / w);
 }
 
 /// Inverse of a homography (normalised so the last element is 1 when

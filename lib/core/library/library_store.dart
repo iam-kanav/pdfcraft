@@ -54,7 +54,9 @@ class DocRecord {
     starred: j['starred'] as bool? ?? false,
     lastPage: j['lastPage'] as int? ?? 1,
     pageCount: j['pageCount'] as int?,
-    bookmarks: [for (final b in (j['bookmarks'] as List? ?? const [])) Bookmark.fromJson((b as Map).cast<String, dynamic>())],
+    bookmarks: [
+      for (final b in (j['bookmarks'] as List? ?? const [])) Bookmark.fromJson((b as Map).cast<String, dynamic>()),
+    ],
   );
 }
 

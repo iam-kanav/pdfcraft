@@ -28,25 +28,14 @@ void main() {
           TextSpanData(' plus '),
           TextSpanData('under', underline: true),
           TextSpanData(' and a '),
-          TextSpanData(
-            'link (with parens)',
-            link: 'https://example.com/a_(b)?x=1&y=2',
-          ),
+          TextSpanData('link (with parens)', link: 'https://example.com/a_(b)?x=1&y=2'),
           TextSpanData('.'),
         ],
       ),
       const ParagraphBlock(
-        spans: [
-          TextSpanData(
-            'Special chars: *stars* _under_ [brackets] <html> `code` \\ back ~tilde~ &amp; 5 > 3',
-          ),
-        ],
+        spans: [TextSpanData('Special chars: *stars* _under_ [brackets] <html> `code` \\ back ~tilde~ &amp; 5 > 3')],
       ),
-      const ParagraphBlock(
-        spans: [
-          TextSpanData('# not a heading\n- not a list\n1. not ordered\nline'),
-        ],
-      ),
+      const ParagraphBlock(spans: [TextSpanData('# not a heading\n- not a list\n1. not ordered\nline')]),
       const ParagraphBlock(
         spans: [
           TextSpanData('adjacent'),
@@ -57,25 +46,13 @@ void main() {
       ),
       const HeadingBlock(level: 3, spans: [TextSpanData('Lists')]),
       const ListItemBlock(spans: [TextSpanData('one')]),
-      const ListItemBlock(
-        spans: [TextSpanData('nested '), TextSpanData('two', bold: true)],
-        indent: 1,
-      ),
-      const ListItemBlock(
-        spans: [TextSpanData('deep ordered')],
-        ordered: true,
-        indent: 2,
-      ),
+      const ListItemBlock(spans: [TextSpanData('nested '), TextSpanData('two', bold: true)], indent: 1),
+      const ListItemBlock(spans: [TextSpanData('deep ordered')], ordered: true, indent: 2),
       const ListItemBlock(spans: [TextSpanData('three')]),
       const ParagraphBlock(spans: [TextSpanData('Between lists.')]),
       const ListItemBlock(spans: [TextSpanData('first')], ordered: true),
-      const ListItemBlock(
-        spans: [TextSpanData('second\ncontinued')],
-        ordered: true,
-      ),
-      const QuoteBlock(
-        spans: [TextSpanData('Quoted '), TextSpanData('text', italic: true)],
-      ),
+      const ListItemBlock(spans: [TextSpanData('second\ncontinued')], ordered: true),
+      const QuoteBlock(spans: [TextSpanData('Quoted '), TextSpanData('text', italic: true)]),
       ImageBlock(bytes: png, width: 30, height: 10),
       ImageBlock(bytes: jpeg, width: 20, height: 40, caption: 'A caption'),
       const TableBlock(
@@ -100,54 +77,33 @@ void main() {
     final export = buildMarkdownWithImages(sample());
     final md = export.markdown;
 
-    test(
-      'emits headings, emphasis, links, lists, tables and image references',
-      () {
-        expect(md, contains('# Title # with hash'));
-        expect(md, contains('**bold**'));
-        expect(md, contains('*italic*'));
-        expect(md, contains('<u>under</u>'));
-        // Emphasis bounded by punctuation falls back to HTML tags (CommonMark
-        // flanking rules would not recognise `**` there).
-        expect(md, contains('adjacent*italic*<strong>bold(punct)</strong>end'));
-        expect(
-          md,
-          contains('[link (with parens)](<https://example.com/a_(b)?x=1&y=2>)'),
-        );
-        expect(
-          md,
-          contains(
-            r'\*stars\* \_under\_ \[brackets\] \<html\> \`code\` \\ back \~tilde\~ \&amp; 5 \> 3',
-          ),
-        );
-        expect(md, contains('![image 1](image-1.png)'));
-        expect(md, contains('![A caption](image-2.jpg)'));
-        expect(md, contains(r'| Col \| A | Col \*B\* |'));
-        expect(md, contains('| --- | --- |'));
-        expect(md, contains('| 1 | x<br>y |'));
-        expect(
-          md,
-          contains(
-            '- one\n    - nested **two**\n        1. deep ordered\n- three',
-          ),
-        );
-        expect(md, contains('1. first\n2. second\\\n   continued'));
-        expect(md, contains(markdownPageBreak));
-        expect(export.images.keys, ['image-1.png', 'image-2.jpg']);
-        expect(export.images['image-1.png'], png);
-        expect(buildMarkdown(sample()), md);
-      },
-    );
+    test('emits headings, emphasis, links, lists, tables and image references', () {
+      expect(md, contains('# Title # with hash'));
+      expect(md, contains('**bold**'));
+      expect(md, contains('*italic*'));
+      expect(md, contains('<u>under</u>'));
+      // Emphasis bounded by punctuation falls back to HTML tags (CommonMark
+      // flanking rules would not recognise `**` there).
+      expect(md, contains('adjacent*italic*<strong>bold(punct)</strong>end'));
+      expect(md, contains('[link (with parens)](<https://example.com/a_(b)?x=1&y=2>)'));
+      expect(md, contains(r'\*stars\* \_under\_ \[brackets\] \<html\> \`code\` \\ back \~tilde\~ \&amp; 5 \> 3'));
+      expect(md, contains('![image 1](image-1.png)'));
+      expect(md, contains('![A caption](image-2.jpg)'));
+      expect(md, contains(r'| Col \| A | Col \*B\* |'));
+      expect(md, contains('| --- | --- |'));
+      expect(md, contains('| 1 | x<br>y |'));
+      expect(md, contains('- one\n    - nested **two**\n        1. deep ordered\n- three'));
+      expect(md, contains('1. first\n2. second\\\n   continued'));
+      expect(md, contains(markdownPageBreak));
+      expect(export.images.keys, ['image-1.png', 'image-2.jpg']);
+      expect(export.images['image-1.png'], png);
+      expect(buildMarkdown(sample()), md);
+    });
 
     test('round trips through parseMarkdown', () {
       final parsed = parseMarkdown(md, images: export.images);
-      expect(
-        parsed.blocks.map(describe).toList(),
-        sample().blocks.map(describe).toList(),
-      );
-      final link = (parsed.blocks[1] as ParagraphBlock).spans.firstWhere(
-        (s) => s.link != null,
-      );
+      expect(parsed.blocks.map(describe).toList(), sample().blocks.map(describe).toList());
+      final link = (parsed.blocks[1] as ParagraphBlock).spans.firstWhere((s) => s.link != null);
       expect(link.link, 'https://example.com/a_(b)?x=1&y=2');
       final images = parsed.blocks.whereType<ImageBlock>().toList();
       expect(images[0].bytes, png);
@@ -159,9 +115,7 @@ void main() {
 
   group('Markdown reader', () {
     test('ATX and setext headings, closing hashes', () {
-      final d = parseMarkdown(
-        '# One #\n\nTwo\n===\n\nThree\n---\n\n###### Six\n\n####### seven',
-      );
+      final d = parseMarkdown('# One #\n\nTwo\n===\n\nThree\n---\n\n###### Six\n\n####### seven');
       expect(d.blocks.map(describe).toList(), [
         [
           'H',
@@ -192,19 +146,12 @@ void main() {
 
     test('soft-wrapped lines are joined, hard breaks kept', () {
       final d = parseMarkdown('line one\nline two  \nline three\\\nline four');
-      expect(
-        (d.blocks.single as ParagraphBlock).text,
-        'line one line two\nline three\nline four',
-      );
+      expect((d.blocks.single as ParagraphBlock).text, 'line one line two\nline three\nline four');
     });
 
     test('emphasis variants', () {
-      final d = parseMarkdown(
-        '**b** __b2__ *i* _i2_ ***bi*** snake_case_word 2*3*4 ** not **',
-      );
-      final spans = (d.blocks.single as ParagraphBlock).spans
-          .map(describeSpan)
-          .toList();
+      final d = parseMarkdown('**b** __b2__ *i* _i2_ ***bi*** snake_case_word 2*3*4 ** not **');
+      final spans = (d.blocks.single as ParagraphBlock).spans.map(describeSpan).toList();
       expect(spans, [
         'B"b"',
         '" "',
@@ -226,9 +173,7 @@ void main() {
         'See [Dart](https://dart.dev "Dart site"), [ref][r], [Short], <https://a.b/c> and www.example.org.\n\n'
         '[r]: https://ref.example\n[short]: https://short.example',
       );
-      final links = (d.blocks.single as ParagraphBlock).spans
-          .where((s) => s.link != null)
-          .toList();
+      final links = (d.blocks.single as ParagraphBlock).spans.where((s) => s.link != null).toList();
       expect(links.map((s) => '${s.text}->${s.link}').toList(), [
         'Dart->https://dart.dev',
         'ref->https://ref.example',
@@ -239,9 +184,7 @@ void main() {
     });
 
     test('nested lists with different markers and lazy continuation', () {
-      final d = parseMarkdown(
-        '* a\n  continued\n  + b\n    1) c\n    2) d\n* e\n\n10. ten\n11. eleven',
-      );
+      final d = parseMarkdown('* a\n  continued\n  + b\n    1) c\n    2) d\n* e\n\n10. ten\n11. eleven');
       expect(d.blocks.map(describe).toList(), [
         [
           'LI',
@@ -340,23 +283,14 @@ void main() {
       ]);
     });
 
-    test(
-      'inline HTML: emphasis tags kept, others stripped, entities decoded',
-      () {
-        final d = parseMarkdown(
-          '<b>bold</b> <span class="x">plain</span> <!-- c --> &copy; &#x41; &unknown;',
-        );
-        final spans = (d.blocks.single as ParagraphBlock).spans
-            .map(describeSpan)
-            .toList();
-        expect(spans, ['B"bold"', '" plain  © A &unknown;"']);
-      },
-    );
+    test('inline HTML: emphasis tags kept, others stripped, entities decoded', () {
+      final d = parseMarkdown('<b>bold</b> <span class="x">plain</span> <!-- c --> &copy; &#x41; &unknown;');
+      final spans = (d.blocks.single as ParagraphBlock).spans.map(describeSpan).toList();
+      expect(spans, ['B"bold"', '" plain  © A &unknown;"']);
+    });
 
     test('data URI images are decoded, unresolved images dropped', () {
-      final d = parseMarkdown(
-        '![Logo](data:image/png;base64,${base64Encode(png)})\n\n![x](missing.png)',
-      );
+      final d = parseMarkdown('![Logo](data:image/png;base64,${base64Encode(png)})\n\n![x](missing.png)');
       final img = d.blocks.single as ImageBlock;
       expect(img.bytes, png);
       expect(img.caption, 'Logo');
@@ -381,12 +315,7 @@ void main() {
       expect(html, contains('<em>italic</em>'));
       expect(html, contains('<strong><em>bold-italic</em></strong>'));
       expect(html, contains('<u>under</u>'));
-      expect(
-        html,
-        contains(
-          '<a href="https://example.com/a_(b)?x=1&amp;y=2" rel="noopener noreferrer">',
-        ),
-      );
+      expect(html, contains('<a href="https://example.com/a_(b)?x=1&amp;y=2" rel="noopener noreferrer">'));
       expect(html, contains('&lt;html&gt;'));
       expect(
         html,
@@ -394,18 +323,9 @@ void main() {
           '<ul>\n<li>one<ul>\n<li>nested <strong>two</strong><ol>\n<li>deep ordered</li>\n</ol>\n</li>\n</ul>\n</li>\n<li>three</li>\n</ul>',
         ),
       );
-      expect(
-        html,
-        contains('<ol>\n<li>first</li>\n<li>second<br>\ncontinued</li>\n</ol>'),
-      );
-      expect(
-        html,
-        contains('<blockquote><p>Quoted <em>text</em></p></blockquote>'),
-      );
-      expect(
-        html,
-        contains('src="data:image/png;base64,${base64Encode(png)}"'),
-      );
+      expect(html, contains('<ol>\n<li>first</li>\n<li>second<br>\ncontinued</li>\n</ol>'));
+      expect(html, contains('<blockquote><p>Quoted <em>text</em></p></blockquote>'));
+      expect(html, contains('src="data:image/png;base64,${base64Encode(png)}"'));
       expect(html, contains('<figcaption>A caption</figcaption>'));
       expect(html, contains('<thead><tr><th scope="col">Col | A</th>'));
       expect(html, contains('<tbody>'));
@@ -436,10 +356,7 @@ void main() {
         ),
       );
       expect(html, isNot(contains('<script>')));
-      expect(
-        html,
-        contains('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;'),
-      );
+      expect(html, contains('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;'));
       expect(html, isNot(contains('javascript:')));
       expect(html, contains('href="https://x.y/&quot;onmouseover=&quot;z"'));
       expect(html, contains('<title>&lt;/title&gt;&lt;script&gt;</title>'));
@@ -493,26 +410,14 @@ void main() {
         ],
       ]);
       expect(parsePlainText('\r\n\r\n').blocks, isEmpty);
-      expect(
-        parsePlainText('A. Smith wrote this.').blocks.single,
-        isA<ParagraphBlock>(),
-      );
+      expect(parsePlainText('A. Smith wrote this.').blocks.single, isA<ParagraphBlock>());
     });
 
     test('structureToPlainText formats every block type', () {
       final text = structureToPlainText(sample());
-      expect(
-        text,
-        startsWith('Title # with hash\n=================\n\nText with bold'),
-      );
-      expect(
-        text,
-        contains('link (with parens) (https://example.com/a_(b)?x=1&y=2).'),
-      );
-      expect(
-        text,
-        contains('• one\n    – nested two\n        i. deep ordered\n• three'),
-      );
+      expect(text, startsWith('Title # with hash\n=================\n\nText with bold'));
+      expect(text, contains('link (with parens) (https://example.com/a_(b)?x=1&y=2).'));
+      expect(text, contains('• one\n    – nested two\n        i. deep ordered\n• three'));
       expect(text, contains('1. first\n2. second\n   continued'));
       expect(text, contains('> Quoted text'));
       expect(text, contains('[Image]\n\n[Image: A caption]'));

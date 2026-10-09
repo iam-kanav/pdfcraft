@@ -37,12 +37,7 @@ const int kMaxWarpSide = 3000;
 /// aspect ratio. Uses inverse mapping with bilinear interpolation and
 /// clamp-to-edge sampling. The output has the same channel count as [src]
 /// when it is an 8-bit RGB/RGBA image, RGB otherwise.
-img.Image warpPerspective(
-  img.Image src,
-  Quad quad, {
-  int? outWidth,
-  int? outHeight,
-}) {
+img.Image warpPerspective(img.Image src, Quad quad, {int? outWidth, int? outHeight}) {
   final raster = Raster.fromImage(src, allowAlpha: true);
   final (natW, natH) = warpOutputSize(quad);
   int dw, dh;
@@ -119,13 +114,7 @@ Raster warpRaster(Raster src, Quad quad, int dw, int dh) {
       final w10 = (1 - fx) * fy;
       final w11 = fx * fy;
       for (var c = 0; c < nc; c++) {
-        out[o++] =
-            (s[p00 + c] * w00 +
-                    s[p01 + c] * w01 +
-                    s[p10 + c] * w10 +
-                    s[p11 + c] * w11 +
-                    0.5)
-                .toInt();
+        out[o++] = (s[p00 + c] * w00 + s[p01 + c] * w01 + s[p10 + c] * w10 + s[p11 + c] * w11 + 0.5).toInt();
       }
     }
   }

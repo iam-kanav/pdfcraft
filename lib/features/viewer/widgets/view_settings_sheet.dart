@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/app_settings.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
-Future<void> showViewSettingsSheet(BuildContext context) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  builder: (ctx) => const _ViewSettings(),
-);
+Future<void> showViewSettingsSheet(BuildContext context) =>
+    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => const _ViewSettings());
 
 class _ViewSettings extends StatelessWidget {
   const _ViewSettings();
@@ -21,14 +19,25 @@ class _ViewSettings extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('View settings', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              'View settings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 16),
             const Text('Page layout'),
             const SizedBox(height: 8),
             SegmentedButton<PageScrollMode>(
               segments: const [
-                ButtonSegment(value: PageScrollMode.continuous, icon: Icon(Icons.view_day_outlined), label: Text('Continuous')),
-                ButtonSegment(value: PageScrollMode.singlePage, icon: Icon(Icons.view_carousel_outlined), label: Text('Single page')),
+                ButtonSegment(
+                  value: PageScrollMode.continuous,
+                  icon: Icon(Symbols.view_day),
+                  label: Text('Continuous'),
+                ),
+                ButtonSegment(
+                  value: PageScrollMode.singlePage,
+                  icon: Icon(Symbols.view_carousel),
+                  label: Text('Single page'),
+                ),
               ],
               selected: {s.scrollMode},
               onSelectionChanged: (v) => s.scrollMode = v.first,
@@ -36,7 +45,7 @@ class _ViewSettings extends StatelessWidget {
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.dark_mode_outlined),
+              secondary: const Icon(Symbols.dark_mode),
               title: const Text('Night mode'),
               subtitle: const Text('Invert page colors for reading in the dark'),
               value: s.nightPages,
@@ -56,9 +65,23 @@ class _ViewSettings extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text('Read aloud speed', style: Theme.of(context).textTheme.bodyMedium),
-            Slider(value: s.ttsRate, min: 0.2, max: 1.0, divisions: 8, label: s.ttsRate.toStringAsFixed(1), onChanged: (v) => s.ttsRate = v),
+            Slider(
+              value: s.ttsRate,
+              min: 0.2,
+              max: 1.0,
+              divisions: 8,
+              label: s.ttsRate.toStringAsFixed(1),
+              onChanged: (v) => s.ttsRate = v,
+            ),
             Text('Voice pitch', style: Theme.of(context).textTheme.bodyMedium),
-            Slider(value: s.ttsPitch, min: 0.5, max: 2.0, divisions: 6, label: s.ttsPitch.toStringAsFixed(1), onChanged: (v) => s.ttsPitch = v),
+            Slider(
+              value: s.ttsPitch,
+              min: 0.5,
+              max: 2.0,
+              divisions: 6,
+              label: s.ttsPitch.toStringAsFixed(1),
+              onChanged: (v) => s.ttsPitch = v,
+            ),
           ],
         ),
       ),

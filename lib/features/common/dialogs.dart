@@ -92,7 +92,12 @@ void showSnack(BuildContext context, String message, {SnackBarAction? action, bo
 }
 
 /// Runs [task] while showing a blocking progress dialog. Errors are shown as a snackbar and rethrown as null.
-Future<T?> runWithProgress<T>(BuildContext context, String label, Future<T> Function() task, {bool showErrors = true}) async {
+Future<T?> runWithProgress<T>(
+  BuildContext context,
+  String label,
+  Future<T> Function() task, {
+  bool showErrors = true,
+}) async {
   final nav = Navigator.of(context, rootNavigator: true);
   var open = true;
   showDialog<void>(

@@ -142,10 +142,10 @@ class ReadingSettings extends ChangeNotifier {
 
   /// Flutter font family for [fontFamily] (null = platform default/Roboto).
   String? get flutterFontFamily => switch (_fontFamily) {
-        'serif' => 'serif',
-        'mono' => 'monospace',
-        _ => null,
-      };
+    'serif' => 'serif',
+    'mono' => 'monospace',
+    _ => null,
+  };
 
   /// Loads persisted values. Safe to call more than once.
   Future<void> load() async {

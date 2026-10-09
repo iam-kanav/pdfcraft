@@ -104,14 +104,7 @@ Future<Uint8List> processScanBytes(ScanRequest r) async {
   raster = fitRaster(raster, maxDim);
 
   final filter = ScanFilter.fromName(r.filter);
-  final filtered = filterRgb(
-    raster.data,
-    raster.width,
-    raster.height,
-    filter,
-    r.brightness,
-    r.contrast,
-  );
+  final filtered = filterRgb(raster.data, raster.width, raster.height, filter, r.brightness, r.contrast);
   var out = Raster(raster.width, raster.height, 3, filtered);
 
   final turns = _quarterTurns(r.rotation);
@@ -140,8 +133,7 @@ img.Image? decodeOriented(Uint8List encoded) {
     return null;
   }
   if (image == null) return null;
-  if (image.exif.imageIfd.hasOrientation &&
-      image.exif.imageIfd.orientation != 1) {
+  if (image.exif.imageIfd.hasOrientation && image.exif.imageIfd.orientation != 1) {
     image = img.bakeOrientation(image);
   }
   return image;

@@ -8,6 +8,7 @@ import '../../core/native/pdf_engine.dart';
 import '../../core/util/format.dart';
 import '../common/dialogs.dart';
 import '../common/open_actions.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 enum SplitMode { everyN, ranges, single }
 
@@ -32,9 +33,12 @@ class _SplitScreenState extends State<SplitScreen> {
   @override
   void initState() {
     super.initState();
-    PdfEngine.instance.info(widget.path, password: widget.password).then((i) => setState(() => _count = i.pageCount)).catchError((Object e) {
-      if (mounted) showSnack(context, friendlyError(e), error: true);
-    });
+    PdfEngine.instance
+        .info(widget.path, password: widget.password)
+        .then((i) => setState(() => _count = i.pageCount))
+        .catchError((Object e) {
+          if (mounted) showSnack(context, friendlyError(e), error: true);
+        });
   }
 
   List<(int, int)> _computeRanges() {
@@ -74,7 +78,13 @@ class _SplitScreenState extends State<SplitScreen> {
     try {
       final base = p.basenameWithoutExtension(widget.path);
       final dir = FileService.uniquePath(p.dirname(widget.path), '$base (split)');
-      final outs = await PdfEngine.instance.split(widget.path, dir, sanitizeFileName(base), ranges, password: widget.password);
+      final outs = await PdfEngine.instance.split(
+        widget.path,
+        dir,
+        sanitizeFileName(base),
+        ranges,
+        password: widget.password,
+      );
       setState(() => _outputs = outs);
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
@@ -95,27 +105,56 @@ class _SplitScreenState extends State<SplitScreen> {
               children: [
                 Text('${p.basename(widget.path)} · $count pages', style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 12),
-                RadioListTile(value: SplitMode.everyN, groupValue: _mode, onChanged: (v) => setState(() => _mode = v!), title: const Text('Split every N pages')),
+                RadioListTile(
+                  value: SplitMode.everyN,
+                  groupValue: _mode,
+                  onChanged: (v) => setState(() => _mode = v!),
+                  title: const Text('Split every N pages'),
+                ),
                 if (_mode == SplitMode.everyN)
                   Padding(
                     padding: const EdgeInsets.only(left: 56, right: 16),
-                    child: TextField(controller: _n, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Pages per file')),
+                    child: TextField(
+                      controller: _n,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Pages per file'),
+                    ),
                   ),
-                RadioListTile(value: SplitMode.ranges, groupValue: _mode, onChanged: (v) => setState(() => _mode = v!), title: const Text('Custom ranges')),
+                RadioListTile(
+                  value: SplitMode.ranges,
+                  groupValue: _mode,
+                  onChanged: (v) => setState(() => _mode = v!),
+                  title: const Text('Custom ranges'),
+                ),
                 if (_mode == SplitMode.ranges)
                   Padding(
                     padding: const EdgeInsets.only(left: 56, right: 16),
-                    child: TextField(controller: _ranges, decoration: InputDecoration(labelText: 'Ranges', hintText: 'e.g. 1-3, 4-$count')),
+                    child: TextField(
+                      controller: _ranges,
+                      decoration: InputDecoration(labelText: 'Ranges', hintText: 'e.g. 1-3, 4-$count'),
+                    ),
                   ),
-                RadioListTile(value: SplitMode.single, groupValue: _mode, onChanged: (v) => setState(() => _mode = v!), title: const Text('One file per page')),
+                RadioListTile(
+                  value: SplitMode.single,
+                  groupValue: _mode,
+                  onChanged: (v) => setState(() => _mode = v!),
+                  title: const Text('One file per page'),
+                ),
                 const SizedBox(height: 16),
-                FilledButton.icon(onPressed: _busy ? null : _split, icon: const Icon(Icons.call_split), label: Text(_busy ? 'Splitting…' : 'Split')),
+                FilledButton.icon(
+                  onPressed: _busy ? null : _split,
+                  icon: const Icon(Symbols.call_split),
+                  label: Text(_busy ? 'Splitting…' : 'Split'),
+                ),
                 if (_outputs != null) ...[
                   const SizedBox(height: 16),
-                  Text('Created ${_outputs!.length} files in "${p.basename(p.dirname(_outputs!.first))}"', style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    'Created ${_outputs!.length} files in "${p.basename(p.dirname(_outputs!.first))}"',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   for (final o in _outputs!)
                     ListTile(
-                      leading: const Icon(Icons.picture_as_pdf),
+                      leading: const Icon(Symbols.picture_as_pdf),
                       title: Text(p.basename(o)),
                       subtitle: Text(formatBytes(File(o).lengthSync())),
                       onTap: () => openDocument(context, o),

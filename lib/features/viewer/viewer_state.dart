@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../../core/native/pdf_engine.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 enum ViewerMode { read, comment, edit, fillSign, redact }
 
@@ -28,24 +29,32 @@ extension CommentToolX on CommentTool {
   };
 
   IconData get icon => switch (this) {
-    CommentTool.select => Icons.near_me_outlined,
-    CommentTool.note => Icons.sticky_note_2_outlined,
-    CommentTool.highlight => Icons.border_color_outlined,
-    CommentTool.underline => Icons.format_underline,
-    CommentTool.strikeout => Icons.format_strikethrough,
-    CommentTool.squiggly => Icons.waves,
-    CommentTool.freeText => Icons.text_fields,
-    CommentTool.ink => Icons.gesture,
-    CommentTool.rect => Icons.crop_square,
-    CommentTool.ellipse => Icons.circle_outlined,
-    CommentTool.line => Icons.horizontal_rule,
-    CommentTool.arrow => Icons.arrow_right_alt,
+    CommentTool.select => Symbols.near_me,
+    CommentTool.note => Symbols.sticky_note_2,
+    CommentTool.highlight => Symbols.border_color,
+    CommentTool.underline => Symbols.format_underlined,
+    CommentTool.strikeout => Symbols.format_strikethrough,
+    CommentTool.squiggly => Symbols.waves,
+    CommentTool.freeText => Symbols.text_fields,
+    CommentTool.ink => Symbols.gesture,
+    CommentTool.rect => Symbols.crop_square,
+    CommentTool.ellipse => Symbols.circle,
+    CommentTool.line => Symbols.horizontal_rule,
+    CommentTool.arrow => Symbols.arrow_right_alt,
   };
 
   bool get isTextMarkup =>
-      this == CommentTool.highlight || this == CommentTool.underline || this == CommentTool.strikeout || this == CommentTool.squiggly;
+      this == CommentTool.highlight ||
+      this == CommentTool.underline ||
+      this == CommentTool.strikeout ||
+      this == CommentTool.squiggly;
 
-  bool get isDrag => this == CommentTool.ink || this == CommentTool.rect || this == CommentTool.ellipse || this == CommentTool.line || this == CommentTool.arrow;
+  bool get isDrag =>
+      this == CommentTool.ink ||
+      this == CommentTool.rect ||
+      this == CommentTool.ellipse ||
+      this == CommentTool.line ||
+      this == CommentTool.arrow;
 
   String get annotationType => switch (this) {
     CommentTool.highlight => 'highlight',
@@ -99,18 +108,18 @@ class AnnotInfo {
   };
 
   IconData get icon => switch (type) {
-    'Text' => Icons.sticky_note_2_outlined,
-    'Highlight' => Icons.border_color_outlined,
-    'Underline' => Icons.format_underline,
-    'StrikeOut' => Icons.format_strikethrough,
-    'FreeText' => Icons.text_fields,
-    'Ink' => Icons.gesture,
-    'Square' => Icons.crop_square,
-    'Circle' => Icons.circle_outlined,
-    'Line' => Icons.horizontal_rule,
-    'Stamp' => Icons.approval_outlined,
-    'Link' => Icons.link,
-    _ => Icons.comment_outlined,
+    'Text' => Symbols.sticky_note_2,
+    'Highlight' => Symbols.border_color,
+    'Underline' => Symbols.format_underlined,
+    'StrikeOut' => Symbols.format_strikethrough,
+    'FreeText' => Symbols.text_fields,
+    'Ink' => Symbols.gesture,
+    'Square' => Symbols.crop_square,
+    'Circle' => Symbols.circle,
+    'Line' => Symbols.horizontal_rule,
+    'Stamp' => Symbols.approval,
+    'Link' => Symbols.link,
+    _ => Symbols.comment,
   };
 }
 
@@ -181,7 +190,8 @@ class ViewerState extends ChangeNotifier {
 
   set editTool(EditTool t) {
     _editTool = t;
-    panLocked = t == EditTool.rect || t == EditTool.ellipse || t == EditTool.line || t == EditTool.arrow || t == EditTool.link;
+    panLocked =
+        t == EditTool.rect || t == EditTool.ellipse || t == EditTool.line || t == EditTool.arrow || t == EditTool.link;
     notifyListeners();
   }
 

@@ -13,12 +13,10 @@ import 'package:image/image.dart' as img;
 /// A tightly packed, interleaved 8-bit raster (`width * height * channels`).
 class Raster {
   /// Wraps [data] (not copied).
-  Raster(this.width, this.height, this.channels, this.data)
-    : assert(data.length >= width * height * channels);
+  Raster(this.width, this.height, this.channels, this.data) : assert(data.length >= width * height * channels);
 
   /// Allocates a zero-filled raster.
-  Raster.alloc(this.width, this.height, this.channels)
-    : data = Uint8List(width * height * channels);
+  Raster.alloc(this.width, this.height, this.channels) : data = Uint8List(width * height * channels);
 
   /// Returns a raster view of [src].
   ///
@@ -206,14 +204,7 @@ Uint8List resizeArea(Uint8List src, int sw, int sh, int nc, int dw, int dh) {
 
 /// Resizes an interleaved buffer with bilinear interpolation (pixel-center
 /// aligned). Suitable for upscaling or mild downscaling.
-Uint8List resizeBilinear(
-  Uint8List src,
-  int sw,
-  int sh,
-  int nc,
-  int dw,
-  int dh,
-) {
+Uint8List resizeBilinear(Uint8List src, int sw, int sh, int nc, int dw, int dh) {
   final out = Uint8List(dw * dh * nc);
   final sxScale = sw / dw;
   final syScale = sh / dh;
@@ -264,12 +255,7 @@ Uint8List resizeBuffer(Uint8List src, int sw, int sh, int nc, int dw, int dh) {
 Raster fitRaster(Raster r, int maxSide) {
   final (w, h) = fitWithin(r.width, r.height, maxSide);
   if (w == r.width && h == r.height) return r;
-  return Raster(
-    w,
-    h,
-    r.channels,
-    resizeArea(r.data, r.width, r.height, r.channels, w, h),
-  );
+  return Raster(w, h, r.channels, resizeArea(r.data, r.width, r.height, r.channels, w, h));
 }
 
 /// Separable box blur of a float plane with radius [r] (window `2r+1`),

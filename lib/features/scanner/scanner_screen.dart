@@ -15,6 +15,7 @@ import '../viewer/viewer_screen.dart';
 import 'processing/edge_detector.dart';
 import 'processing/geometry.dart';
 import 'scan_review_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Camera capture with live document edge detection (Acrobat Scan-style).
 class ScannerScreen extends StatefulWidget {
@@ -76,7 +77,12 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
         return;
       }
       final back = cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back, orElse: () => cameras.first);
-      final c = CameraController(back, ResolutionPreset.veryHigh, enableAudio: false, imageFormatGroup: ImageFormatGroup.yuv420);
+      final c = CameraController(
+        back,
+        ResolutionPreset.veryHigh,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.yuv420,
+      );
       await c.initialize();
       try {
         await c.setFlashMode(FlashMode.off);
@@ -92,7 +98,11 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       });
       await c.startImageStream(_onFrame);
     } on CameraException catch (e) {
-      setState(() => _error = e.code == 'CameraAccessDenied' ? 'Camera permission was denied. Allow it in Settings, or import photos instead.' : 'Camera error: ${e.description}');
+      setState(
+        () => _error = e.code == 'CameraAccessDenied'
+            ? 'Camera permission was denied. Allow it in Settings, or import photos instead.'
+            : 'Camera error: ${e.description}',
+      );
     } catch (e) {
       setState(() => _error = 'Camera error: $e');
     }
@@ -107,11 +117,13 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
     final plane = frame.planes.first;
     final sensor = _camera?.description.sensorOrientation ?? 90;
     final args = (Uint8List.fromList(plane.bytes), frame.width, frame.height, plane.bytesPerRow, sensor);
-    Isolate.run(() => detectFromLuma(args.$1, args.$2, args.$3, args.$4, args.$5)).then((quad) {
-      if (!mounted) return;
-      setState(() => _liveQuad = quad);
-      _checkStable(quad);
-    }).whenComplete(() => _detecting = false);
+    Isolate.run(() => detectFromLuma(args.$1, args.$2, args.$3, args.$4, args.$5))
+        .then((quad) {
+          if (!mounted) return;
+          setState(() => _liveQuad = quad);
+          _checkStable(quad);
+        })
+        .whenComplete(() => _detecting = false);
   }
 
   void _checkStable(List<Offset>? quad) {
@@ -170,7 +182,9 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       Navigator.pop(context, _pages);
       return;
     }
-    final result = await Navigator.of(context).push<Object>(MaterialPageRoute(builder: (_) => ScanReviewScreen(pages: _pages)));
+    final result = await Navigator.of(
+      context,
+    ).push<Object>(MaterialPageRoute(builder: (_) => ScanReviewScreen(pages: _pages)));
     if (!mounted) return;
     if (result is String) {
       // Saved: replace the scanner with the viewer for the new PDF.
@@ -198,7 +212,7 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
         actions: [
           IconButton(
             tooltip: _flash ? 'Flash off' : 'Flash on',
-            icon: Icon(_flash ? Icons.flash_on : Icons.flash_off),
+            icon: Icon(_flash ? Symbols.flash_on : Symbols.flash_off),
             onPressed: c == null
                 ? null
                 : () async {
@@ -217,7 +231,16 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
         children: [
           Expanded(
             child: _error != null
-                ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70))))
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  )
                 : c == null || !c.value.isInitialized
                 ? const Center(child: CircularProgressIndicator())
                 : Center(
@@ -241,16 +264,28 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
               top: false,
               child: Row(
                 children: [
-                  IconButton(onPressed: _import, icon: const Icon(Icons.photo_library_outlined, color: Colors.white), tooltip: 'Import photos'),
+                  IconButton(
+                    onPressed: _import,
+                    icon: const Icon(Symbols.photo_library, color: Colors.white),
+                    tooltip: 'Import photos',
+                  ),
                   const Spacer(),
                   GestureDetector(
                     onTap: _capture,
                     child: Container(
                       width: 72,
                       height: 72,
-                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 4)),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                      ),
                       padding: const EdgeInsets.all(4),
-                      child: Container(decoration: BoxDecoration(shape: BoxShape.circle, color: _capturing ? Colors.white54 : Colors.white)),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _capturing ? Colors.white54 : Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const Spacer(),
@@ -263,8 +298,24 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
                           ? const SizedBox()
                           : Stack(
                               children: [
-                                Positioned.fill(child: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.memory(_pages.last.thumbnail, fit: BoxFit.cover))),
-                                Positioned(right: 0, top: 0, child: CircleAvatar(radius: 11, backgroundColor: Theme.of(context).colorScheme.primary, child: Text('${_pages.length}', style: const TextStyle(fontSize: 11, color: Colors.white)))),
+                                Positioned.fill(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.memory(_pages.last.thumbnail, fit: BoxFit.cover),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: CircleAvatar(
+                                    radius: 11,
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    child: Text(
+                                      '${_pages.length}',
+                                      style: const TextStyle(fontSize: 11, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                     ),
@@ -326,10 +377,13 @@ class _QuadPainter extends CustomPainter {
     path.close();
     final color = stable ? const Color(0xFF22C55E) : const Color(0xFF3B82F6);
     canvas.drawPath(path, Paint()..color = color.withValues(alpha: 0.18));
-    canvas.drawPath(path, Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
   }
 
   @override

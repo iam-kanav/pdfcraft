@@ -25,8 +25,13 @@ class SignatureStore {
 
   List<SavedSignature> list(SignatureKind kind) {
     if (!dir.existsSync()) return [];
-    final files = dir.listSync().whereType<File>().where((f) => p.basename(f.path).startsWith(_prefix(kind)) && f.path.endsWith('.png')).toList()
-      ..sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+    final files =
+        dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => p.basename(f.path).startsWith(_prefix(kind)) && f.path.endsWith('.png'))
+            .toList()
+          ..sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
     return [for (final f in files) SavedSignature(f, kind)];
   }
 

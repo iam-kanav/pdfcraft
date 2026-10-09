@@ -1,13 +1,7 @@
 /// Offline document conversion engine (pure Dart).
 library;
 
-export 'convert_utils.dart'
-    show
-        ImageKind,
-        detectImageKind,
-        readImageSize,
-        stripInvalidXmlChars,
-        xmlEscape;
+export 'convert_utils.dart' show ImageKind, detectImageKind, readImageSize, stripInvalidXmlChars, xmlEscape;
 export 'docx_reader.dart';
 export 'docx_writer.dart';
 export 'html_writer.dart';

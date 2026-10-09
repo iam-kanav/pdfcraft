@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../../core/services.dart';
 import 'viewer_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// A sentence-sized piece of page text to speak.
 class TtsChunk {
@@ -205,17 +206,25 @@ class TtsBar extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 8),
-            Icon(Icons.record_voice_over, color: scheme.primary),
+            Icon(Symbols.record_voice_over, color: scheme.primary),
             const SizedBox(width: 8),
             Expanded(child: Text(tts.current == null ? 'Read aloud' : 'Reading page ${tts.page}', maxLines: 1)),
-            IconButton(tooltip: 'Previous sentence', icon: const Icon(Icons.skip_previous), onPressed: () => tts.skip(-1)),
+            IconButton(
+              tooltip: 'Previous sentence',
+              icon: const Icon(Symbols.skip_previous),
+              onPressed: () => tts.skip(-1),
+            ),
             IconButton(
               tooltip: tts.playing ? 'Pause' : 'Play',
-              icon: Icon(tts.playing ? Icons.pause_circle_filled : Icons.play_circle_fill, size: 34, color: scheme.primary),
+              icon: Icon(
+                tts.playing ? Symbols.pause_circle_filled : Symbols.play_circle,
+                size: 34,
+                color: scheme.primary,
+              ),
               onPressed: () => tts.playing ? tts.pause() : tts.resume(),
             ),
-            IconButton(tooltip: 'Next sentence', icon: const Icon(Icons.skip_next), onPressed: () => tts.skip(1)),
-            IconButton(tooltip: 'Stop', icon: const Icon(Icons.close), onPressed: tts.stop),
+            IconButton(tooltip: 'Next sentence', icon: const Icon(Symbols.skip_next), onPressed: () => tts.skip(1)),
+            IconButton(tooltip: 'Stop', icon: const Icon(Symbols.close), onPressed: tts.stop),
           ],
         ),
       ),

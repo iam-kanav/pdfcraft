@@ -37,9 +37,15 @@ class Samples {
             children: [
               pw.Text('Chapter $i Heading', style: pw.TextStyle(font: bold, fontSize: 24)),
               pw.SizedBox(height: 16),
-              pw.Text('Hello World page $i. This is the first paragraph of sample text used for testing.', style: pw.TextStyle(font: regular, fontSize: 12)),
+              pw.Text(
+                'Hello World page $i. This is the first paragraph of sample text used for testing.',
+                style: pw.TextStyle(font: regular, fontSize: 12),
+              ),
               pw.SizedBox(height: 12),
-              pw.Text('The account number is SECRET123 and must be hidden.', style: pw.TextStyle(font: regular, fontSize: 12)),
+              pw.Text(
+                'The account number is SECRET123 and must be hidden.',
+                style: pw.TextStyle(font: regular, fontSize: 12),
+              ),
               pw.SizedBox(height: 12),
               if (i == 1) pw.Image(image, width: 200, height: 133),
               pw.SizedBox(height: 12),
@@ -65,9 +71,19 @@ class Samples {
           children: [
             pw.Text('Application form', style: pw.TextStyle(font: regular, fontSize: 20)),
             pw.SizedBox(height: 20),
-            pw.Row(children: [pw.Text('Name: ', style: pw.TextStyle(font: regular)), pw.TextField(name: 'name', width: 200, height: 20)]),
+            pw.Row(
+              children: [
+                pw.Text('Name: ', style: pw.TextStyle(font: regular)),
+                pw.TextField(name: 'name', width: 200, height: 20),
+              ],
+            ),
             pw.SizedBox(height: 20),
-            pw.Row(children: [pw.Text('Agree: ', style: pw.TextStyle(font: regular)), pw.Checkbox(name: 'agree', value: false)]),
+            pw.Row(
+              children: [
+                pw.Text('Agree: ', style: pw.TextStyle(font: regular)),
+                pw.Checkbox(name: 'agree', value: false),
+              ],
+            ),
           ],
         ),
       ),

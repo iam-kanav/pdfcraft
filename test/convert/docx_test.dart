@@ -28,46 +28,22 @@ DocStructure richDoc(Uint8List png, Uint8List jpeg) => DocStructure(
         TextSpanData(' see '),
         TextSpanData('the link', link: 'https://example.com/a?b=1&c=2'),
         TextSpanData(' and '),
-        TextSpanData(
-          'bold link',
-          bold: true,
-          link: 'mailto:someone@example.com',
-        ),
+        TextSpanData('bold link', bold: true, link: 'mailto:someone@example.com'),
         TextSpanData(' <tags> & "quotes"\ttab\nsecond line'),
       ],
     ),
-    const HeadingBlock(
-      level: 2,
-      spans: [TextSpanData('Level two '), TextSpanData('emph', italic: true)],
-    ),
+    const HeadingBlock(level: 2, spans: [TextSpanData('Level two '), TextSpanData('emph', italic: true)]),
     const HeadingBlock(level: 3, spans: [TextSpanData('Level three')]),
     const HeadingBlock(level: 4, spans: [TextSpanData('Level four')]),
     const HeadingBlock(level: 5, spans: [TextSpanData('Level five')]),
     const HeadingBlock(level: 6, spans: [TextSpanData('Level six')]),
     const ListItemBlock(spans: [TextSpanData('bullet one')]),
-    const ListItemBlock(
-      spans: [TextSpanData('nested '), TextSpanData('bullet', bold: true)],
-      indent: 1,
-    ),
-    const ListItemBlock(
-      spans: [TextSpanData('nested ordered')],
-      ordered: true,
-      indent: 1,
-    ),
+    const ListItemBlock(spans: [TextSpanData('nested '), TextSpanData('bullet', bold: true)], indent: 1),
+    const ListItemBlock(spans: [TextSpanData('nested ordered')], ordered: true, indent: 1),
     const ListItemBlock(spans: [TextSpanData('ordered one')], ordered: true),
     const ListItemBlock(spans: [TextSpanData('ordered two')], ordered: true),
-    const QuoteBlock(
-      spans: [
-        TextSpanData('A wise quote, '),
-        TextSpanData('emphasised', italic: true),
-      ],
-    ),
-    ImageBlock(
-      bytes: png,
-      width: 40,
-      height: 20,
-      caption: 'Figure 1: red & blue',
-    ),
+    const QuoteBlock(spans: [TextSpanData('A wise quote, '), TextSpanData('emphasised', italic: true)]),
+    ImageBlock(bytes: png, width: 40, height: 20, caption: 'Figure 1: red & blue'),
     ImageBlock(bytes: jpeg, width: 2000, height: 1000),
     const TableBlock(
       rows: [
@@ -84,12 +60,8 @@ DocStructure richDoc(Uint8List png, Uint8List jpeg) => DocStructure(
       ],
     ),
     const PageBreakBlock(),
-    const ParagraphBlock(
-      spans: [TextSpanData('After break: Ελληνικά, Кириллица.')],
-    ),
-    const ParagraphBlock(
-      spans: [TextSpanData('Bad\u0001chars￿removed\u{1F600}ok')],
-    ),
+    const ParagraphBlock(spans: [TextSpanData('After break: Ελληνικά, Кириллица.')]),
+    const ParagraphBlock(spans: [TextSpanData('Bad\u0001chars￿removed\u{1F600}ok')]),
   ],
 );
 
@@ -120,19 +92,12 @@ void main() {
       ]) {
         expect(names, contains(part));
       }
-      for (final f in archive.files.where(
-        (f) => f.name.endsWith('.xml') || f.name.endsWith('.rels'),
-      )) {
-        expect(
-          () => XmlDocument.parse(utf8.decode(f.readBytes()!)),
-          returnsNormally,
-          reason: f.name,
-        );
+      for (final f in archive.files.where((f) => f.name.endsWith('.xml') || f.name.endsWith('.rels'))) {
+        expect(() => XmlDocument.parse(utf8.decode(f.readBytes()!)), returnsNormally, reason: f.name);
       }
     });
 
-    String part(String name) =>
-        utf8.decode(archive.findFile(name)!.readBytes()!);
+    String part(String name) => utf8.decode(archive.findFile(name)!.readBytes()!);
 
     test('content types, relationships and styles are declared', () {
       final ct = part('[Content_Types].xml');
@@ -140,23 +105,10 @@ void main() {
       expect(ct, contains('Extension="jpeg" ContentType="image/jpeg"'));
       expect(ct, contains('/word/numbering.xml'));
       final rels = part('word/_rels/document.xml.rels');
-      expect(
-        rels,
-        contains(
-          'Target="https://example.com/a?b=1&amp;c=2" TargetMode="External"',
-        ),
-      );
+      expect(rels, contains('Target="https://example.com/a?b=1&amp;c=2" TargetMode="External"'));
       expect(rels, contains('media/image1.png'));
       final styles = part('word/styles.xml');
-      for (final id in [
-        'Normal',
-        'Title',
-        'Heading1',
-        'Heading6',
-        'ListParagraph',
-        'Quote',
-        'TableGrid',
-      ]) {
+      for (final id in ['Normal', 'Title', 'Heading1', 'Heading6', 'ListParagraph', 'Quote', 'TableGrid']) {
         expect(styles, contains('w:styleId="$id"'));
       }
       expect(styles, contains('<w:outlineLvl w:val="5"/>'));
@@ -170,9 +122,7 @@ void main() {
 
     test('images are sized in EMU, capped at text width, aspect preserved', () {
       final doc = XmlDocument.parse(part('word/document.xml'));
-      final extents = doc.descendantElements
-          .where((e) => e.name.qualified == 'wp:extent')
-          .toList();
+      final extents = doc.descendantElements.where((e) => e.name.qualified == 'wp:extent').toList();
       expect(extents, hasLength(2));
       expect(extents[0].getAttribute('cx'), '${40 * 9525}');
       expect(extents[0].getAttribute('cy'), '${20 * 9525}');
@@ -229,10 +179,7 @@ void main() {
         ],
       );
       final parsed = parseDocx(buildDocx(doc));
-      expect(
-        parsed.blocks.whereType<ListItemBlock>().map((l) => l.marker).toList(),
-        ['1.', '2.', '1.'],
-      );
+      expect(parsed.blocks.whereType<ListItemBlock>().map((l) => l.marker).toList(), ['1.', '2.', '1.']);
     });
 
     test('empty document is still valid', () {
@@ -242,103 +189,92 @@ void main() {
   });
 
   group('DOCX reader (Word-style input)', () {
-    test(
-      'handles style names, overrides, numbering, merged cells, fields and unknown elements',
-      () {
-        final parsed = parseDocx(_wordLikeDocx(png));
-        final d = parsed.blocks.map(describe).toList();
-        expect(d, [
+    test('handles style names, overrides, numbering, merged cells, fields and unknown elements', () {
+      final parsed = parseDocx(_wordLikeDocx(png));
+      final d = parsed.blocks.map(describe).toList();
+      expect(d, [
+        [
+          'H',
+          1,
+          ['"Doc Title"'],
+        ],
+        [
+          'H',
+          2,
+          ['"Kapitel"'],
+        ],
+        [
+          'H',
+          3,
+          ['"Outline heading"'],
+        ],
+        [
+          'P',
+          ['B"Bold by style "', '"not bold"'],
+        ],
+        [
+          'P',
+          ['B"strong char style"', '" plain "', 'I"italic"', '"\tafter tab\nline2"'],
+        ],
+        [
+          'P',
+          ['"before break"'],
+        ],
+        ['BR'],
+        [
+          'P',
+          ['"after break"'],
+        ],
+        [
+          'LI',
+          false,
+          0,
+          ['"Bullet item"'],
+        ],
+        [
+          'LI',
+          true,
+          1,
+          ['"Decimal sub item"'],
+        ],
+        [
+          'LI',
+          true,
+          1,
+          ['"Decimal sub item 2"'],
+        ],
+        [
+          'P',
+          ['"Field link: "', '<https://dart.dev>"Dart"'],
+        ],
+        ['IMG', png.length, null],
+        [
+          'P',
+          ['"Choice text"'],
+        ],
+        [
+          'Q',
+          ['"Intense"'],
+        ],
+        [
+          'T',
+          true,
           [
-            'H',
-            1,
-            ['"Doc Title"'],
+            ['H1', 'H2', 'H3'],
+            ['span', '', 'x'],
+            ['', 'y', 'z'],
           ],
-          [
-            'H',
-            2,
-            ['"Kapitel"'],
-          ],
-          [
-            'H',
-            3,
-            ['"Outline heading"'],
-          ],
-          [
-            'P',
-            ['B"Bold by style "', '"not bold"'],
-          ],
-          [
-            'P',
-            [
-              'B"strong char style"',
-              '" plain "',
-              'I"italic"',
-              '"\tafter tab\nline2"',
-            ],
-          ],
-          [
-            'P',
-            ['"before break"'],
-          ],
-          ['BR'],
-          [
-            'P',
-            ['"after break"'],
-          ],
-          [
-            'LI',
-            false,
-            0,
-            ['"Bullet item"'],
-          ],
-          [
-            'LI',
-            true,
-            1,
-            ['"Decimal sub item"'],
-          ],
-          [
-            'LI',
-            true,
-            1,
-            ['"Decimal sub item 2"'],
-          ],
-          [
-            'P',
-            ['"Field link: "', '<https://dart.dev>"Dart"'],
-          ],
-          ['IMG', png.length, null],
-          [
-            'P',
-            ['"Choice text"'],
-          ],
-          [
-            'Q',
-            ['"Intense"'],
-          ],
-          [
-            'T',
-            true,
-            [
-              ['H1', 'H2', 'H3'],
-              ['span', '', 'x'],
-              ['', 'y', 'z'],
-            ],
-          ],
-        ]);
-        final lists = parsed.blocks.whereType<ListItemBlock>().toList();
-        expect(lists.map((l) => l.marker).toList(), ['•', '1.1', '1.2']);
-        final img = parsed.blocks.whereType<ImageBlock>().single;
-        expect(img.width, 100);
-        expect(img.height, 50);
-      },
-    );
+        ],
+      ]);
+      final lists = parsed.blocks.whereType<ListItemBlock>().toList();
+      expect(lists.map((l) => l.marker).toList(), ['•', '1.1', '1.2']);
+      final img = parsed.blocks.whereType<ImageBlock>().single;
+      expect(img.width, 100);
+      expect(img.height, 50);
+    });
 
     test('rejects non-zip input with FormatException', () {
-      expect(
-        () => parseDocx(Uint8List.fromList([1, 2, 3, 4])),
-        throwsFormatException,
-      );
+      expect(() => parseDocx(Uint8List.fromList([1, 2, 3, 4])), throwsFormatException);
     });
   });
 
@@ -349,14 +285,8 @@ void main() {
       () async {
         final dir = await Directory.systemTemp.createTemp('pdfcraft_textutil');
         try {
-          final input = File('${dir.path}/doc.docx')
-            ..writeAsBytesSync(buildDocx(richDoc(png, jpeg)));
-          final r = await Process.run('/usr/bin/textutil', [
-            '-convert',
-            'txt',
-            '-stdout',
-            input.path,
-          ]);
+          final input = File('${dir.path}/doc.docx')..writeAsBytesSync(buildDocx(richDoc(png, jpeg)));
+          final r = await Process.run('/usr/bin/textutil', ['-convert', 'txt', '-stdout', input.path]);
           expect(r.exitCode, 0, reason: '${r.stderr}');
           final text = r.stdout as String;
           for (final s in [
@@ -385,8 +315,7 @@ void main() {
       () async {
         final dir = await Directory.systemTemp.createTemp('pdfcraft_docx');
         try {
-          final input = File('${dir.path}/roundtrip.docx')
-            ..writeAsBytesSync(buildDocx(richDoc(png, jpeg)));
+          final input = File('${dir.path}/roundtrip.docx')..writeAsBytesSync(buildDocx(richDoc(png, jpeg)));
           final r = await Process.run(soffice!, [
             '--headless',
             '--convert-to',
@@ -489,12 +418,7 @@ Uint8List _wordLikeDocx(Uint8List png) {
       '</w:tbl>'
       '<w:sectPr><w:headerReference w:type="default" r:id="rIdH"/></w:sectPr>';
   final archive = Archive()
-    ..addFile(
-      ArchiveFile.string(
-        '[Content_Types].xml',
-        '<?xml version="1.0"?><Types/>',
-      ),
-    )
+    ..addFile(ArchiveFile.string('[Content_Types].xml', '<?xml version="1.0"?><Types/>'))
     ..addFile(
       ArchiveFile.string(
         '_rels/.rels',
@@ -512,12 +436,7 @@ Uint8List _wordLikeDocx(Uint8List png) {
     ..addFile(ArchiveFile.string('word/styles.xml', styles))
     ..addFile(ArchiveFile.string('word/numbering.xml', numbering))
     ..addFile(ArchiveFile.string('word/_rels/document.xml.rels', rels))
-    ..addFile(
-      ArchiveFile.string(
-        'word/header1.xml',
-        '<w:hdr $w><w:p><w:r><w:t>HEADER</w:t></w:r></w:p></w:hdr>',
-      ),
-    )
+    ..addFile(ArchiveFile.string('word/header1.xml', '<w:hdr $w><w:p><w:r><w:t>HEADER</w:t></w:r></w:p></w:hdr>'))
     ..addFile(ArchiveFile.bytes('word/media/pic.png', png));
   return ZipEncoder().encodeBytes(archive);
 }

@@ -29,9 +29,7 @@ String structureToPlainText(DocStructure doc) {
         out.write(text);
         if (block.level <= 2) {
           out.write('\n');
-          out.write(
-            (block.level == 1 ? '=' : '-') * text.runes.length.clamp(3, 80),
-          );
+          out.write((block.level == 1 ? '=' : '-') * text.runes.length.clamp(3, 80));
         }
       case ParagraphBlock():
         final text = _spansText(block.spans).trim();
@@ -57,20 +55,12 @@ String structureToPlainText(DocStructure doc) {
       case ImageBlock():
         separate(isList: false);
         final caption = block.caption?.trim();
-        out.write(
-          caption == null || caption.isEmpty ? '[Image]' : '[Image: $caption]',
-        );
+        out.write(caption == null || caption.isEmpty ? '[Image]' : '[Image: $caption]');
       case TableBlock():
         if (block.rows.isEmpty) continue;
         separate(isList: false);
         out.write(
-          block.rows
-              .map(
-                (r) => r
-                    .map((c) => c.replaceAll(RegExp(r'[\t\r\n]+'), ' ').trim())
-                    .join('\t'),
-              )
-              .join('\n'),
+          block.rows.map((r) => r.map((c) => c.replaceAll(RegExp(r'[\t\r\n]+'), ' ').trim()).join('\t')).join('\n'),
         );
       case PageBreakBlock():
         continue;

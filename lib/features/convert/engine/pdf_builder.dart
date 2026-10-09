@@ -44,15 +44,9 @@ class PdfFontSet {
   }) async {
     final family = serif ? 'NotoSerif' : 'NotoSans';
     final faces = await Future.wait([
-      for (final face in const ['Regular', 'Bold', 'Italic', 'BoldItalic'])
-        loader('$directory/$family-$face.ttf'),
+      for (final face in const ['Regular', 'Bold', 'Italic', 'BoldItalic']) loader('$directory/$family-$face.ttf'),
     ]);
-    return PdfFontSet.fromBytes(
-      regular: faces[0],
-      bold: faces[1],
-      italic: faces[2],
-      boldItalic: faces[3],
-    );
+    return PdfFontSet.fromBytes(regular: faces[0], bold: faces[1], italic: faces[2], boldItalic: faces[3]);
   }
 
   final pw.Font regular;
@@ -99,11 +93,7 @@ Future<Uint8List> buildPdfFromStructure(
 
   pdf.addPage(
     pw.MultiPage(
-      pageTheme: pw.PageTheme(
-        pageFormat: format,
-        margin: pw.EdgeInsets.all(margin),
-        theme: builder.theme,
-      ),
+      pageTheme: pw.PageTheme(pageFormat: format, margin: pw.EdgeInsets.all(margin), theme: builder.theme),
       maxPages: 1000000,
       footer: pageNumbers ? builder.footer : null,
       build: (_) => widgets,
@@ -135,10 +125,7 @@ class _PdfBuilder {
       fontFallback: fonts.fallback,
     );
     theme = t.copyWith(
-      defaultTextStyle: t.defaultTextStyle.copyWith(
-        fontSize: base,
-        lineSpacing: base * 0.3,
-      ),
+      defaultTextStyle: t.defaultTextStyle.copyWith(fontSize: base, lineSpacing: base * 0.3),
     );
   }
 
@@ -150,16 +137,11 @@ class _PdfBuilder {
   late final pw.ThemeData theme;
 
   double get contentWidth => format.width - 2 * margin;
-  double get contentHeight =>
-      format.height - 2 * margin - (pageNumbers ? base * 2.5 : 0);
+  double get contentHeight => format.height - 2 * margin - (pageNumbers ? base * 2.5 : 0);
 
   /// Characters of a list item's first (non-spanning) part: a conservative
   /// 40% of what fits on one page, so the row never overflows a page.
-  int get _chunkChars => math.max(
-    80,
-    (0.4 * (contentWidth / (base * 0.55)) * (contentHeight / (base * 1.5)))
-        .floor(),
-  );
+  int get _chunkChars => math.max(80, (0.4 * (contentWidth / (base * 0.55)) * (contentHeight / (base * 1.5))).floor());
 
   pw.Widget footer(pw.Context context) => pw.Container(
     alignment: pw.Alignment.center,
@@ -222,28 +204,18 @@ class _PdfBuilder {
 
   /// Removes control characters the fonts cannot draw; tabs become spaces.
   String _clean(String s) {
-    final t = s
-        .replaceAll('\r\n', '\n')
-        .replaceAll('\r', '\n')
-        .replaceAll('\t', '    ');
+    final t = s.replaceAll('\r\n', '\n').replaceAll('\r', '\n').replaceAll('\t', '    ');
     final sb = StringBuffer();
     for (final r in t.runes) {
       if (r == 0x0A ||
-          (r >= 0x20 &&
-              r != 0x7F &&
-              !(r >= 0x80 && r < 0xA0) &&
-              r != 0xFEFF &&
-              !(r >= 0xD800 && r <= 0xDFFF))) {
+          (r >= 0x20 && r != 0x7F && !(r >= 0x80 && r < 0xA0) && r != 0xFEFF && !(r >= 0xD800 && r <= 0xDFFF))) {
         sb.writeCharCode(r);
       }
     }
     return sb.toString();
   }
 
-  List<pw.InlineSpan> _textSpans(
-    List<TextSpanData> spans, {
-    bool forceBold = false,
-  }) {
+  List<pw.InlineSpan> _textSpans(List<TextSpanData> spans, {bool forceBold = false}) {
     final out = <pw.InlineSpan>[];
     for (final s in mergeSpans(spans)) {
       final text = _clean(s.text);
@@ -254,13 +226,9 @@ class _PdfBuilder {
         pw.TextSpan(
           text: text,
           style: pw.TextStyle(
-            fontWeight: s.bold || forceBold
-                ? pw.FontWeight.bold
-                : pw.FontWeight.normal,
+            fontWeight: s.bold || forceBold ? pw.FontWeight.bold : pw.FontWeight.normal,
             fontStyle: s.italic ? pw.FontStyle.italic : pw.FontStyle.normal,
-            decoration: s.underline || hasLink
-                ? pw.TextDecoration.underline
-                : pw.TextDecoration.none,
+            decoration: s.underline || hasLink ? pw.TextDecoration.underline : pw.TextDecoration.none,
             color: hasLink ? _linkColor : null,
           ),
           annotation: hasLink ? pw.AnnotationUrl(link.trim()) : null,
@@ -275,16 +243,11 @@ class _PdfBuilder {
     final level = h.level.clamp(1, 6);
     final size = base * scale[level - 1];
     final spans = _textSpans(
-      h.spans
-          .map((s) => s.copyWith(text: s.text.replaceAll('\n', ' ')))
-          .toList(),
+      h.spans.map((s) => s.copyWith(text: s.text.replaceAll('\n', ' '))).toList(),
       forceBold: true,
     );
     return pw.Padding(
-      padding: pw.EdgeInsets.only(
-        top: size * (level <= 2 ? 0.9 : 0.7),
-        bottom: size * 0.45,
-      ),
+      padding: pw.EdgeInsets.only(top: size * (level <= 2 ? 0.9 : 0.7), bottom: size * 0.45),
       child: pw.RichText(
         text: pw.TextSpan(
           style: pw.TextStyle(
@@ -301,10 +264,7 @@ class _PdfBuilder {
 
   /// Splits spans so that the first part has at most [maxChars] characters,
   /// preferring a sentence or word boundary.
-  (List<TextSpanData>, List<TextSpanData>) _splitSpans(
-    List<TextSpanData> spans,
-    int maxChars,
-  ) {
+  (List<TextSpanData>, List<TextSpanData>) _splitSpans(List<TextSpanData> spans, int maxChars) {
     final text = spansToText(spans);
     if (text.length <= maxChars) return (spans, const []);
     var cut = -1;
@@ -333,9 +293,7 @@ class _PdfBuilder {
     }
     final trimmedRest = List<TextSpanData>.of(rest);
     if (trimmedRest.isNotEmpty) {
-      trimmedRest[0] = trimmedRest[0].copyWith(
-        text: trimmedRest[0].text.replaceFirst(RegExp(r'^[ \n]+'), ''),
-      );
+      trimmedRest[0] = trimmedRest[0].copyWith(text: trimmedRest[0].text.replaceFirst(RegExp(r'^[ \n]+'), ''));
     }
     return (first, trimmedRest);
   }
@@ -344,32 +302,20 @@ class _PdfBuilder {
     final level = item.indent.clamp(0, 8);
     final marker = listMarker(item, number);
     final indent = level * base * 1.6;
-    final markerWidth = item.ordered
-        ? math.max(base * 1.8, base * 0.62 * (marker.length + 1))
-        : base * 1.3;
+    final markerWidth = item.ordered ? math.max(base * 1.8, base * 0.62 * (marker.length + 1)) : base * 1.3;
     final (first, rest) = _splitSpans(item.spans, _chunkChars);
     final widgets = <pw.Widget>[
       pw.Padding(
-        padding: pw.EdgeInsets.only(
-          left: indent,
-          bottom: rest.isEmpty ? base * 0.3 : 0,
-        ),
+        padding: pw.EdgeInsets.only(left: indent, bottom: rest.isEmpty ? base * 0.3 : 0),
         child: pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.SizedBox(
               width: markerWidth,
-              child: pw.Text(
-                marker,
-                textAlign: item.ordered
-                    ? pw.TextAlign.left
-                    : pw.TextAlign.center,
-              ),
+              child: pw.Text(marker, textAlign: item.ordered ? pw.TextAlign.left : pw.TextAlign.center),
             ),
             pw.Expanded(
-              child: pw.RichText(
-                text: pw.TextSpan(children: _textSpans(first)),
-              ),
+              child: pw.RichText(text: pw.TextSpan(children: _textSpans(first))),
             ),
           ],
         ),
@@ -378,10 +324,7 @@ class _PdfBuilder {
     if (rest.isNotEmpty) {
       widgets.add(
         pw.Padding(
-          padding: pw.EdgeInsets.only(
-            left: indent + markerWidth,
-            bottom: base * 0.3,
-          ),
+          padding: pw.EdgeInsets.only(left: indent + markerWidth, bottom: base * 0.3),
           child: pw.RichText(
             text: pw.TextSpan(children: _textSpans(rest)),
             overflow: pw.TextOverflow.span,
@@ -397,16 +340,8 @@ class _PdfBuilder {
     if (spans.isEmpty) return const [];
     return [
       pw.Container(
-        margin: pw.EdgeInsets.only(
-          left: base * 0.5,
-          top: base * 0.2,
-          bottom: base * 0.8,
-        ),
-        padding: pw.EdgeInsets.only(
-          left: base * 0.9,
-          top: base * 0.15,
-          bottom: base * 0.15,
-        ),
+        margin: pw.EdgeInsets.only(left: base * 0.5, top: base * 0.2, bottom: base * 0.8),
+        padding: pw.EdgeInsets.only(left: base * 0.9, top: base * 0.15, bottom: base * 0.15),
         decoration: const pw.BoxDecoration(
           border: pw.Border(left: pw.BorderSide(color: _quoteBorder, width: 3)),
         ),
@@ -450,12 +385,7 @@ class _PdfBuilder {
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
           pw.Center(
-            child: pw.Image(
-              provider,
-              width: w,
-              height: h,
-              fit: pw.BoxFit.contain,
-            ),
+            child: pw.Image(provider, width: w, height: h, fit: pw.BoxFit.contain),
           ),
           ?caption,
         ],
@@ -472,11 +402,7 @@ class _PdfBuilder {
       child: pw.Text(
         text,
         textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(
-          fontSize: base * 0.85,
-          fontStyle: pw.FontStyle.italic,
-          color: _captionColor,
-        ),
+        style: pw.TextStyle(fontSize: base * 0.85, fontStyle: pw.FontStyle.italic, color: _captionColor),
       ),
     );
   }
@@ -492,10 +418,7 @@ class _PdfBuilder {
         : cols <= 9
         ? base * 0.72
         : math.max(base * 0.55, 5.0);
-    final padding = pw.EdgeInsets.symmetric(
-      horizontal: fontSize * 0.45,
-      vertical: fontSize * 0.3,
-    );
+    final padding = pw.EdgeInsets.symmetric(horizontal: fontSize * 0.45, vertical: fontSize * 0.3);
 
     // Column weights from content length so narrow columns stay narrow.
     final widths = <int, pw.TableColumnWidth>{};
@@ -503,9 +426,7 @@ class _PdfBuilder {
       var maxLen = 1;
       for (final r in rows) {
         if (c < r.length) {
-          final longestLine = r[c]
-              .split('\n')
-              .fold<int>(0, (m, l) => math.max(m, l.length));
+          final longestLine = r[c].split('\n').fold<int>(0, (m, l) => math.max(m, l.length));
           maxLen = math.max(maxLen, longestLine);
         }
       }
@@ -513,14 +434,8 @@ class _PdfBuilder {
     }
 
     // A single row must fit on one page; cap pathological cell sizes.
-    final maxCellChars =
-        (contentWidth * contentHeight / (fontSize * fontSize) / cols)
-            .floor()
-            .clamp(200, 4000);
-    final maxCellLines = math.max(
-      3,
-      (contentHeight / (fontSize * 1.6)).floor() - 4,
-    );
+    final maxCellChars = (contentWidth * contentHeight / (fontSize * fontSize) / cols).floor().clamp(200, 4000);
+    final maxCellLines = math.max(3, (contentHeight / (fontSize * 1.6)).floor() - 4);
     String cellText(String s) {
       var t = _clean(s);
       final lines = t.split('\n');
@@ -536,9 +451,7 @@ class _PdfBuilder {
       tableRows.add(
         pw.TableRow(
           repeat: header,
-          decoration: header
-              ? const pw.BoxDecoration(color: _headerFill)
-              : null,
+          decoration: header ? const pw.BoxDecoration(color: _headerFill) : null,
           children: [
             for (var c = 0; c < cols; c++)
               pw.Padding(
@@ -547,9 +460,7 @@ class _PdfBuilder {
                   cellText(c < rows[r].length ? rows[r][c] : ''),
                   style: pw.TextStyle(
                     fontSize: fontSize,
-                    fontWeight: header
-                        ? pw.FontWeight.bold
-                        : pw.FontWeight.normal,
+                    fontWeight: header ? pw.FontWeight.bold : pw.FontWeight.normal,
                   ),
                 ),
               ),

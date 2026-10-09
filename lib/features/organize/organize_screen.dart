@@ -10,6 +10,7 @@ import '../common/dialogs.dart';
 import '../common/open_actions.dart';
 import 'crop_screen.dart';
 import 'split_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class _PageItem {
   _PageItem({this.file, this.index = 0, this.blank = false, this.size});
@@ -128,7 +129,9 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
   }
 
   Future<void> _insertBlank() async {
-    final ref = _items.isNotEmpty && !_items.first.blank && _doc != null && _items.first.file == null ? _doc!.pages[_items.first.index] : null;
+    final ref = _items.isNotEmpty && !_items.first.blank && _doc != null && _items.first.file == null
+        ? _doc!.pages[_items.first.index]
+        : null;
     final size = ref != null ? Size(ref.width, ref.height) : const Size(595.28, 841.89);
     setState(() {
       _items.insert(_insertAt, _PageItem(blank: true, size: size));
@@ -158,7 +161,10 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await s.apply('Organize pages', (i, o) => PdfEngine.instance.organize(i, o, [for (final it in _items) it.toSpec()], password: s.password));
+      await s.apply(
+        'Organize pages',
+        (i, o) => PdfEngine.instance.organize(i, o, [for (final it in _items) it.toSpec()], password: s.password),
+      );
       if (!mounted) return;
       showSnack(context, 'Pages saved');
       await _load();
@@ -173,14 +179,28 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
     final items = _selectedItems;
     if (items.isEmpty) return;
     final out = FileService.uniquePath(p.dirname(s.path), '${p.basenameWithoutExtension(s.path)}_pages.pdf');
-    final ok = await runWithProgress(context, 'Extracting pages…', () => PdfEngine.instance.organize(s.path, out, [for (final it in items) it.toSpec()], password: s.password));
+    final ok = await runWithProgress(
+      context,
+      'Extracting pages…',
+      () => PdfEngine.instance.organize(s.path, out, [for (final it in items) it.toSpec()], password: s.password),
+    );
     if (ok == null || !mounted) return;
-    showSnack(context, 'Extracted ${items.length} page${items.length == 1 ? '' : 's'} to ${p.basename(out)}', action: SnackBarAction(label: 'Open', onPressed: () => openDocument(context, out)));
+    showSnack(
+      context,
+      'Extracted ${items.length} page${items.length == 1 ? '' : 's'} to ${p.basename(out)}',
+      action: SnackBarAction(label: 'Open', onPressed: () => openDocument(context, out)),
+    );
   }
 
   Future<bool> _confirmDiscard() async {
     if (!_dirty) return true;
-    return confirmDialog(context, title: 'Discard changes?', message: 'Your page changes have not been saved.', confirmLabel: 'Discard', destructive: true);
+    return confirmDialog(
+      context,
+      title: 'Discard changes?',
+      message: 'Your page changes have not been saved.',
+      confirmLabel: 'Discard',
+      destructive: true,
+    );
   }
 
   @override
@@ -199,26 +219,52 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
         appBar: AppBar(
           title: Text(selCount == 0 ? 'Organize pages' : '$selCount selected'),
           actions: [
-            if (selCount > 0) IconButton(tooltip: 'Clear selection', icon: const Icon(Icons.deselect), onPressed: () => setState(_selected.clear)),
+            if (selCount > 0)
+              IconButton(
+                tooltip: 'Clear selection',
+                icon: const Icon(Symbols.deselect),
+                onPressed: () => setState(_selected.clear),
+              ),
             if (selCount == 0)
-              IconButton(tooltip: 'Select all', icon: const Icon(Icons.select_all), onPressed: () => setState(() => _selected.addAll(_items.map((e) => e.id)))),
+              IconButton(
+                tooltip: 'Select all',
+                icon: const Icon(Symbols.select_all),
+                onPressed: () => setState(() => _selected.addAll(_items.map((e) => e.id))),
+              ),
             PopupMenuButton<String>(
               onSelected: (v) async {
                 switch (v) {
                   case 'split':
-                    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => SplitScreen(path: s.path, password: s.password)));
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SplitScreen(path: s.path, password: s.password),
+                      ),
+                    );
                   case 'crop':
                     if (_dirty) {
                       showSnack(context, 'Save your page changes first');
                       return;
                     }
-                    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CropScreen(session: s, initialPage: _selected.isEmpty ? 0 : _items.indexWhere((i) => _selected.contains(i.id)))));
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CropScreen(
+                          session: s,
+                          initialPage: _selected.isEmpty ? 0 : _items.indexWhere((i) => _selected.contains(i.id)),
+                        ),
+                      ),
+                    );
                     _load();
                 }
               },
               itemBuilder: (_) => const [
-                PopupMenuItem(value: 'crop', child: ListTile(leading: Icon(Icons.crop), title: Text('Crop pages'))),
-                PopupMenuItem(value: 'split', child: ListTile(leading: Icon(Icons.call_split), title: Text('Split document'))),
+                PopupMenuItem(
+                  value: 'crop',
+                  child: ListTile(leading: Icon(Symbols.crop), title: Text('Crop pages')),
+                ),
+                PopupMenuItem(
+                  value: 'split',
+                  child: ListTile(leading: Icon(Symbols.call_split), title: Text('Split document')),
+                ),
               ],
             ),
           ],
@@ -227,7 +273,12 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
             ? const Center(child: CircularProgressIndicator())
             : GridView.builder(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 150, childAspectRatio: 0.62, mainAxisSpacing: 12, crossAxisSpacing: 12),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 150,
+                  childAspectRatio: 0.62,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                ),
                 itemCount: _items.length,
                 itemBuilder: (context, i) => _cell(i),
               ),
@@ -235,7 +286,13 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
         floatingActionButton: _dirty
             ? FloatingActionButton.extended(
                 onPressed: _saving ? null : _save,
-                icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_outlined),
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Symbols.save),
                 label: const Text('Save'),
                 shape: const StadiumBorder(),
               )
@@ -250,7 +307,13 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
     if (doc == null) return const SizedBox();
     final page = doc.pages[item.index];
     final rot = PdfPageRotation.values[((page.rotation.index * 90 + item.rotation) % 360) ~/ 90];
-    return PdfPageView(key: ValueKey('${item.file}#${item.index}#${item.rotation}'), document: doc, pageNumber: item.index + 1, rotationOverride: rot, maximumDpi: 60);
+    return PdfPageView(
+      key: ValueKey('${item.file}#${item.index}#${item.rotation}'),
+      document: doc,
+      pageNumber: item.index + 1,
+      rotationOverride: rot,
+      maximumDpi: 60,
+    );
   }
 
   Widget _cell(int i) {
@@ -266,15 +329,18 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: selected ? scheme.primary : scheme.outlineVariant, width: selected ? 3 : 1),
+                    border: Border.all(
+                      color: selected ? scheme.primary : scheme.outlineVariant,
+                      width: selected ? 3 : 1,
+                    ),
                   ),
                   padding: const EdgeInsets.all(3),
                   child: _thumb(item),
                 ),
               ),
-              if (selected) Positioned(right: 6, top: 6, child: Icon(Icons.check_circle, color: scheme.primary)),
+              if (selected) Positioned(right: 6, top: 6, child: Icon(Symbols.check_circle, color: scheme.primary)),
               if (item.file != null)
-                Positioned(left: 6, top: 6, child: Icon(Icons.add_circle, size: 18, color: scheme.tertiary)),
+                Positioned(left: 6, top: 6, child: Icon(Symbols.add_circle, size: 18, color: scheme.tertiary)),
             ],
           ),
         ),
@@ -291,12 +357,20 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
       }),
       builder: (context, candidates, _) => LongPressDraggable<int>(
         data: i,
-        feedback: SizedBox(width: 110, height: 160, child: Opacity(opacity: 0.85, child: Material(elevation: 6, child: _thumb(item)))),
+        feedback: SizedBox(
+          width: 110,
+          height: 160,
+          child: Opacity(opacity: 0.85, child: Material(elevation: 6, child: _thumb(item))),
+        ),
         childWhenDragging: Opacity(opacity: 0.3, child: tile),
         child: GestureDetector(
           onTap: () => setState(() => selected ? _selected.remove(item.id) : _selected.add(item.id)),
           child: Container(
-            decoration: candidates.isNotEmpty ? BoxDecoration(border: Border(left: BorderSide(color: scheme.primary, width: 4))) : null,
+            decoration: candidates.isNotEmpty
+                ? BoxDecoration(
+                    border: Border(left: BorderSide(color: scheme.primary, width: 4)),
+                  )
+                : null,
             child: tile,
           ),
         ),
@@ -316,7 +390,10 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
             children: [
               Icon(icon, color: onTap == null ? Theme.of(context).disabledColor : null),
               const SizedBox(height: 2),
-              Text(label, style: TextStyle(fontSize: 11, color: onTap == null ? Theme.of(context).disabledColor : null)),
+              Text(
+                label,
+                style: TextStyle(fontSize: 11, color: onTap == null ? Theme.of(context).disabledColor : null),
+              ),
             ],
           ),
         ),
@@ -329,11 +406,11 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
         top: false,
         child: Row(
           children: [
-            act(Icons.rotate_left, 'Left', () => _rotate(270)),
-            act(Icons.rotate_right, 'Right', () => _rotate(90)),
-            act(Icons.delete_outline, 'Delete', has ? _delete : null),
-            act(Icons.copy_all_outlined, 'Duplicate', has ? _duplicate : null),
-            act(Icons.output, 'Extract', has ? _extract : null),
+            act(Symbols.rotate_left, 'Left', () => _rotate(270)),
+            act(Symbols.rotate_right, 'Right', () => _rotate(90)),
+            act(Symbols.delete_outline, 'Delete', has ? _delete : null),
+            act(Symbols.copy_all, 'Duplicate', has ? _duplicate : null),
+            act(Symbols.output, 'Extract', has ? _extract : null),
             PopupMenuButton<String>(
               tooltip: 'Insert',
               onSelected: (v) => v == 'blank' ? _insertBlank() : _insertFromFile(),
@@ -343,7 +420,14 @@ class _OrganizeScreenState extends State<OrganizeScreen> {
               ],
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.note_add_outlined), SizedBox(height: 2), Text('Insert', style: TextStyle(fontSize: 11))]),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Symbols.note_add),
+                    SizedBox(height: 2),
+                    Text('Insert', style: TextStyle(fontSize: 11)),
+                  ],
+                ),
               ),
             ),
           ],

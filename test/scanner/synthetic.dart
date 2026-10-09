@@ -104,12 +104,7 @@ class Canvas {
     }
   }
 
-  img.Image toImage() => img.Image.fromBytes(
-    width: width,
-    height: height,
-    bytes: data.buffer,
-    numChannels: 3,
-  );
+  img.Image toImage() => img.Image.fromBytes(width: width, height: height, bytes: data.buffer, numChannels: 3);
 }
 
 /// Solid color shader.
@@ -123,26 +118,13 @@ Shader solid(int v, [int? g, int? b]) {
 Quad rotatedRect(double cx, double cy, double w, double h, double deg) {
   final a = deg * pi / 180;
   final ca = cos(a), sa = sin(a);
-  Point<double> p(double x, double y) =>
-      Point(cx + x * ca - y * sa, cy + x * sa + y * ca);
-  return Quad.orderPoints([
-    p(-w / 2, -h / 2),
-    p(w / 2, -h / 2),
-    p(w / 2, h / 2),
-    p(-w / 2, h / 2),
-  ]);
+  Point<double> p(double x, double y) => Point(cx + x * ca - y * sa, cy + x * sa + y * ca);
+  return Quad.orderPoints([p(-w / 2, -h / 2), p(w / 2, -h / 2), p(w / 2, h / 2), p(-w / 2, h / 2)]);
 }
 
 /// Draws a few lines of fake text inside [paper] (in the paper's own
 /// coordinate frame, mapped through a homography).
-void drawFakeText(
-  Canvas c,
-  Quad paper,
-  Random rnd, {
-  int lines = 12,
-  Rgb color = (30, 30, 40),
-  double thickness = 3,
-}) {
+void drawFakeText(Canvas c, Quad paper, Random rnd, {int lines = 12, Rgb color = (30, 30, 40), double thickness = 3}) {
   final h = computeHomography([
     const Point(0.0, 0.0),
     const Point(1.0, 0.0),
@@ -155,12 +137,7 @@ void drawFakeText(
     while (u < 0.88) {
       final wordLen = 0.04 + rnd.nextDouble() * 0.12;
       final end = min(0.9, u + wordLen);
-      c.stroke(
-        applyHomography(h, Point(u, v)),
-        applyHomography(h, Point(end, v)),
-        thickness,
-        color,
-      );
+      c.stroke(applyHomography(h, Point(u, v)), applyHomography(h, Point(end, v)), thickness, color);
       u = end + 0.025;
     }
   }

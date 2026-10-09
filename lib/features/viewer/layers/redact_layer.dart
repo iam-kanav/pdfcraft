@@ -6,6 +6,7 @@ import '../../common/dialogs.dart';
 import '../viewer_screen.dart';
 import '../viewer_state.dart';
 import '../widgets/selection_box.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Per-page layer for marking redaction areas.
 class RedactLayer extends StatefulWidget {
@@ -79,14 +80,24 @@ class _RedactLayerState extends State<RedactLayer> {
                     color: Colors.red.withValues(alpha: 0.18),
                     border: Border.all(color: Colors.red, width: 1.5),
                   ),
-                  child: const Align(alignment: Alignment.topRight, child: Icon(Icons.close, size: 12, color: Colors.red)),
+                  child: const Align(
+                    alignment: Alignment.topRight,
+                    child: Icon(Symbols.close, size: 12, color: Colors.red),
+                  ),
                 ),
               ),
             ),
           if (_a != null && _b != null)
             Positioned.fromRect(
               rect: scaleRect(Rect.fromPoints(_a!, _b!), s),
-              child: IgnorePointer(child: Container(decoration: BoxDecoration(border: Border.all(color: Colors.red, width: 1.5), color: Colors.red.withValues(alpha: 0.1)))),
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.red, width: 1.5),
+                    color: Colors.red.withValues(alpha: 0.1),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
@@ -100,7 +111,12 @@ class RedactToolbar extends StatelessWidget {
   final ViewerHost host;
 
   Future<void> _searchAndMark(BuildContext context) async {
-    final q = await showTextInputDialog(context, title: 'Find text to redact', hint: 'Word, phrase, or e-mail', confirmLabel: 'Find');
+    final q = await showTextInputDialog(
+      context,
+      title: 'Find text to redact',
+      hint: 'Word, phrase, or e-mail',
+      confirmLabel: 'Find',
+    );
     if (q == null || q.trim().isEmpty) return;
     final doc = host.document;
     if (doc == null) return;
@@ -118,7 +134,8 @@ class RedactToolbar extends StatelessWidget {
       return n;
     });
     vs.changed();
-    if (context.mounted && matches != null) showSnack(context, matches == 0 ? 'No matches found' : 'Marked $matches occurrence${matches == 1 ? '' : 's'}');
+    if (context.mounted && matches != null)
+      showSnack(context, matches == 0 ? 'No matches found' : 'Marked $matches occurrence${matches == 1 ? '' : 's'}');
   }
 
   Future<void> _apply(BuildContext context) async {
@@ -136,9 +153,14 @@ class RedactToolbar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Text, images and drawings under the marked areas are permanently removed from the file. This cannot be undone after you leave the document.'),
+                const Text(
+                  'Text, images and drawings under the marked areas are permanently removed from the file. This cannot be undone after you leave the document.',
+                ),
                 const SizedBox(height: 12),
-                TextField(decoration: const InputDecoration(labelText: 'Overlay text (optional)', hintText: 'e.g. REDACTED'), onChanged: (v) => overlay = v),
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Overlay text (optional)', hintText: 'e.g. REDACTED'),
+                  onChanged: (v) => overlay = v,
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -151,7 +173,14 @@ class RedactToolbar extends StatelessWidget {
                           width: 28,
                           height: 28,
                           margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(color: c, shape: BoxShape.circle, border: Border.all(color: color == c ? Colors.blue : Colors.black26, width: color == c ? 3 : 1)),
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: color == c ? Colors.blue : Colors.black26,
+                              width: color == c ? 3 : 1,
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -173,13 +202,30 @@ class RedactToolbar extends StatelessWidget {
       ),
     );
     if (ok != true) return;
-    final areas = {for (final e in vs.redactions.entries) if (e.value.isNotEmpty) e.key: List<Rect>.from(e.value)};
-    final result = await host.edit('Redact', (i, o) => PdfEngine.instance.redact(i, o, areas, password: host.session.password, fill: color, overlayText: overlay.trim().isEmpty ? null : overlay.trim(), removeMetadata: removeMeta));
+    final areas = {
+      for (final e in vs.redactions.entries)
+        if (e.value.isNotEmpty) e.key: List<Rect>.from(e.value),
+    };
+    final result = await host.edit(
+      'Redact',
+      (i, o) => PdfEngine.instance.redact(
+        i,
+        o,
+        areas,
+        password: host.session.password,
+        fill: color,
+        overlayText: overlay.trim().isEmpty ? null : overlay.trim(),
+        removeMetadata: removeMeta,
+      ),
+    );
     if (result != null) {
       vs.redactions.clear();
       vs.changed();
       if (context.mounted) {
-        showSnack(context, 'Redacted: ${result['glyphs']} characters, ${result['images']} images, ${result['paths']} graphics, ${result['annotations']} annotations');
+        showSnack(
+          context,
+          'Redacted: ${result['glyphs']} characters, ${result['images']} images, ${result['paths']} graphics, ${result['annotations']} annotations',
+        );
       }
     }
   }
@@ -203,15 +249,19 @@ class RedactToolbar extends StatelessWidget {
                   Expanded(
                     child: SegmentedButton<bool>(
                       segments: const [
-                        ButtonSegment(value: true, icon: Icon(Icons.crop_free), label: Text('Area')),
-                        ButtonSegment(value: false, icon: Icon(Icons.text_fields), label: Text('Text')),
+                        ButtonSegment(value: true, icon: Icon(Symbols.crop_free), label: Text('Area')),
+                        ButtonSegment(value: false, icon: Icon(Symbols.text_fields), label: Text('Text')),
                       ],
                       selected: {vs.redactByArea},
                       onSelectionChanged: (v) => vs.setRedactByArea(v.first),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton.filledTonal(tooltip: 'Find & mark', onPressed: () => _searchAndMark(context), icon: const Icon(Icons.manage_search)),
+                  IconButton.filledTonal(
+                    tooltip: 'Find & mark',
+                    onPressed: () => _searchAndMark(context),
+                    icon: const Icon(Symbols.manage_search),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -220,7 +270,9 @@ class RedactToolbar extends StatelessWidget {
                   Expanded(
                     child: Text(
                       vs.redactionCount == 0
-                          ? (vs.redactByArea ? 'Drag over content to mark it' : 'Select text, then choose "Mark for redaction"')
+                          ? (vs.redactByArea
+                                ? 'Drag over content to mark it'
+                                : 'Select text, then choose "Mark for redaction"')
                           : '${vs.redactionCount} area${vs.redactionCount == 1 ? '' : 's'} marked · tap a mark to remove it',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),

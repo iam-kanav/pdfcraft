@@ -6,6 +6,7 @@ import '../../core/pdf_render.dart';
 import '../../core/session/document_session.dart';
 import '../common/dialogs.dart';
 import 'ocr_service.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// "Recognize text": adds an invisible OCR text layer so scanned pages become searchable and selectable.
 class OcrScreen extends StatefulWidget {
@@ -77,7 +78,8 @@ class _OcrScreenState extends State<OcrScreen> {
           for (final r in withWords) r.pageIndex: [for (final w in r.words) (text: w.text, rect: w.rect)],
         }, password: s.password),
       );
-      _status = 'Done: $_wordCount words on ${withWords.length} page${withWords.length == 1 ? '' : 's'} are now searchable.';
+      _status =
+          'Done: $_wordCount words on ${withWords.length} page${withWords.length == 1 ? '' : 's'} are now searchable.';
     } catch (e) {
       _status = 'Failed: ${friendlyError(e)}';
     }
@@ -98,9 +100,11 @@ class _OcrScreenState extends State<OcrScreen> {
         children: [
           const ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.offline_bolt_outlined),
+            leading: Icon(Symbols.offline_bolt),
             title: Text('Runs entirely on this device'),
-            subtitle: Text('Latin-script languages (English, Spanish, French, German, …). Text becomes searchable and selectable; the page looks unchanged.'),
+            subtitle: Text(
+              'Latin-script languages (English, Spanish, French, German, …). Text becomes searchable and selectable; the page looks unchanged.',
+            ),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -110,7 +114,11 @@ class _OcrScreenState extends State<OcrScreen> {
           ),
           const SizedBox(height: 12),
           if (!_running)
-            FilledButton.icon(onPressed: _run, icon: const Icon(Icons.document_scanner_outlined), label: const Text('Recognize text'))
+            FilledButton.icon(
+              onPressed: _run,
+              icon: const Icon(Symbols.document_scanner),
+              label: const Text('Recognize text'),
+            )
           else
             OutlinedButton(onPressed: () => setState(() => _cancel = true), child: const Text('Cancel')),
           if (_progress != null) ...[const SizedBox(height: 16), LinearProgressIndicator(value: _progress)],
@@ -126,14 +134,17 @@ class _OcrScreenState extends State<OcrScreen> {
                     Clipboard.setData(ClipboardData(text: _text!));
                     showSnack(context, 'Copied');
                   },
-                  icon: const Icon(Icons.copy, size: 18),
+                  icon: const Icon(Symbols.content_copy, size: 18),
                   label: const Text('Copy'),
                 ),
               ],
             ),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: SelectableText(_text!),
             ),
           ],

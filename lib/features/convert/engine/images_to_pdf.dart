@@ -49,12 +49,7 @@ Future<Uint8List> buildPdfFromImages(
   if (images.isEmpty) {
     throw ArgumentError.value(images, 'images', 'must not be empty');
   }
-  final pdf = pw.Document(
-    title: title,
-    creator: 'PDFCraft',
-    producer: 'PDFCraft',
-    compress: compress,
-  );
+  final pdf = pw.Document(title: title, creator: 'PDFCraft', producer: 'PDFCraft', compress: compress);
 
   for (var i = 0; i < images.length; i++) {
     final provider = _provider(images[i], i);
@@ -70,9 +65,7 @@ Future<Uint8List> buildPdfFromImages(
       drawH = ih * scale;
       pageFormat = PdfPageFormat(drawW + 2 * margin, drawH + 2 * margin);
     } else {
-      final base = pageSize == ImagePageSize.a4
-          ? PdfPageFormat.a4
-          : PdfPageFormat.letter;
+      final base = pageSize == ImagePageSize.a4 ? PdfPageFormat.a4 : PdfPageFormat.letter;
       final landscape = switch (orientation) {
         PdfPageOrientationMode.auto => iw > ih,
         PdfPageOrientationMode.portrait => false,
@@ -82,11 +75,7 @@ Future<Uint8List> buildPdfFromImages(
       final availW = pageFormat.width - 2 * margin;
       final availH = pageFormat.height - 2 * margin;
       if (availW <= 0 || availH <= 0) {
-        throw ArgumentError.value(
-          margin,
-          'margin',
-          'leaves no room for the image',
-        );
+        throw ArgumentError.value(margin, 'margin', 'leaves no room for the image');
       }
       final scale = (availW / iw) < (availH / ih) ? availW / iw : availH / ih;
       drawW = iw * scale;
@@ -98,12 +87,7 @@ Future<Uint8List> buildPdfFromImages(
         pageFormat: pageFormat,
         margin: pw.EdgeInsets.all(margin),
         build: (_) => pw.Center(
-          child: pw.Image(
-            provider,
-            width: drawW,
-            height: drawH,
-            fit: pw.BoxFit.contain,
-          ),
+          child: pw.Image(provider, width: drawW, height: drawH, fit: pw.BoxFit.contain),
         ),
       ),
     );
@@ -141,9 +125,7 @@ pw.ImageProvider _provider(Uint8List bytes, int index) {
     decoded = null;
   }
   if (decoded == null) {
-    throw FormatException(
-      'Image ${index + 1} has an unsupported or corrupt format',
-    );
+    throw FormatException('Image ${index + 1} has an unsupported or corrupt format');
   }
   final orientation = decoded.exif.imageIfd.orientation;
   if (orientation != null && orientation > 1) {

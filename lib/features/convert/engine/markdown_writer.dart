@@ -15,8 +15,7 @@ class MarkdownExport {
 
 /// Marker line used for page breaks; understood by [parseMarkdown] and
 /// rendered by Markdown viewers that allow inline HTML.
-const String markdownPageBreak =
-    '<div style="page-break-after: always;"></div>';
+const String markdownPageBreak = '<div style="page-break-after: always;"></div>';
 
 /// Converts [doc] to GitHub-flavoured Markdown. Images are emitted as
 /// references (`![image N](image-N.png)`); use [buildMarkdownWithImages] to
@@ -45,12 +44,7 @@ MarkdownExport buildMarkdownWithImages(DocStructure doc) {
     switch (block) {
       case HeadingBlock():
         final level = block.level.clamp(1, 6);
-        final spans = block.spans
-            .map(
-              (s) =>
-                  s.copyWith(text: s.text.replaceAll(RegExp(r'[\r\n]+'), ' ')),
-            )
-            .toList();
+        final spans = block.spans.map((s) => s.copyWith(text: s.text.replaceAll(RegExp(r'[\r\n]+'), ' '))).toList();
         var text = _InlineWriter().write(spans);
         if (text.endsWith('#')) {
           text = '${text.substring(0, text.length - 1)}\\#';
@@ -63,19 +57,13 @@ MarkdownExport buildMarkdownWithImages(DocStructure doc) {
       case QuoteBlock():
         final text = _InlineWriter().write(block.spans);
         if (text.trim().isNotEmpty) {
-          out.add(
-            text.split('\n').map((l) => l.isEmpty ? '>' : '> $l').join('\n'),
-          );
+          out.add(text.split('\n').map((l) => l.isEmpty ? '>' : '> $l').join('\n'));
         }
       case ListItemBlock():
         var level = block.indent < 0 ? 0 : block.indent;
         if (level > prevListLevel + 1) level = prevListLevel + 1;
         prevListLevel = level;
-        final normalized = ListItemBlock(
-          spans: block.spans,
-          ordered: block.ordered,
-          indent: level,
-        );
+        final normalized = ListItemBlock(spans: block.spans, ordered: block.ordered, indent: level);
         final number = counter.next(normalized);
         final marker = block.ordered ? '$number.' : '-';
         final indent = '    ' * level;
@@ -97,9 +85,7 @@ MarkdownExport buildMarkdownWithImages(DocStructure doc) {
         final caption = block.caption;
         final alt = caption == null || caption.trim().isEmpty
             ? 'image $n'
-            : escapeMarkdownText(
-                caption.replaceAll(RegExp(r'\s+'), ' ').trim(),
-              );
+            : escapeMarkdownText(caption.replaceAll(RegExp(r'\s+'), ' ').trim());
         out.add('![$alt]($name)');
       case TableBlock():
         final t = _table(block);
@@ -113,9 +99,7 @@ MarkdownExport buildMarkdownWithImages(DocStructure doc) {
   return MarkdownExport(markdown: md.isEmpty ? '' : '$md\n', images: images);
 }
 
-final RegExp _entityLike = RegExp(
-  r'&(#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);',
-);
+final RegExp _entityLike = RegExp(r'&(#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);');
 
 /// Escapes characters with inline Markdown meaning.
 String escapeMarkdownText(String input, {bool escapePipes = false}) {
@@ -160,12 +144,8 @@ class _State {
   final bool underline;
 
   static const none = _State(null, false, false, false);
-  static _State of(TextSpanData s) => _State(
-    s.link != null && s.link!.isNotEmpty ? s.link : null,
-    s.bold,
-    s.italic,
-    s.underline,
-  );
+  static _State of(TextSpanData s) =>
+      _State(s.link != null && s.link!.isNotEmpty ? s.link : null, s.bold, s.italic, s.underline);
 }
 
 /// Serialises spans to inline Markdown with properly nested emphasis.
@@ -202,8 +182,7 @@ class _InlineWriter {
   int _depthFor(_State target) {
     var d = 0;
     final levels = [
-      (_state.link == target.link && _state.link != null) ||
-          (_state.link == null && target.link == null),
+      (_state.link == target.link && _state.link != null) || (_state.link == null && target.link == null),
       _state.bold == target.bold,
       _state.italic == target.italic,
       _state.underline == target.underline,
@@ -269,13 +248,7 @@ class _InlineWriter {
     return _sb.toString().trimRight();
   }
 
-  void _openEmphasis(
-    int kind,
-    String md,
-    String htmlOpen,
-    String htmlClose,
-    String content,
-  ) {
+  void _openEmphasis(int kind, String md, String htmlOpen, String htmlClose, String content) {
     final t = content.trim();
     final usesHtml = t.isEmpty || _isPunct(t[0]) || _isPunct(t[t.length - 1]);
     if (usesHtml) {
@@ -289,26 +262,24 @@ class _InlineWriter {
 
   /// Returns a function giving the text covered by an emphasis group of the
   /// given nesting level that starts at span [start].
-  String Function(int) _groupText(List<TextSpanData> spans, int start) =>
-      (int kind) {
-        final first = _State.of(spans[start]);
-        final sb = StringBuffer();
-        for (var j = start; j < spans.length; j++) {
-          final st = _State.of(spans[j]);
-          final sameOuter =
-              st.link == first.link && (kind < 2 || st.bold == first.bold);
-          final inGroup = sameOuter && (kind == 1 ? st.bold : st.italic);
-          if (!inGroup) {
-            if (spans[j].text.trim().isEmpty) {
-              sb.write(spans[j].text);
-              continue;
-            }
-            break;
-          }
+  String Function(int) _groupText(List<TextSpanData> spans, int start) => (int kind) {
+    final first = _State.of(spans[start]);
+    final sb = StringBuffer();
+    for (var j = start; j < spans.length; j++) {
+      final st = _State.of(spans[j]);
+      final sameOuter = st.link == first.link && (kind < 2 || st.bold == first.bold);
+      final inGroup = sameOuter && (kind == 1 ? st.bold : st.italic);
+      if (!inGroup) {
+        if (spans[j].text.trim().isEmpty) {
           sb.write(spans[j].text);
+          continue;
         }
-        return sb.toString();
-      };
+        break;
+      }
+      sb.write(spans[j].text);
+    }
+    return sb.toString();
+  };
 }
 
 String _linkDestination(String url) {
@@ -323,15 +294,10 @@ String _table(TableBlock table) {
   final rows = table.rows.where((r) => r.isNotEmpty).toList();
   if (rows.isEmpty) return '';
   final cols = rows.map((r) => r.length).reduce((a, b) => a > b ? a : b);
-  String cell(String text) => escapeMarkdownText(
-    text.replaceAll('\r\n', '\n').trim(),
-    escapePipes: true,
-  ).replaceAll('\n', '<br>');
+  String cell(String text) =>
+      escapeMarkdownText(text.replaceAll('\r\n', '\n').trim(), escapePipes: true).replaceAll('\n', '<br>');
   String row(List<String> r) {
-    final cells = List<String>.generate(
-      cols,
-      (i) => i < r.length ? cell(r[i]) : '',
-    );
+    final cells = List<String>.generate(cols, (i) => i < r.length ? cell(r[i]) : '');
     return '| ${cells.join(' | ')} |';
   }
 

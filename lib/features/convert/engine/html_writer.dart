@@ -14,9 +14,7 @@ String buildHtml(DocStructure doc, {String? title}) {
     ..writeln('<html>')
     ..writeln('<head>')
     ..writeln('<meta charset="utf-8">')
-    ..writeln(
-      '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    )
+    ..writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
     ..writeln('<meta name="generator" content="PDFCraft">')
     ..writeln('<title>${escapeHtml(pageTitle)}</title>')
     ..writeln('<style>')
@@ -89,18 +87,15 @@ String escapeHtml(String text) {
   return sb.toString();
 }
 
-String _textWithBreaks(String text) => escapeHtml(
-  text.replaceAll('\r\n', '\n'),
-).replaceAll('\n', '<br>\n').replaceAll('\t', '&emsp;');
+String _textWithBreaks(String text) =>
+    escapeHtml(text.replaceAll('\r\n', '\n')).replaceAll('\n', '<br>\n').replaceAll('\t', '&emsp;');
 
 /// Only links with a safe scheme (or relative links) are emitted as hrefs.
 String? _safeHref(String? link) {
   if (link == null) return null;
   final l = link.trim();
   if (l.isEmpty) return null;
-  final scheme = RegExp(
-    r'^([a-zA-Z][a-zA-Z0-9+.-]*):',
-  ).firstMatch(l)?.group(1)?.toLowerCase();
+  final scheme = RegExp(r'^([a-zA-Z][a-zA-Z0-9+.-]*):').firstMatch(l)?.group(1)?.toLowerCase();
   if (scheme == null) return l;
   const allowed = {'http', 'https', 'mailto', 'tel', 'ftp'};
   return allowed.contains(scheme) ? l : null;
@@ -115,10 +110,8 @@ String _spans(List<TextSpanData> spans) {
     if (s.bold) inner = '<strong>$inner</strong>';
     final href = _safeHref(s.link);
     if (href != null) {
-      final external =
-          href.startsWith('http://') || href.startsWith('https://');
-      inner =
-          '<a href="${escapeHtml(href)}"${external ? ' rel="noopener noreferrer"' : ''}>$inner</a>';
+      final external = href.startsWith('http://') || href.startsWith('https://');
+      inner = '<a href="${escapeHtml(href)}"${external ? ' rel="noopener noreferrer"' : ''}>$inner</a>';
     }
     sb.write(inner);
   }
@@ -138,17 +131,11 @@ String _image(ImageBlock block, int index) {
   final caption = block.caption;
   final alt = escapeHtml(caption ?? 'Image $index');
   if (mime == null) {
-    return caption == null
-        ? ''
-        : '<p class="caption">${escapeHtml(caption)}</p>';
+    return caption == null ? '' : '<p class="caption">${escapeHtml(caption)}</p>';
   }
-  final size = block.width > 0 && block.height > 0
-      ? ' width="${block.width}" height="${block.height}"'
-      : '';
+  final size = block.width > 0 && block.height > 0 ? ' width="${block.width}" height="${block.height}"' : '';
   final sb = StringBuffer('<figure>');
-  sb.write(
-    '<img src="data:$mime;base64,${base64Encode(block.bytes)}" alt="$alt"$size loading="lazy">',
-  );
+  sb.write('<img src="data:$mime;base64,${base64Encode(block.bytes)}" alt="$alt"$size loading="lazy">');
   if (caption != null && caption.isNotEmpty) {
     sb.write('<figcaption>${escapeHtml(caption)}</figcaption>');
   }

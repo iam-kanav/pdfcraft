@@ -28,20 +28,14 @@ const int _maxImageWidthEmu = _textWidthTw * _emuPerTwip;
 // Leave room for a caption line below images that fill a whole page.
 const int _maxImageHeightEmu = (_textHeightTw - 720) * _emuPerTwip;
 
-const String _nsW =
-    'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-const String _nsR =
-    'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-const String _nsWp =
-    'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+const String _nsW = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const String _nsR = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const String _nsWp = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
 const String _nsA = 'http://schemas.openxmlformats.org/drawingml/2006/main';
-const String _nsPic =
-    'http://schemas.openxmlformats.org/drawingml/2006/picture';
-const String _relBase =
-    'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const String _nsPic = 'http://schemas.openxmlformats.org/drawingml/2006/picture';
+const String _relBase = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
-const String _xmlDecl =
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+const String _xmlDecl = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
 /// Numbering ids: abstract 0 = bullets, abstract 1 = ordered.
 const int _bulletAbstractId = 0;
@@ -102,8 +96,7 @@ class _DocxWriter {
         '</w:sectPr></w:body></w:document>';
 
     final archive = Archive();
-    void add(String name, String content) =>
-        archive.addFile(ArchiveFile.string(name, content));
+    void add(String name, String content) => archive.addFile(ArchiveFile.string(name, content));
 
     add('[Content_Types].xml', _contentTypes());
     add('_rels/.rels', _rootRels());
@@ -158,8 +151,7 @@ class _DocxWriter {
             _paragraph(
               block.spans,
               style: 'ListParagraph',
-              numPr:
-                  '<w:numPr><w:ilvl w:val="$level"/><w:numId w:val="$numId"/></w:numPr>',
+              numPr: '<w:numPr><w:ilvl w:val="$level"/><w:numId w:val="$numId"/></w:numPr>',
             ),
           );
         case ImageBlock():
@@ -200,10 +192,7 @@ class _DocxWriter {
     for (final span in mergeSpans(spans)) {
       final link = span.link;
       if (link != null && link.isNotEmpty) {
-        final relId = _hyperlinkRelIds.putIfAbsent(
-          link,
-          () => _addRel('$_relBase/hyperlink', link, external: true),
-        );
+        final relId = _hyperlinkRelIds.putIfAbsent(link, () => _addRel('$_relBase/hyperlink', link, external: true));
         sb.write('<w:hyperlink r:id="$relId" w:history="1">');
         sb.write(_run(span, hyperlink: true, forceBold: forceBold));
         sb.write('</w:hyperlink>');
@@ -214,11 +203,7 @@ class _DocxWriter {
     return sb.toString();
   }
 
-  String _run(
-    TextSpanData span, {
-    bool hyperlink = false,
-    bool forceBold = false,
-  }) {
+  String _run(TextSpanData span, {bool hyperlink = false, bool forceBold = false}) {
     final rPr = StringBuffer();
     if (hyperlink) rPr.write('<w:rStyle w:val="Hyperlink"/>');
     if (span.bold || forceBold) rPr.write('<w:b/><w:bCs/>');
@@ -262,9 +247,7 @@ class _DocxWriter {
     final bytes = normalizeToPngOrJpeg(block.bytes);
     if (bytes == null) {
       final caption = block.caption;
-      return caption == null || caption.isEmpty
-          ? ''
-          : _paragraph([TextSpanData(caption)], style: 'Caption');
+      return caption == null || caption.isEmpty ? '' : _paragraph([TextSpanData(caption)], style: 'Caption');
     }
     final kind = detectImageKind(bytes);
     final ext = kind == ImageKind.jpeg ? 'jpeg' : 'png';
@@ -295,30 +278,18 @@ class _DocxWriter {
 
     final id = _drawingId++;
     final descr = xmlEscape(block.caption ?? '');
-    final sb = StringBuffer(
-      '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing>',
-    );
+    final sb = StringBuffer('<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing>');
     sb.write('<wp:inline distT="0" distB="0" distL="0" distR="0">');
     sb.write('<wp:extent cx="$cx" cy="$cy"/>');
     sb.write('<wp:effectExtent l="0" t="0" r="0" b="0"/>');
     sb.write('<wp:docPr id="$id" name="Picture $id" descr="$descr"/>');
-    sb.write(
-      '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>',
-    );
+    sb.write('<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>');
     sb.write('<a:graphic><a:graphicData uri="$_nsPic"><pic:pic>');
-    sb.write(
-      '<pic:nvPicPr><pic:cNvPr id="$id" name="image$index.$ext" descr="$descr"/><pic:cNvPicPr/></pic:nvPicPr>',
-    );
-    sb.write(
-      '<pic:blipFill><a:blip r:embed="$relId"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>',
-    );
-    sb.write(
-      '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="$cx" cy="$cy"/></a:xfrm>',
-    );
+    sb.write('<pic:nvPicPr><pic:cNvPr id="$id" name="image$index.$ext" descr="$descr"/><pic:cNvPicPr/></pic:nvPicPr>');
+    sb.write('<pic:blipFill><a:blip r:embed="$relId"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>');
+    sb.write('<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="$cx" cy="$cy"/></a:xfrm>');
     sb.write('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>');
-    sb.write(
-      '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>',
-    );
+    sb.write('</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>');
     final caption = block.caption;
     if (caption != null && caption.isNotEmpty) {
       sb.write(_paragraph([TextSpanData(caption)], style: 'Caption'));
@@ -382,12 +353,8 @@ class _DocxWriter {
   String _contentTypes() {
     final exts = _media.map((m) => m.ext).toSet();
     final sb = StringBuffer(_xmlDecl);
-    sb.write(
-      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
-    );
-    sb.write(
-      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
-    );
+    sb.write('<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">');
+    sb.write('<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>');
     sb.write('<Default Extension="xml" ContentType="application/xml"/>');
     if (exts.contains('png')) {
       sb.write('<Default Extension="png" ContentType="image/png"/>');
@@ -395,23 +362,12 @@ class _DocxWriter {
     if (exts.contains('jpeg')) {
       sb.write('<Default Extension="jpeg" ContentType="image/jpeg"/>');
     }
-    const wml =
-        'application/vnd.openxmlformats-officedocument.wordprocessingml';
-    sb.write(
-      '<Override PartName="/word/document.xml" ContentType="$wml.document.main+xml"/>',
-    );
-    sb.write(
-      '<Override PartName="/word/styles.xml" ContentType="$wml.styles+xml"/>',
-    );
-    sb.write(
-      '<Override PartName="/word/numbering.xml" ContentType="$wml.numbering+xml"/>',
-    );
-    sb.write(
-      '<Override PartName="/word/settings.xml" ContentType="$wml.settings+xml"/>',
-    );
-    sb.write(
-      '<Override PartName="/word/fontTable.xml" ContentType="$wml.fontTable+xml"/>',
-    );
+    const wml = 'application/vnd.openxmlformats-officedocument.wordprocessingml';
+    sb.write('<Override PartName="/word/document.xml" ContentType="$wml.document.main+xml"/>');
+    sb.write('<Override PartName="/word/styles.xml" ContentType="$wml.styles+xml"/>');
+    sb.write('<Override PartName="/word/numbering.xml" ContentType="$wml.numbering+xml"/>');
+    sb.write('<Override PartName="/word/settings.xml" ContentType="$wml.settings+xml"/>');
+    sb.write('<Override PartName="/word/fontTable.xml" ContentType="$wml.fontTable+xml"/>');
     sb.write(
       '<Override PartName="/docProps/core.xml" '
       'ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>',
@@ -434,13 +390,9 @@ class _DocxWriter {
 
   String _documentRels() {
     final sb = StringBuffer(_xmlDecl);
-    sb.write(
-      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
-    );
+    sb.write('<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">');
     for (final r in _rels) {
-      sb.write(
-        '<Relationship Id="${r.id}" Type="${r.type}" Target="${xmlEscape(r.target)}"',
-      );
+      sb.write('<Relationship Id="${r.id}" Type="${r.type}" Target="${xmlEscape(r.target)}"');
       if (r.external) sb.write(' TargetMode="External"');
       sb.write('/>');
     }
@@ -465,12 +417,8 @@ class _DocxWriter {
       sb.write('<dc:creator>${xmlEscape(author!)}</dc:creator>');
       sb.write('<cp:lastModifiedBy>${xmlEscape(author!)}</cp:lastModifiedBy>');
     }
-    sb.write(
-      '<dcterms:created xsi:type="dcterms:W3CDTF">$stamp</dcterms:created>',
-    );
-    sb.write(
-      '<dcterms:modified xsi:type="dcterms:W3CDTF">$stamp</dcterms:modified>',
-    );
+    sb.write('<dcterms:created xsi:type="dcterms:W3CDTF">$stamp</dcterms:created>');
+    sb.write('<dcterms:modified xsi:type="dcterms:W3CDTF">$stamp</dcterms:modified>');
     sb.write('</cp:coreProperties>');
     return sb.toString();
   }
@@ -488,9 +436,7 @@ class _DocxWriter {
     sb.write('<w:numbering xmlns:w="$_nsW">');
 
     // Bullets.
-    sb.write(
-      '<w:abstractNum w:abstractNumId="$_bulletAbstractId"><w:multiLevelType w:val="hybridMultilevel"/>',
-    );
+    sb.write('<w:abstractNum w:abstractNumId="$_bulletAbstractId"><w:multiLevelType w:val="hybridMultilevel"/>');
     // Plain Unicode bullets in common fonts (Symbol/Wingdings private-use
     // glyphs are not portable across Word, LibreOffice and Google Docs).
     const bullets = ['•', 'o', '▪'];
@@ -508,9 +454,7 @@ class _DocxWriter {
     sb.write('</w:abstractNum>');
 
     // Ordered: decimal, lowerLetter, lowerRoman repeating.
-    sb.write(
-      '<w:abstractNum w:abstractNumId="$_orderedAbstractId"><w:multiLevelType w:val="hybridMultilevel"/>',
-    );
+    sb.write('<w:abstractNum w:abstractNumId="$_orderedAbstractId"><w:multiLevelType w:val="hybridMultilevel"/>');
     const fmts = ['decimal', 'lowerLetter', 'lowerRoman'];
     for (var l = 0; l < 9; l++) {
       final fmt = fmts[l % 3];
@@ -522,17 +466,11 @@ class _DocxWriter {
     }
     sb.write('</w:abstractNum>');
 
-    sb.write(
-      '<w:num w:numId="$_bulletNumId"><w:abstractNumId w:val="$_bulletAbstractId"/></w:num>',
-    );
+    sb.write('<w:num w:numId="$_bulletNumId"><w:abstractNumId w:val="$_bulletAbstractId"/></w:num>');
     for (final id in _orderedNumIds) {
-      sb.write(
-        '<w:num w:numId="$id"><w:abstractNumId w:val="$_orderedAbstractId"/>',
-      );
+      sb.write('<w:num w:numId="$id"><w:abstractNumId w:val="$_orderedAbstractId"/>');
       for (var l = 0; l < 9; l++) {
-        sb.write(
-          '<w:lvlOverride w:ilvl="$l"><w:startOverride w:val="1"/></w:lvlOverride>',
-        );
+        sb.write('<w:lvlOverride w:ilvl="$l"><w:startOverride w:val="1"/></w:lvlOverride>');
       }
       sb.write('</w:num>');
     }
@@ -555,8 +493,7 @@ String _headingStyle(int level) {
 }
 
 final String _stylesXml = () {
-  const font =
-      '<w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>';
+  const font = '<w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>';
   final sb = StringBuffer(_xmlDecl);
   sb.write('<w:styles xmlns:w="$_nsW">');
   sb.write(

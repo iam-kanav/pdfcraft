@@ -53,26 +53,20 @@ String _expandTabs(String line) {
   return sb.toString();
 }
 
-String _normalizeLabel(String label) =>
-    label.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+String _normalizeLabel(String label) => label.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
 final RegExp _refDef = RegExp(
   r'''^ {0,3}\[([^\]]+)\]:\s*(?:<([^>]*)>|(\S+))(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$''',
 );
 final RegExp _fenceOpen = RegExp(r'^( {0,3})(`{3,}|~{3,})(.*)$');
 
-List<String> _extractReferenceDefinitions(
-  List<String> lines,
-  Map<String, String> refs,
-) {
+List<String> _extractReferenceDefinitions(List<String> lines, Map<String, String> refs) {
   final out = <String>[];
   String? fence;
   var prevBlank = true;
   for (final line in lines) {
     final f = _fenceOpen.firstMatch(line);
-    if (fence == null &&
-        f != null &&
-        !(f.group(2)!.startsWith('`') && f.group(3)!.contains('`'))) {
+    if (fence == null && f != null && !(f.group(2)!.startsWith('`') && f.group(3)!.contains('`'))) {
       fence = f.group(2)!;
       out.add(line);
       prevBlank = false;
@@ -80,8 +74,7 @@ List<String> _extractReferenceDefinitions(
     }
     if (fence != null) {
       final t = line.trim();
-      if (t.startsWith(fence[0] * fence.length) &&
-          t.replaceAll(fence[0], '').isEmpty) {
+      if (t.startsWith(fence[0] * fence.length) && t.replaceAll(fence[0], '').isEmpty) {
         fence = null;
       }
       out.add(line);
@@ -89,10 +82,7 @@ List<String> _extractReferenceDefinitions(
     }
     final m = prevBlank ? _refDef.firstMatch(line) : null;
     if (m != null) {
-      refs.putIfAbsent(
-        _normalizeLabel(m.group(1)!),
-        () => (m.group(2) ?? m.group(3))!,
-      );
+      refs.putIfAbsent(_normalizeLabel(m.group(1)!), () => (m.group(2) ?? m.group(3))!);
       continue;
     }
     prevBlank = line.trim().isEmpty;
@@ -103,12 +93,8 @@ List<String> _extractReferenceDefinitions(
 
 // ------------------------------------------------------------- blocks
 
-final RegExp _atx = RegExp(
-  r'^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$',
-);
-final RegExp _hr = RegExp(
-  r'^ {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$',
-);
+final RegExp _atx = RegExp(r'^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$');
+final RegExp _hr = RegExp(r'^ {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$');
 final RegExp _setext1 = RegExp(r'^ {0,3}=+[ \t]*$');
 final RegExp _setext2 = RegExp(r'^ {0,3}-+[ \t]*$');
 final RegExp _bulletItem = RegExp(r'^( *)([-*+])( +|$)(.*)$');
@@ -118,17 +104,10 @@ final RegExp _pageBreak = RegExp(
   r'^\s*(?:<div\b[^>]*page-break[^>]*>\s*(?:</div>)?|\\pagebreak|\\newpage|<!--\s*pagebreak\s*-->)\s*$',
   caseSensitive: false,
 );
-final RegExp _tableSeparator = RegExp(
-  r'^ {0,3}\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$',
-);
+final RegExp _tableSeparator = RegExp(r'^ {0,3}\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$');
 
 class _PendingItem {
-  _PendingItem({
-    required this.ordered,
-    required this.marker,
-    required this.level,
-    required this.contentIndent,
-  });
+  _PendingItem({required this.ordered, required this.marker, required this.level, required this.contentIndent});
   final bool ordered;
   final String marker;
   final int level;
@@ -165,9 +144,7 @@ class _BlockParser {
     if (i + 1 >= lines.length) return false;
     final header = lines[i];
     final sep = lines[i + 1];
-    if (!header.contains('|') ||
-        !_tableSeparator.hasMatch(sep) ||
-        !sep.contains('-')) {
+    if (!header.contains('|') || !_tableSeparator.hasMatch(sep) || !sep.contains('-')) {
       return false;
     }
     if (_indentOf(header) > 3) return false;
@@ -176,8 +153,7 @@ class _BlockParser {
     return hc == sc && (sep.contains('|') || hc == 1) && sep.contains('|');
   }
 
-  bool _isListLine(String l) =>
-      _bulletItem.hasMatch(l) || _orderedItem.hasMatch(l);
+  bool _isListLine(String l) => _bulletItem.hasMatch(l) || _orderedItem.hasMatch(l);
 
   /// True if [l] starts a block that interrupts a paragraph or lazy
   /// continuation.
@@ -219,44 +195,30 @@ class _BlockParser {
 
     // Continuation paragraph inside a list item (indented after a blank).
     final item = _item;
-    if (item != null &&
-        _blankAfterItem &&
-        indent >= item.contentIndent &&
-        !_isListLine(line)) {
+    if (item != null && _blankAfterItem && indent >= item.contentIndent && !_isListLine(line)) {
       item.paragraphs.add([line.trimLeft()]);
       _blankAfterItem = false;
       return i + 1;
     }
 
     // Lazy continuation of a list item's current paragraph.
-    if (item != null &&
-        !_blankAfterItem &&
-        !_startsBlock(i) &&
-        !_isListLine(line)) {
+    if (item != null && !_blankAfterItem && !_startsBlock(i) && !_isListLine(line)) {
       item.paragraphs.last.add(line.trimLeft());
       return i + 1;
     }
 
     // Setext heading underline.
-    if (_para.isNotEmpty &&
-        indent <= 3 &&
-        (_setext1.hasMatch(line) || _setext2.hasMatch(line))) {
+    if (_para.isNotEmpty && indent <= 3 && (_setext1.hasMatch(line) || _setext2.hasMatch(line))) {
       final level = _setext1.hasMatch(line) ? 1 : 2;
       final text = _para.join('\n');
       _para.clear();
-      _addTextBlocks(
-        _parseInline(text),
-        (spans) => HeadingBlock(level: level, spans: _singleLine(spans)),
-      );
+      _addTextBlocks(_parseInline(text), (spans) => HeadingBlock(level: level, spans: _singleLine(spans)));
       return i + 1;
     }
 
     // Fenced code.
-    final fence = indent <= 3 || _item != null
-        ? _fenceOpen.firstMatch(line.trimLeft())
-        : null;
-    if (fence != null &&
-        !(fence.group(2)!.startsWith('`') && fence.group(3)!.contains('`'))) {
+    final fence = indent <= 3 || _item != null ? _fenceOpen.firstMatch(line.trimLeft()) : null;
+    if (fence != null && !(fence.group(2)!.startsWith('`') && fence.group(3)!.contains('`'))) {
       _flushPara();
       _endList();
       final marker = fence.group(2)!;
@@ -303,10 +265,7 @@ class _BlockParser {
       _endList();
       final level = atx.group(1)!.length;
       final content = atx.group(2) ?? '';
-      _addTextBlocks(
-        _parseInline(content),
-        (spans) => HeadingBlock(level: level, spans: spans),
-      );
+      _addTextBlocks(_parseInline(content), (spans) => HeadingBlock(level: level, spans: spans));
       return i + 1;
     }
 
@@ -327,10 +286,7 @@ class _BlockParser {
         final m = _quoteLine.firstMatch(lines[j]);
         if (m != null) {
           inner.add(m.group(1)!);
-        } else if (lines[j].trim().isNotEmpty &&
-            inner.isNotEmpty &&
-            inner.last.trim().isNotEmpty &&
-            !_startsBlock(j)) {
+        } else if (lines[j].trim().isNotEmpty && inner.isNotEmpty && inner.last.trim().isNotEmpty && !_startsBlock(j)) {
           inner.add(lines[j]); // lazy continuation
         } else {
           break;
@@ -347,11 +303,7 @@ class _BlockParser {
           case QuoteBlock():
             out.add(b);
           case ListItemBlock():
-            out.add(
-              QuoteBlock(
-                spans: [TextSpanData('${b.marker ?? '•'} '), ...b.spans],
-              ),
-            );
+            out.add(QuoteBlock(spans: [TextSpanData('${b.marker ?? '•'} '), ...b.spans]));
           case TableBlock():
             out.add(QuoteBlock(spans: [TextSpanData(b.plainText)]));
           case ImageBlock():
@@ -373,22 +325,14 @@ class _BlockParser {
     // List item.
     final bullet = _bulletItem.firstMatch(line);
     final ordered = bullet == null ? _orderedItem.firstMatch(line) : null;
-    if ((bullet != null || ordered != null) &&
-        (_para.isEmpty || _interruptingListItem(line))) {
+    if ((bullet != null || ordered != null) && (_para.isEmpty || _interruptingListItem(line))) {
       _flushPara();
       _finishItem();
-      final markerIndent = bullet != null
-          ? bullet.group(1)!.length
-          : ordered!.group(1)!.length;
-      final markerText = bullet != null
-          ? bullet.group(2)!
-          : '${ordered!.group(2)}${ordered.group(3)}';
-      final spacing =
-          (bullet != null ? bullet.group(3) : ordered!.group(4))!.length;
+      final markerIndent = bullet != null ? bullet.group(1)!.length : ordered!.group(1)!.length;
+      final markerText = bullet != null ? bullet.group(2)! : '${ordered!.group(2)}${ordered.group(3)}';
+      final spacing = (bullet != null ? bullet.group(3) : ordered!.group(4))!.length;
       final content = (bullet != null ? bullet.group(4) : ordered!.group(5))!;
-      if (_blankAfterItem &&
-          _listStack.isNotEmpty &&
-          markerIndent < _listStack.first) {
+      if (_blankAfterItem && _listStack.isNotEmpty && markerIndent < _listStack.first) {
         _endList();
       }
       while (_listStack.isNotEmpty && markerIndent < _listStack.last + 2) {
@@ -396,10 +340,7 @@ class _BlockParser {
       }
       final level = _listStack.length;
       _listStack.add(markerIndent);
-      final contentIndent =
-          markerIndent +
-          markerText.length +
-          (spacing == 0 || spacing > 4 ? 1 : spacing);
+      final contentIndent = markerIndent + markerText.length + (spacing == 0 || spacing > 4 ? 1 : spacing);
       _item = _PendingItem(
         ordered: ordered != null,
         marker: ordered != null ? markerText : '•',
@@ -415,8 +356,7 @@ class _BlockParser {
     if (indent >= 4 && _para.isEmpty && _item == null) {
       final code = <String>[];
       var j = i;
-      while (j < lines.length &&
-          (lines[j].trim().isEmpty || _indentOf(lines[j]) >= 4)) {
+      while (j < lines.length && (lines[j].trim().isEmpty || _indentOf(lines[j]) >= 4)) {
         code.add(lines[j].length >= 4 ? lines[j].substring(4) : '');
         j++;
       }
@@ -444,9 +384,7 @@ class _BlockParser {
     while (j < lines.length) {
       final l = lines[j];
       if (l.trim().isEmpty || !l.contains('|')) break;
-      if (_atx.hasMatch(l) ||
-          _quoteLine.hasMatch(l) ||
-          _fenceOpen.hasMatch(l)) {
+      if (_atx.hasMatch(l) || _quoteLine.hasMatch(l) || _fenceOpen.hasMatch(l)) {
         break;
       }
       final cells = _splitRow(l).map(_cellText).toList();
@@ -478,10 +416,7 @@ class _BlockParser {
   }
 
   /// Emits text blocks, splitting around images.
-  void _addTextBlocks(
-    List<Object> items,
-    DocBlock Function(List<TextSpanData>) make,
-  ) {
+  void _addTextBlocks(List<Object> items, DocBlock Function(List<TextSpanData>) make) {
     var buf = <TextSpanData>[];
     void flush() {
       final spans = _trim(mergeSpans(buf));
@@ -515,14 +450,7 @@ class _BlockParser {
       if (spans.isNotEmpty) spans.add(const TextSpanData('\n'));
       spans.addAll(paraSpans);
     }
-    out.add(
-      ListItemBlock(
-        spans: mergeSpans(spans),
-        ordered: item.ordered,
-        marker: item.marker,
-        indent: item.level,
-      ),
-    );
+    out.add(ListItemBlock(spans: mergeSpans(spans), ordered: item.ordered, marker: item.marker, indent: item.level));
     out.addAll(images);
   }
 
@@ -760,10 +688,7 @@ class _InlineParser {
             i += n;
           } else {
             var code = s.substring(i + n, close).replaceAll('\n', ' ');
-            if (code.length >= 2 &&
-                code.startsWith(' ') &&
-                code.endsWith(' ') &&
-                code.trim().isNotEmpty) {
+            if (code.length >= 2 && code.startsWith(' ') && code.endsWith(' ') && code.trim().isNotEmpty) {
               code = code.substring(1, code.length - 1);
             }
             _buf.write(code);
@@ -776,12 +701,8 @@ class _InlineParser {
           }
           final before = i == 0 ? ' ' : s[i - 1];
           final after = i + n >= s.length ? ' ' : s[i + n];
-          final left =
-              !_isWs(after) &&
-              (!_isPunctChar(after) || _isWs(before) || _isPunctChar(before));
-          final right =
-              !_isWs(before) &&
-              (!_isPunctChar(before) || _isWs(after) || _isPunctChar(after));
+          final left = !_isWs(after) && (!_isPunctChar(after) || _isWs(before) || _isPunctChar(before));
+          final right = !_isWs(before) && (!_isPunctChar(before) || _isWs(after) || _isPunctChar(after));
           final bool canOpen;
           final bool canClose;
           if (c == '*') {
@@ -830,9 +751,7 @@ class _InlineParser {
             i++;
           }
         case '&':
-          final m = RegExp(
-            r'&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});',
-          ).matchAsPrefix(s, i);
+          final m = RegExp(r'&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});').matchAsPrefix(s, i);
           String? decoded;
           if (m != null) {
             final e = m.group(1)!;
@@ -876,13 +795,9 @@ class _InlineParser {
           }
         case 'h' || 'w' || 'H' || 'W':
           final prev = i == 0 ? ' ' : s[i - 1];
-          final url = (_isWs(prev) || '(*_~'.contains(prev))
-              ? _matchBareUrl(i)
-              : null;
+          final url = (_isWs(prev) || '(*_~'.contains(prev)) ? _matchBareUrl(i) : null;
           if (url != null) {
-            final href = url.toLowerCase().startsWith('www.')
-                ? 'http://$url'
-                : url;
+            final href = url.toLowerCase().startsWith('www.') ? 'http://$url' : url;
             _add(_Link(href, [_Text(url)]));
             i += url.length;
           } else {
@@ -914,18 +829,14 @@ class _InlineParser {
   }
 
   String? _matchBareUrl(int i) {
-    final m = RegExp(
-      r'(?:https?://|www\.)[^\s<]+',
-      caseSensitive: false,
-    ).matchAsPrefix(_s, i);
+    final m = RegExp(r'(?:https?://|www\.)[^\s<]+', caseSensitive: false).matchAsPrefix(_s, i);
     if (m == null) return null;
     var url = m.group(0)!;
     while (url.isNotEmpty) {
       final last = url[url.length - 1];
       if ('?!.,:*_~\'"'.contains(last)) {
         url = url.substring(0, url.length - 1);
-      } else if (last == ')' &&
-          '('.allMatches(url).length < ')'.allMatches(url).length) {
+      } else if (last == ')' && '('.allMatches(url).length < ')'.allMatches(url).length) {
         url = url.substring(0, url.length - 1);
       } else {
         break;
@@ -1038,9 +949,7 @@ class _InlineParser {
   /// characters consumed, or 0 when `<` is literal.
   int _tryAngle(int i) {
     final s = _s;
-    final auto = RegExp(
-      r'<([A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*)>',
-    ).matchAsPrefix(s, i);
+    final auto = RegExp(r'<([A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*)>').matchAsPrefix(s, i);
     if (auto != null) {
       final url = auto.group(1)!;
       _add(_Link(url, [_Text(url)]));
@@ -1058,9 +967,7 @@ class _InlineParser {
       final e = s.indexOf('-->', i + 4);
       if (e >= 0) return e + 3 - i;
     }
-    final tag = RegExp(
-      r'''<(/?)([A-Za-z][A-Za-z0-9-]*)(?:\s+[^<>]*?)?\s*(/?)>''',
-    ).matchAsPrefix(s, i);
+    final tag = RegExp(r'''<(/?)([A-Za-z][A-Za-z0-9-]*)(?:\s+[^<>]*?)?\s*(/?)>''').matchAsPrefix(s, i);
     if (tag != null) {
       final closing = tag.group(1) == '/';
       final name = tag.group(2)!.toLowerCase();
@@ -1191,9 +1098,7 @@ class _InlineParser {
       final comma = src.indexOf(',');
       if (comma > 0 && src.substring(0, comma).contains(';base64')) {
         try {
-          bytes = base64Decode(
-            src.substring(comma + 1).replaceAll(RegExp(r'\s'), ''),
-          );
+          bytes = base64Decode(src.substring(comma + 1).replaceAll(RegExp(r'\s'), ''));
         } catch (_) {
           bytes = null;
         }
@@ -1214,17 +1119,8 @@ class _InlineParser {
     final size = readImageSize(normalized);
     if (size == null) return null;
     final alt = n.alt.trim();
-    final caption =
-        alt.isEmpty ||
-            RegExp(r'^image[ -]?\d+$', caseSensitive: false).hasMatch(alt)
-        ? null
-        : alt;
-    return ImageBlock(
-      bytes: normalized,
-      width: size.width,
-      height: size.height,
-      caption: caption,
-    );
+    final caption = alt.isEmpty || RegExp(r'^image[ -]?\d+$', caseSensitive: false).hasMatch(alt) ? null : alt;
+    return ImageBlock(bytes: normalized, width: size.width, height: size.height, caption: caption);
   }
 }
 

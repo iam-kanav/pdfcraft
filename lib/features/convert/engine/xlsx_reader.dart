@@ -112,9 +112,7 @@ class _XlsxReader {
       throw const FormatException('XLSX package has no workbook part');
     }
     final baseDir = p.posix.dirname(workbookPath);
-    final rels = _rels(
-      p.posix.join(baseDir, '_rels', '${p.posix.basename(workbookPath)}.rels'),
-    );
+    final rels = _rels(p.posix.join(baseDir, '_rels', '${p.posix.basename(workbookPath)}.rels'));
 
     for (final r in rels.values) {
       if (r.type.endsWith('/sharedStrings')) {
@@ -131,16 +129,12 @@ class _XlsxReader {
     } catch (e) {
       throw FormatException('Invalid workbook.xml: $e');
     }
-    final pr = workbook.rootElement.descendantElements
-        .where((e) => e.name.local == 'workbookPr')
-        .firstOrNull;
+    final pr = workbook.rootElement.descendantElements.where((e) => e.name.local == 'workbookPr').firstOrNull;
     final d1904 = pr == null ? null : _attr(pr, 'date1904');
     _date1904 = d1904 == '1' || d1904 == 'true';
 
     final result = <({String name, TableBlock table})>[];
-    for (final sheet in workbook.rootElement.descendantElements.where(
-      (e) => e.name.local == 'sheet',
-    )) {
+    for (final sheet in workbook.rootElement.descendantElements.where((e) => e.name.local == 'sheet')) {
       if (_attr(sheet, 'state') == 'veryHidden') continue;
       final name = _attr(sheet, 'name') ?? 'Sheet${result.length + 1}';
       final rid = _attr(sheet, 'id');
@@ -201,16 +195,12 @@ class _XlsxReader {
     if (xml == null) return;
     try {
       final root = XmlDocument.parse(xml).rootElement;
-      for (final f in root.descendantElements.where(
-        (e) => e.name.local == 'numFmt',
-      )) {
+      for (final f in root.descendantElements.where((e) => e.name.local == 'numFmt')) {
         final id = int.tryParse(_attr(f, 'numFmtId') ?? '');
         final code = _attr(f, 'formatCode');
         if (id != null && code != null) _customFormats[id] = code;
       }
-      final cellXfs = root.childElements
-          .where((e) => e.name.local == 'cellXfs')
-          .firstOrNull;
+      final cellXfs = root.childElements.where((e) => e.name.local == 'cellXfs').firstOrNull;
       if (cellXfs != null) {
         _xfNumFmt = cellXfs.childElements
             .where((e) => e.name.local == 'xf')
@@ -242,12 +232,7 @@ class _XlsxReader {
 
     void endCell() {
       final raw = inInline ? inline.toString() : value.toString();
-      final text = _cellValue(
-        type,
-        raw,
-        style,
-        inlineStr: type == 'inlineStr' || inline.isNotEmpty,
-      );
+      final text = _cellValue(type, raw, style, inlineStr: type == 'inlineStr' || inline.isNotEmpty);
       if (text.isNotEmpty) {
         (cells[cellRow] ??= {})[cellCol] = text;
         maxRow = math.max(maxRow, cellRow);
@@ -325,39 +310,24 @@ class _XlsxReader {
     }
     // Header heuristic: a first row of text labels covering at least half of
     // the columns.
-    final firstFilled = rows.isEmpty
-        ? const <String>[]
-        : rows.first.where((c) => c.trim().isNotEmpty).toList();
+    final firstFilled = rows.isEmpty ? const <String>[] : rows.first.where((c) => c.trim().isNotEmpty).toList();
     final hasHeader =
         rows.length > 1 &&
         firstFilled.length * 2 >= colCount &&
-        firstFilled.every(
-          (c) =>
-              double.tryParse(c.replaceAll(',', '').replaceAll('%', '')) ==
-              null,
-        );
+        firstFilled.every((c) => double.tryParse(c.replaceAll(',', '').replaceAll('%', '')) == null);
     return TableBlock(rows: rows, hasHeader: hasHeader);
   }
 
-  String _cellValue(
-    String? type,
-    String raw,
-    int? style, {
-    required bool inlineStr,
-  }) {
+  String _cellValue(String? type, String raw, int? style, {required bool inlineStr}) {
     switch (type) {
       case 's':
         final idx = int.tryParse(raw.trim());
-        return idx != null && idx >= 0 && idx < _shared.length
-            ? _shared[idx]
-            : '';
+        return idx != null && idx >= 0 && idx < _shared.length ? _shared[idx] : '';
       case 'inlineStr' || 'str' || 'e':
         return raw;
       case 'b':
         final v = raw.trim();
-        return v == '1' || v.toLowerCase() == 'true'
-            ? 'TRUE'
-            : (v.isEmpty ? '' : 'FALSE');
+        return v == '1' || v.toLowerCase() == 'true' ? 'TRUE' : (v.isEmpty ? '' : 'FALSE');
       case 'd':
         return raw.trim();
       default:
@@ -371,9 +341,7 @@ class _XlsxReader {
   }
 
   String _formatNumber(double v, int? style) {
-    final fmtId = style != null && style >= 0 && style < _xfNumFmt.length
-        ? _xfNumFmt[style]
-        : 0;
+    final fmtId = style != null && style >= 0 && style < _xfNumFmt.length ? _xfNumFmt[style] : 0;
     final code = _customFormats[fmtId] ?? _builtinFormats[fmtId] ?? 'General';
     final section = _cleanFormat(code.split(';').first);
 
@@ -382,16 +350,11 @@ class _XlsxReader {
       if (dt != null) return _formatDate(dt, v, section);
     }
     if (section.contains('%')) {
-      final decimals =
-          RegExp(r'\.(0+)').firstMatch(section)?.group(1)?.length ?? 0;
+      final decimals = RegExp(r'\.(0+)').firstMatch(section)?.group(1)?.length ?? 0;
       return '${(v * 100).toStringAsFixed(decimals)}%';
     }
-    final fixed = RegExp(
-      r'^[#,0]*0(\.(0+))?$',
-    ).firstMatch(section.replaceAll(RegExp(r'[^#,0.]'), ''));
-    if (fixed != null &&
-        section.isNotEmpty &&
-        !section.toUpperCase().contains('E')) {
+    final fixed = RegExp(r'^[#,0]*0(\.(0+))?$').firstMatch(section.replaceAll(RegExp(r'[^#,0.]'), ''));
+    if (fixed != null && section.isNotEmpty && !section.toUpperCase().contains('E')) {
       final decimals = fixed.group(2)?.length ?? 0;
       var s = v.toStringAsFixed(decimals);
       if (section.contains(',')) s = _thousands(s);
@@ -432,10 +395,7 @@ class _XlsxReader {
       .trim();
 
   bool _isDateFormat(int id, String cleaned) {
-    if ((id >= 14 && id <= 22) ||
-        (id >= 27 && id <= 36) ||
-        (id >= 45 && id <= 47) ||
-        (id >= 50 && id <= 58)) {
+    if ((id >= 14 && id <= 22) || (id >= 27 && id <= 36) || (id >= 45 && id <= 47) || (id >= 50 && id <= 58)) {
       return true;
     }
     if (id < 164 && !_customFormats.containsKey(id)) return false;
@@ -451,9 +411,7 @@ class _XlsxReader {
       base = DateTime.utc(1904, 1, 1);
     } else {
       // Excel's fictitious 1900-02-29 shifts serials below 61 by one day.
-      base = serial < 61
-          ? DateTime.utc(1899, 12, 31)
-          : DateTime.utc(1899, 12, 30);
+      base = serial < 61 ? DateTime.utc(1899, 12, 31) : DateTime.utc(1899, 12, 30);
     }
     final ms = (serial * 86400000).round();
     return base.add(Duration(milliseconds: ms));
@@ -462,16 +420,11 @@ class _XlsxReader {
   String _formatDate(DateTime dt, double serial, String code) {
     String two(int n) => n.toString().padLeft(2, '0');
     final lower = code.toLowerCase();
-    final hasDate =
-        lower.contains('d') ||
-        lower.contains('y') ||
-        (lower.contains('m') && !lower.contains('h'));
+    final hasDate = lower.contains('d') || lower.contains('y') || (lower.contains('m') && !lower.contains('h'));
     final hasTime = lower.contains('h') || lower.contains('s');
     final hasSeconds = lower.contains('s');
-    final date =
-        '${dt.year.toString().padLeft(4, '0')}-${two(dt.month)}-${two(dt.day)}';
-    final time =
-        '${two(dt.hour)}:${two(dt.minute)}${hasSeconds ? ':${two(dt.second)}' : ''}';
+    final date = '${dt.year.toString().padLeft(4, '0')}-${two(dt.month)}-${two(dt.day)}';
+    final time = '${two(dt.hour)}:${two(dt.minute)}${hasSeconds ? ':${two(dt.second)}' : ''}';
     if (hasDate && hasTime) return '$date $time';
     if (hasTime) return time;
     return date;

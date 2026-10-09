@@ -13,6 +13,7 @@ import '../common/dialogs.dart';
 import '../common/doc_widgets.dart';
 import '../common/file_actions.dart';
 import '../common/open_actions.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Files tab: browse the local library folders and PDFs elsewhere on the device.
 class FilesScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
   bool _desc = true;
   bool _loading = true;
   bool _deviceMode = false;
+  bool _rootMode = true;
   bool? _hasAccess;
   List<({String path, int size, DateTime modified})> _device = [];
 
@@ -94,6 +96,29 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
 
   bool get _atRoot => p.equals(_dir.path, _files.root.path);
 
+  void _enterLibrary(Directory d) {
+    setState(() {
+      _rootMode = false;
+      _deviceMode = false;
+      _dir = d;
+      _loading = true;
+    });
+    _load();
+  }
+
+  void _back() {
+    if (_deviceMode) {
+      setState(() {
+        _deviceMode = false;
+        _rootMode = true;
+      });
+    } else if (_atRoot) {
+      setState(() => _rootMode = true);
+    } else {
+      _open(_dir.parent);
+    }
+  }
+
   Future<void> _newFolder() async {
     final name = await showTextInputDialog(context, title: 'New folder', hint: 'Folder name', confirmLabel: 'Create');
     if (name == null || name.trim().isEmpty) return;
@@ -106,7 +131,8 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
     for (final f in picked) {
       await _files.import(f, into: _dir);
     }
-    if (picked.isNotEmpty && mounted) showSnack(context, 'Imported ${picked.length} file${picked.length == 1 ? '' : 's'}');
+    if (picked.isNotEmpty && mounted)
+      showSnack(context, 'Imported ${picked.length} file${picked.length == 1 ? '' : 's'}');
     _load();
   }
 
@@ -117,9 +143,21 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(leading: const Icon(Icons.drive_file_rename_outline), title: const Text('Rename'), onTap: () => Navigator.pop(ctx, 'rename')),
-            ListTile(leading: const Icon(Icons.drive_file_move_outline), title: const Text('Move'), onTap: () => Navigator.pop(ctx, 'move')),
-            ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(ctx).colorScheme.error), title: const Text('Delete'), onTap: () => Navigator.pop(ctx, 'delete')),
+            ListTile(
+              leading: const Icon(Symbols.drive_file_rename_outline),
+              title: const Text('Rename'),
+              onTap: () => Navigator.pop(ctx, 'rename'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.drive_file_move_outline),
+              title: const Text('Move'),
+              onTap: () => Navigator.pop(ctx, 'move'),
+            ),
+            ListTile(
+              leading: Icon(Symbols.delete_outline, color: Theme.of(ctx).colorScheme.error),
+              title: const Text('Delete'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
           ],
         ),
       ),
@@ -138,7 +176,7 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
 
   Widget _sortMenu() => PopupMenuButton<String>(
     tooltip: 'Sort',
-    icon: const Icon(Icons.sort),
+    icon: const Icon(Symbols.sort),
     onSelected: (v) {
       setState(() {
         if (v == 'dir') {
@@ -151,11 +189,15 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
     },
     itemBuilder: (_) => [
       for (final f in SortField.values)
-        CheckedPopupMenuItem(value: f.name, checked: _sort == f, child: Text(switch (f) {
-          SortField.name => 'Name',
-          SortField.date => 'Date modified',
-          SortField.size => 'Size',
-        })),
+        CheckedPopupMenuItem(
+          value: f.name,
+          checked: _sort == f,
+          child: Text(switch (f) {
+            SortField.name => 'Name',
+            SortField.date => 'Date modified',
+            SortField.size => 'Size',
+          }),
+        ),
       const PopupMenuDivider(),
       CheckedPopupMenuItem(value: 'dir', checked: _desc, child: const Text('Descending')),
     ],
@@ -164,44 +206,59 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     context.watch<LibraryStore>();
+    final theme = Theme.of(context);
+    if (_rootMode) {
+      Widget loc(IconData icon, String title, VoidCallback onTap, {String? subtitle, bool chevron = true}) => Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Icon(icon),
+            title: Text(title),
+            subtitle: subtitle == null ? null : Text(subtitle),
+            trailing: chevron ? const Icon(Symbols.chevron_right) : null,
+            onTap: onTap,
+          ),
+          const Divider(indent: 16, endIndent: 16),
+        ],
+      );
+      return Scaffold(
+        appBar: AppBar(toolbarHeight: 8),
+        body: ListView(
+          children: [
+            Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), child: Text('Files', style: theme.textTheme.headlineSmall)),
+            loc(Symbols.smartphone, 'On this device', () {
+              setState(() {
+                _rootMode = false;
+                _deviceMode = true;
+              });
+              _loadDevice();
+            }),
+            loc(Symbols.folder, 'My Files', () => _enterLibrary(_files.root), subtitle: 'Files stored in PDFCraft'),
+            loc(Symbols.document_scanner, 'Scans', () => _enterLibrary(_files.scansDir)),
+            loc(Symbols.swap_horiz, 'Converted', () => _enterLibrary(_files.convertedDir)),
+            loc(Symbols.folder_open, 'Browse more files', () => pickAndOpenPdf(context), chevron: false),
+          ],
+        ),
+      );
+    }
     return PopScope(
-      canPop: _atRoot && !_deviceMode,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        if (_deviceMode) {
-          setState(() => _deviceMode = false);
-          _load();
-        } else {
-          _open(_dir.parent);
-        }
+        if (!didPop) _back();
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: _atRoot && !_deviceMode
-              ? null
-              : BackButton(
-                  onPressed: () {
-                    if (_deviceMode) {
-                      setState(() => _deviceMode = false);
-                      _load();
-                    } else {
-                      _open(_dir.parent);
-                    }
-                  },
-                ),
-          title: Text(_deviceMode ? 'PDFs on this device' : (_atRoot ? 'Files' : p.basename(_dir.path))),
+          leading: BackButton(onPressed: _back),
+          title: Text(_deviceMode ? 'On this device' : (_atRoot ? 'My Files' : p.basename(_dir.path))),
           actions: [
             _sortMenu(),
             if (!_deviceMode) ...[
-              IconButton(tooltip: 'New folder', icon: const Icon(Icons.create_new_folder_outlined), onPressed: _newFolder),
-              IconButton(tooltip: 'Import files', icon: const Icon(Icons.file_download_outlined), onPressed: _import),
+              IconButton(tooltip: 'New folder', icon: const Icon(Symbols.create_new_folder), onPressed: _newFolder),
+              IconButton(tooltip: 'Import files', icon: const Icon(Symbols.upload_file), onPressed: _import),
             ],
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: _load,
-          child: _deviceMode ? _deviceList() : _libraryList(),
-        ),
+        body: RefreshIndicator(onRefresh: _load, child: _deviceMode ? _deviceList() : _libraryList()),
       ),
     );
   }
@@ -209,32 +266,7 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
   Widget _libraryList() {
     return ListView(
       children: [
-        if (_atRoot) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text('Locations', style: Theme.of(context).textTheme.titleSmall),
-          ),
-          ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.phone_android)),
-            title: const Text('PDFs on this device'),
-            subtitle: const Text('Find PDFs in Downloads, Documents and other folders'),
-            onTap: () {
-              setState(() => _deviceMode = true);
-              _loadDevice();
-            },
-          ),
-          ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.folder_open)),
-            title: const Text('Browse with system picker'),
-            subtitle: const Text('Open from Downloads, Drive or SD card'),
-            onTap: () => pickAndOpenPdf(context),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text('My Files', style: Theme.of(context).textTheme.titleSmall),
-          ),
-        ] else
+        if (!_atRoot)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text('My Files / ${p.relative(_dir.path, from: _files.root.path)}', style: Theme.of(context).textTheme.bodySmall),
@@ -244,7 +276,7 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
         else if (_entries.isEmpty)
           const Padding(
             padding: EdgeInsets.all(32),
-            child: EmptyState(icon: Icons.folder_open, title: 'This folder is empty', message: 'Import, scan or create PDFs to fill it.'),
+            child: EmptyState(icon: Symbols.folder_open, title: 'This folder is empty', message: 'Import, scan or create PDFs to fill it.'),
           )
         else
           for (final e in _entries)
@@ -253,7 +285,7 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
             else
               DocListTile(
                 path: e.path,
-                subtitle: '${formatRelativeDate(e.modified)} · ${formatBytes(e.size)}',
+                subtitle: 'PDF  ·  ${formatRelativeDate(e.modified)}  ·  ${formatBytes(e.size)}',
                 onTap: () => openDocument(context, e.path),
                 onChanged: _load,
               ),
@@ -268,15 +300,22 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
       return ListView(
         children: [
           EmptyState(
-            icon: Icons.folder_special_outlined,
+            icon: Symbols.folder_special,
             title: 'Allow access to find PDFs',
-            message: 'PDFCraft needs "All files access" to list PDFs stored anywhere on this device. Files never leave your phone.',
-            action: FilledButton(onPressed: PlatformBridge.instance.requestAllFilesAccess, child: const Text('Allow access')),
+            message:
+                'PDFCraft needs "All files access" to list PDFs stored anywhere on this device. Files never leave your phone.',
+            action: FilledButton(
+              onPressed: PlatformBridge.instance.requestAllFilesAccess,
+              child: const Text('Allow access'),
+            ),
           ),
         ],
       );
     }
-    if (_device.isEmpty) return ListView(children: const [EmptyState(icon: Icons.search_off, title: 'No PDFs found on this device')]);
+    if (_device.isEmpty)
+      return ListView(
+        children: const [EmptyState(icon: Symbols.search_off, title: 'No PDFs found on this device')],
+      );
     return ListView.builder(
       itemCount: _device.length,
       itemBuilder: (context, i) {

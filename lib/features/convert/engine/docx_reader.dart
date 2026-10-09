@@ -73,11 +73,8 @@ class _RunProps {
 
   static const empty = _RunProps();
 
-  _RunProps overlay(_RunProps o) => _RunProps(
-    bold: o.bold ?? bold,
-    italic: o.italic ?? italic,
-    underline: o.underline ?? underline,
-  );
+  _RunProps overlay(_RunProps o) =>
+      _RunProps(bold: o.bold ?? bold, italic: o.italic ?? italic, underline: o.underline ?? underline);
 
   static _RunProps fromRPr(XmlElement? rPr) {
     if (rPr == null) return empty;
@@ -142,18 +139,9 @@ class _Field {
 
 enum _ParaKind { paragraph, heading, list, quote, caption }
 
-final RegExp _headingName = RegExp(
-  r'^heading\s*([1-9])$',
-  caseSensitive: false,
-);
-final RegExp _hyperlinkInstr = RegExp(
-  r'HYPERLINK\s+"([^"]+)"',
-  caseSensitive: false,
-);
-final RegExp _hyperlinkInstrBare = RegExp(
-  r'HYPERLINK\s+(\S+)',
-  caseSensitive: false,
-);
+final RegExp _headingName = RegExp(r'^heading\s*([1-9])$', caseSensitive: false);
+final RegExp _hyperlinkInstr = RegExp(r'HYPERLINK\s+"([^"]+)"', caseSensitive: false);
+final RegExp _hyperlinkInstrBare = RegExp(r'HYPERLINK\s+(\S+)', caseSensitive: false);
 
 class _DocxReader {
   _DocxReader(this.archive) {
@@ -231,20 +219,12 @@ class _DocxReader {
         }
       }
     }
-    final document =
-        _xml(mainPath) ??
-        (mainPath == 'word/document.xml' ? null : _xml('word/document.xml'));
+    final document = _xml(mainPath) ?? (mainPath == 'word/document.xml' ? null : _xml('word/document.xml'));
     if (document == null) {
-      throw const FormatException(
-        'DOCX package has no readable main document part',
-      );
+      throw const FormatException('DOCX package has no readable main document part');
     }
     _mainDir = p.posix.dirname(mainPath);
-    final relsPath = p.posix.join(
-      _mainDir,
-      '_rels',
-      '${p.posix.basename(mainPath)}.rels',
-    );
+    final relsPath = p.posix.join(_mainDir, '_rels', '${p.posix.basename(mainPath)}.rels');
 
     String? stylesPath;
     String? numberingPath;
@@ -255,8 +235,7 @@ class _DocxReader {
         final type = _attr(r, 'Type') ?? '';
         final target = _attr(r, 'Target');
         if (id == null || target == null) continue;
-        final external =
-            (_attr(r, 'TargetMode') ?? '').toLowerCase() == 'external';
+        final external = (_attr(r, 'TargetMode') ?? '').toLowerCase() == 'external';
         _rels[id] = (type: type, target: target, external: external);
         if (type.endsWith('/styles')) stylesPath = _resolve(_mainDir, target);
         if (type.endsWith('/numbering')) {
@@ -267,9 +246,7 @@ class _DocxReader {
     _parseStyles(_xml(stylesPath ?? 'word/styles.xml'));
     _parseNumbering(_xml(numberingPath ?? 'word/numbering.xml'));
 
-    final body = document.rootElement.childElements
-        .where((e) => _local(e) == 'body')
-        .firstOrNull;
+    final body = document.rootElement.childElements.where((e) => _local(e) == 'body').firstOrNull;
     if (body != null) _walkBody(body);
 
     return DocStructure(blocks: _blocks, title: _readTitle());
@@ -291,9 +268,7 @@ class _DocxReader {
 
   void _parseStyles(XmlDocument? doc) {
     if (doc == null) return;
-    for (final s in doc.rootElement.childElements.where(
-      (e) => _local(e) == 'style',
-    )) {
+    for (final s in doc.rootElement.childElements.where((e) => _local(e) == 'style')) {
       final id = _attr(s, 'styleId');
       if (id == null) continue;
       final style = _Style(id, _attr(s, 'type') ?? 'paragraph');
@@ -310,8 +285,7 @@ class _DocxReader {
       style.runProps = _RunProps.fromRPr(_child(s, 'rPr'));
       _styles[id] = style;
       final isDefault = (_attr(s, 'default') ?? '').toLowerCase();
-      if (style.type == 'paragraph' &&
-          (isDefault == '1' || isDefault == 'true' || isDefault == 'on')) {
+      if (style.type == 'paragraph' && (isDefault == '1' || isDefault == 'true' || isDefault == 'on')) {
         _defaultParaStyle = id;
       }
     }
@@ -334,10 +308,7 @@ class _DocxReader {
   int? _styleHeadingLevel(String? id) {
     if (id != null && _styles[id] == null) {
       // Style ids without a styles.xml entry: still honour conventional ids.
-      final m = RegExp(
-        r'^heading([1-9])$',
-        caseSensitive: false,
-      ).firstMatch(id);
+      final m = RegExp(r'^heading([1-9])$', caseSensitive: false).firstMatch(id);
       if (m != null) return int.parse(m.group(1)!).clamp(1, 6);
       if (id.toLowerCase() == 'title') return 1;
       return null;
@@ -410,9 +381,7 @@ class _DocxReader {
         final absId = _childVal(e, 'abstractNumId');
         if (id == null || absId == null) continue;
         final num = _Num(absId);
-        for (final o in e.childElements.where(
-          (c) => _local(c) == 'lvlOverride',
-        )) {
+        for (final o in e.childElements.where((c) => _local(c) == 'lvlOverride')) {
           final ilvl = int.tryParse(_attr(o, 'ilvl') ?? '');
           if (ilvl == null) continue;
           final start = int.tryParse(_childVal(o, 'startOverride') ?? '');
@@ -446,13 +415,8 @@ class _DocxReader {
   /// Advances list counters and returns the rendered marker.
   String _nextMarker(String numId, int ilvl) {
     final num = _nums[numId]!;
-    final key = num.startOverrides.isNotEmpty
-        ? 'n$numId'
-        : 'a${num.abstractId}';
-    final counters = _listCounters.putIfAbsent(
-      key,
-      () => List<int?>.filled(9, null),
-    );
+    final key = num.startOverrides.isNotEmpty ? 'n$numId' : 'a${num.abstractId}';
+    final counters = _listCounters.putIfAbsent(key, () => List<int?>.filled(9, null));
     final lvl = _level(numId, ilvl);
     final start = num.startOverrides[ilvl] ?? lvl?.start ?? 1;
     counters[ilvl] = counters[ilvl] == null ? start : counters[ilvl]! + 1;
@@ -539,18 +503,13 @@ class _DocxReader {
     ({String numId, int ilvl})? numPr;
     final directNumPr = _child(pPr, 'numPr');
     if (directNumPr != null) {
-      final numId =
-          _childVal(directNumPr, 'numId') ?? _styleNumPr(styleId)?.numId;
-      final ilvl =
-          int.tryParse(_childVal(directNumPr, 'ilvl') ?? '') ??
-          _styleNumPr(styleId)?.ilvl ??
-          0;
+      final numId = _childVal(directNumPr, 'numId') ?? _styleNumPr(styleId)?.numId;
+      final ilvl = int.tryParse(_childVal(directNumPr, 'ilvl') ?? '') ?? _styleNumPr(styleId)?.ilvl ?? 0;
       if (numId != null) numPr = (numId: numId, ilvl: ilvl.clamp(0, 8));
     } else {
       numPr = _styleNumPr(styleId);
     }
-    if (numPr != null &&
-        (numPr.numId == '0' || !_nums.containsKey(numPr.numId))) {
+    if (numPr != null && (numPr.numId == '0' || !_nums.containsKey(numPr.numId))) {
       numPr = null;
     }
     _Level? listLevel;
@@ -564,10 +523,7 @@ class _DocxReader {
       kind = _ParaKind.heading;
     } else if (numPr != null) {
       kind = _ParaKind.list;
-    } else if (_styleMatches(
-      styleId,
-      (s) => s == 'quote' || s == 'intense quote' || s == 'intensequote',
-    )) {
+    } else if (_styleMatches(styleId, (s) => s == 'quote' || s == 'intense quote' || s == 'intensequote')) {
       kind = _ParaKind.quote;
     } else if (_styleMatches(styleId, (s) => s == 'caption')) {
       kind = _ParaKind.caption;
@@ -579,9 +535,7 @@ class _DocxReader {
 
     // Heading formatting comes from the heading style itself; only direct
     // formatting is meaningful for span styles there.
-    final base = kind == _ParaKind.heading
-        ? _RunProps.empty
-        : _styleRunProps(styleId);
+    final base = kind == _ParaKind.heading ? _RunProps.empty : _styleRunProps(styleId);
     final inlines = <_Inline>[];
     _walkInline(para, base, null, inlines);
 
@@ -591,9 +545,7 @@ class _DocxReader {
       final spans = _trimSpans(mergeSpans(buffer));
       buffer = [];
       if (spans.isEmpty) return;
-      final k = first
-          ? kind
-          : (kind == _ParaKind.quote ? kind : _ParaKind.paragraph);
+      final k = first ? kind : (kind == _ParaKind.quote ? kind : _ParaKind.paragraph);
       first = false;
       switch (k) {
         case _ParaKind.heading:
@@ -671,12 +623,7 @@ class _DocxReader {
   }
 
   /// Walks paragraph-level content (runs, hyperlinks, fields, ...).
-  void _walkInline(
-    XmlElement parent,
-    _RunProps base,
-    String? link,
-    List<_Inline> out,
-  ) {
+  void _walkInline(XmlElement parent, _RunProps base, String? link, List<_Inline> out) {
     for (final e in parent.childElements) {
       switch (_local(e)) {
         case 'r':
@@ -701,10 +648,7 @@ class _DocxReader {
           final choice = _child(e, 'Choice') ?? _child(e, 'Fallback');
           if (choice != null) _walkInline(choice, base, link, out);
         case 'oMath' || 'oMathPara':
-          final text = e.descendantElements
-              .where((d) => _local(d) == 't')
-              .map((d) => d.innerText)
-              .join();
+          final text = e.descendantElements.where((d) => _local(d) == 't').map((d) => d.innerText).join();
           if (text.isNotEmpty) out.add(_TextInline(_span(text, base, link)));
         default:
           break; // pPr, bookmarks, proofErr, del, moveFrom, comments, ...
@@ -713,9 +657,7 @@ class _DocxReader {
   }
 
   String? _fieldLink(String instr) {
-    final m =
-        _hyperlinkInstr.firstMatch(instr) ??
-        _hyperlinkInstrBare.firstMatch(instr);
+    final m = _hyperlinkInstr.firstMatch(instr) ?? _hyperlinkInstrBare.firstMatch(instr);
     if (m == null) return null;
     final url = m.group(1)!;
     if (url.startsWith(r'\')) return null; // switch, e.g. \l (local anchor)
@@ -731,14 +673,13 @@ class _DocxReader {
 
   bool get _inFieldInstruction => _fields.isNotEmpty && !_fields.last.inResult;
 
-  TextSpanData _span(String text, _RunProps props, String? link) =>
-      TextSpanData(
-        text,
-        bold: props.bold ?? false,
-        italic: props.italic ?? false,
-        underline: props.underline ?? false,
-        link: link,
-      );
+  TextSpanData _span(String text, _RunProps props, String? link) => TextSpanData(
+    text,
+    bold: props.bold ?? false,
+    italic: props.italic ?? false,
+    underline: props.underline ?? false,
+    link: link,
+  );
 
   void _run(XmlElement r, _RunProps base, String? link, List<_Inline> out) {
     final rPr = _child(r, 'rPr');
@@ -813,9 +754,7 @@ class _DocxReader {
           final before = out.length;
           final textBefore = text.length;
           if (choice != null) choice.childElements.forEach(handle);
-          if (out.length == before &&
-              text.length == textBefore &&
-              fallback != null) {
+          if (out.length == before && text.length == textBefore && fallback != null) {
             fallback.childElements.forEach(handle);
           }
         default:
@@ -935,8 +874,7 @@ class _DocxReader {
       }
       final isFirst = rows.isEmpty;
       for (final tc in _flatChildren(tr, 'tc')) {
-        final span =
-            int.tryParse(_childVal(_child(tc, 'tcPr'), 'gridSpan') ?? '') ?? 1;
+        final span = int.tryParse(_childVal(_child(tc, 'tcPr'), 'gridSpan') ?? '') ?? 1;
         final inlines = <TextSpanData>[];
         cells.add(_cellText(tc, inlines));
         if (isFirst) {
@@ -958,9 +896,7 @@ class _DocxReader {
       rows.add(cells);
     }
     if (rows.isEmpty) return null;
-    final width = rows
-        .map((r) => r.length)
-        .fold<int>(0, (a, b) => a > b ? a : b);
+    final width = rows.map((r) => r.length).fold<int>(0, (a, b) => a > b ? a : b);
     if (width == 0) return null;
     for (final r in rows) {
       while (r.length < width) {
@@ -982,10 +918,7 @@ class _DocxReader {
         final styleId = _childVal(pPr, 'pStyle') ?? _defaultParaStyle;
         final inlines = <_Inline>[];
         _walkInline(c, _styleRunProps(styleId), null, inlines);
-        final spans = inlines
-            .whereType<_TextInline>()
-            .map((i) => i.span)
-            .toList();
+        final spans = inlines.whereType<_TextInline>().map((i) => i.span).toList();
         spansOut.addAll(spans);
         parts.add(spansToText(spans).trimRight());
       } else if (n == 'tbl') {

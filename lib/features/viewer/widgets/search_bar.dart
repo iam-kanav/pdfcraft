@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Acrobat-style in-document search bar (replaces the app bar).
 class ViewerSearchBar extends StatefulWidget implements PreferredSizeWidget {
@@ -61,13 +62,13 @@ class _ViewerSearchBarState extends State<ViewerSearchBar> {
         ? 'Searching… ${((s.searchProgress ?? 0) * 100).round()}%'
         : (_controller.text.isEmpty ? '' : (count == 0 ? 'No results' : '${(idx ?? 0) + 1} of $count'));
     return AppBar(
-      leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: widget.onClose),
+      leading: IconButton(icon: const Icon(Symbols.arrow_back), onPressed: widget.onClose),
       titleSpacing: 0,
       title: TextField(
         controller: _controller,
         autofocus: true,
         textInputAction: TextInputAction.search,
-        decoration: const InputDecoration(hintText: 'Search document', filled: false, border: InputBorder.none),
+        decoration: const InputDecoration(hintText: 'Search document', filled: false, border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none),
         onChanged: (_) {
           _debounce?.cancel();
           _debounce = Timer(const Duration(milliseconds: 400), _search);
@@ -81,12 +82,20 @@ class _ViewerSearchBarState extends State<ViewerSearchBar> {
         },
       ),
       actions: [
-        IconButton(tooltip: 'Previous', icon: const Icon(Icons.keyboard_arrow_up), onPressed: count > 0 ? s.goToPrevMatch : null),
-        IconButton(tooltip: 'Next', icon: const Icon(Icons.keyboard_arrow_down), onPressed: count > 0 ? s.goToNextMatch : null),
+        IconButton(
+          tooltip: 'Previous',
+          icon: const Icon(Symbols.keyboard_arrow_up),
+          onPressed: count > 0 ? s.goToPrevMatch : null,
+        ),
+        IconButton(
+          tooltip: 'Next',
+          icon: const Icon(Symbols.keyboard_arrow_down),
+          onPressed: count > 0 ? s.goToNextMatch : null,
+        ),
         if (_controller.text.isNotEmpty)
           IconButton(
             tooltip: 'Clear',
-            icon: const Icon(Icons.close),
+            icon: const Icon(Symbols.close),
             onPressed: () {
               _controller.clear();
               s.resetTextSearch();

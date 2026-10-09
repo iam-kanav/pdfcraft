@@ -14,6 +14,7 @@ import '../viewer_screen.dart';
 import '../viewer_state.dart';
 import '../widgets/color_palette.dart';
 import '../widgets/selection_box.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class _PageObjects {
   _PageObjects(this.texts, this.images);
@@ -89,7 +90,10 @@ class _EditLayerState extends State<EditLayer> {
     );
     if (result == null) return;
     final edit = {'id': block['id'], ...result};
-    await host.edit(result['text'] == '' ? 'Delete text' : 'Edit text', (i, o) => PdfEngine.instance.editTextBlocks(i, o, pageIndex, [edit], password: pw));
+    await host.edit(
+      result['text'] == '' ? 'Delete text' : 'Edit text',
+      (i, o) => PdfEngine.instance.editTextBlocks(i, o, pageIndex, [edit], password: pw),
+    );
   }
 
   // ------------------------------------------------------------ images
@@ -104,10 +108,22 @@ class _EditLayerState extends State<EditLayer> {
             ListTile(title: Text('Image ${img['pw']}×${img['ph']} px')),
             const Divider(),
             if (img['inline'] != true) ...[
-              ListTile(leading: const Icon(Icons.open_with), title: const Text('Move or resize'), onTap: () => Navigator.pop(ctx, 'move')),
-              ListTile(leading: const Icon(Icons.find_replace), title: const Text('Replace image'), onTap: () => Navigator.pop(ctx, 'replace')),
+              ListTile(
+                leading: const Icon(Symbols.open_with),
+                title: const Text('Move or resize'),
+                onTap: () => Navigator.pop(ctx, 'move'),
+              ),
+              ListTile(
+                leading: const Icon(Symbols.find_replace),
+                title: const Text('Replace image'),
+                onTap: () => Navigator.pop(ctx, 'replace'),
+              ),
             ],
-            ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(ctx).colorScheme.error), title: const Text('Delete image'), onTap: () => Navigator.pop(ctx, 'delete')),
+            ListTile(
+              leading: Icon(Symbols.delete_outline, color: Theme.of(ctx).colorScheme.error),
+              title: const Text('Delete image'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
           ],
         ),
       ),
@@ -120,9 +136,23 @@ class _EditLayerState extends State<EditLayer> {
       case 'replace':
         final path = await _pickImage();
         if (path == null) return;
-        await host.edit('Replace image', (i, o) => PdfEngine.instance.editImage(i, o, page: pageIndex, id: id, action: 'replace', imagePath: path, password: pw));
+        await host.edit(
+          'Replace image',
+          (i, o) => PdfEngine.instance.editImage(
+            i,
+            o,
+            page: pageIndex,
+            id: id,
+            action: 'replace',
+            imagePath: path,
+            password: pw,
+          ),
+        );
       case 'delete':
-        await host.edit('Delete image', (i, o) => PdfEngine.instance.editImage(i, o, page: pageIndex, id: id, action: 'delete', password: pw));
+        await host.edit(
+          'Delete image',
+          (i, o) => PdfEngine.instance.editImage(i, o, page: pageIndex, id: id, action: 'delete', password: pw),
+        );
     }
   }
 
@@ -160,16 +190,19 @@ class _EditLayerState extends State<EditLayer> {
         );
         if (r == null || (r['text'] as String).trim().isEmpty) return;
         final fontSize = (r['fontSize'] as num?)?.toDouble() ?? 12;
-        await host.edit('Add text', (i, o) => PdfEngine.instance.addContent(i, o, [
-          {
-            'type': 'text',
-            'page': pageIndex,
-            'x': p.dx,
-            'y': p.dy - fontSize / 2,
-            'width': widget.page.width - p.dx - 24,
-            ...r,
-          },
-        ], password: pw));
+        await host.edit(
+          'Add text',
+          (i, o) => PdfEngine.instance.addContent(i, o, [
+            {
+              'type': 'text',
+              'page': pageIndex,
+              'x': p.dx,
+              'y': p.dy - fontSize / 2,
+              'width': widget.page.width - p.dx - 24,
+              ...r,
+            },
+          ], password: pw),
+        );
         vs.editTool = EditTool.select;
       case EditTool.addImage:
         final path = await _pickImage();
@@ -179,9 +212,12 @@ class _EditLayerState extends State<EditLayer> {
         final w = math.min(200.0, widget.page.width * 0.6);
         final h = w * size.height / size.width;
         final rect = Rect.fromLTWH(p.dx - w / 2, p.dy - h / 2, w, h);
-        await host.edit('Add image', (i, o) => PdfEngine.instance.addContent(i, o, [
-          {'type': 'image', 'page': pageIndex, 'rect': rectToList(rect), 'imagePath': path},
-        ], password: pw));
+        await host.edit(
+          'Add image',
+          (i, o) => PdfEngine.instance.addContent(i, o, [
+            {'type': 'image', 'page': pageIndex, 'rect': rectToList(rect), 'imagePath': path},
+          ], password: pw),
+        );
         vs.editTool = EditTool.select;
       default:
         break;
@@ -212,9 +248,15 @@ class _EditLayerState extends State<EditLayer> {
       case EditTool.ellipse:
         item.addAll({'type': 'ellipse', 'rect': rectToList(Rect.fromPoints(a, b))});
       case EditTool.line:
-        item.addAll({'type': 'line', 'points': [a.dx, a.dy, b.dx, b.dy]});
+        item.addAll({
+          'type': 'line',
+          'points': [a.dx, a.dy, b.dx, b.dy],
+        });
       case EditTool.arrow:
-        item.addAll({'type': 'arrow', 'points': [a.dx, a.dy, b.dx, b.dy]});
+        item.addAll({
+          'type': 'arrow',
+          'points': [a.dx, a.dy, b.dx, b.dy],
+        });
       default:
         return;
     }
@@ -235,15 +277,26 @@ class _EditLayerState extends State<EditLayer> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SegmentedButton<bool>(
-                segments: const [ButtonSegment(value: false, label: Text('Web page')), ButtonSegment(value: true, label: Text('Page'))],
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Web page')),
+                  ButtonSegment(value: true, label: Text('Page')),
+                ],
                 selected: {toPage},
                 onSelectionChanged: (v) => setState(() => toPage = v.first),
               ),
               const SizedBox(height: 12),
               if (!toPage)
-                TextField(controller: urlCtl, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'URL'))
+                TextField(
+                  controller: urlCtl,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(labelText: 'URL'),
+                )
               else
-                TextField(controller: pageCtl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Page number (1–$count)')),
+                TextField(
+                  controller: pageCtl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: 'Page number (1–$count)'),
+                ),
             ],
           ),
           actions: [
@@ -274,7 +327,12 @@ class _EditLayerState extends State<EditLayer> {
   Widget build(BuildContext context) {
     final s = widget.scale;
     final tool = vs.editTool;
-    final isDrag = tool == EditTool.rect || tool == EditTool.ellipse || tool == EditTool.line || tool == EditTool.arrow || tool == EditTool.link;
+    final isDrag =
+        tool == EditTool.rect ||
+        tool == EditTool.ellipse ||
+        tool == EditTool.line ||
+        tool == EditTool.arrow ||
+        tool == EditTool.link;
     final links = host.annotations.where((a) => a.page == pageIndex && a.isLink).toList();
     return Positioned.fill(
       child: FutureBuilder<_PageObjects>(
@@ -288,14 +346,20 @@ class _EditLayerState extends State<EditLayer> {
                   Positioned.fromRect(
                     rect: scaleRect(listToRect(t['rect'] as List).inflate(2), s),
                     child: IgnorePointer(
-                      child: Container(decoration: BoxDecoration(border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.6)))),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.6)),
+                        ),
+                      ),
                     ),
                   ),
                 for (final img in objs.images)
                   Positioned.fromRect(
                     rect: scaleRect(listToRect(img['rect'] as List), s),
                     child: IgnorePointer(
-                      child: Container(decoration: BoxDecoration(border: Border.all(color: const Color(0xFF8B5CF6), width: 1.5))),
+                      child: Container(
+                        decoration: BoxDecoration(border: Border.all(color: const Color(0xFF8B5CF6), width: 1.5)),
+                      ),
                     ),
                   ),
               ],
@@ -305,7 +369,10 @@ class _EditLayerState extends State<EditLayer> {
                   child: GestureDetector(
                     onLongPress: () => _linkActions(l),
                     child: Container(
-                      decoration: BoxDecoration(border: Border.all(color: Colors.teal, width: 1), color: Colors.teal.withValues(alpha: 0.08)),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.teal, width: 1),
+                        color: Colors.teal.withValues(alpha: 0.08),
+                      ),
                     ),
                   ),
                 ),
@@ -321,7 +388,9 @@ class _EditLayerState extends State<EditLayer> {
               if (_dragStart != null && _dragEnd != null)
                 Positioned.fill(
                   child: IgnorePointer(
-                    child: CustomPaint(painter: _ShapePreview(tool, _dragStart! * s, _dragEnd! * s, vs.inkColor, vs.strokeWidth * s)),
+                    child: CustomPaint(
+                      painter: _ShapePreview(tool, _dragStart! * s, _dragEnd! * s, vs.inkColor, vs.strokeWidth * s),
+                    ),
                   ),
                 ),
               if (_movingImage != null && objs != null)
@@ -332,7 +401,18 @@ class _EditLayerState extends State<EditLayer> {
                   onChanged: (r) async {
                     final id = _movingImage!;
                     setState(() => _movingImage = null);
-                    await host.edit('Move image', (i, o) => PdfEngine.instance.editImage(i, o, page: pageIndex, id: id, action: 'move', rect: r, password: pw));
+                    await host.edit(
+                      'Move image',
+                      (i, o) => PdfEngine.instance.editImage(
+                        i,
+                        o,
+                        page: pageIndex,
+                        id: id,
+                        action: 'move',
+                        rect: r,
+                        password: pw,
+                      ),
+                    );
                   },
                 ),
             ],
@@ -351,7 +431,10 @@ class _EditLayerState extends State<EditLayer> {
       destructive: true,
     );
     if (!del) return;
-    await host.edit('Remove link', (i, o) => PdfEngine.instance.deleteAnnotations(i, o, [(page: l.page, id: l.id)], password: pw));
+    await host.edit(
+      'Remove link',
+      (i, o) => PdfEngine.instance.deleteAnnotations(i, o, [(page: l.page, id: l.id)], password: pw),
+    );
   }
 }
 
@@ -414,7 +497,10 @@ class _TextBlockEditorState extends State<_TextBlockEditor> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(isNew ? 'Add text' : 'Edit text', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                isNew ? 'Add text' : 'Edit text',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
               if (!isNew && widget.block!['fontName'] != null)
                 Text('Original font: ${widget.block!['fontName']}', style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 12),
@@ -423,15 +509,32 @@ class _TextBlockEditorState extends State<_TextBlockEditor> {
                 autofocus: true,
                 minLines: 3,
                 maxLines: 8,
-                style: TextStyle(fontWeight: _bold ? FontWeight.bold : null, fontStyle: _italic ? FontStyle.italic : null, fontFamily: _serif ? 'serif' : null, color: _color),
+                style: TextStyle(
+                  fontWeight: _bold ? FontWeight.bold : null,
+                  fontStyle: _italic ? FontStyle.italic : null,
+                  fontFamily: _serif ? 'serif' : null,
+                  color: _color,
+                ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  IconButton.filledTonal(isSelected: _bold, onPressed: () => setState(() => _bold = !_bold), icon: const Icon(Icons.format_bold)),
-                  IconButton.filledTonal(isSelected: _italic, onPressed: () => setState(() => _italic = !_italic), icon: const Icon(Icons.format_italic)),
+                  IconButton.filledTonal(
+                    isSelected: _bold,
+                    onPressed: () => setState(() => _bold = !_bold),
+                    icon: const Icon(Symbols.format_bold),
+                  ),
+                  IconButton.filledTonal(
+                    isSelected: _italic,
+                    onPressed: () => setState(() => _italic = !_italic),
+                    icon: const Icon(Symbols.format_italic),
+                  ),
                   const SizedBox(width: 6),
-                  ChoiceChip(label: const Text('Serif'), selected: _serif, onSelected: (v) => setState(() => _serif = v)),
+                  ChoiceChip(
+                    label: const Text('Serif'),
+                    selected: _serif,
+                    onSelected: (v) => setState(() => _serif = v),
+                  ),
                   const Spacer(),
                   Text('${_size.round()} pt'),
                 ],
@@ -439,8 +542,21 @@ class _TextBlockEditorState extends State<_TextBlockEditor> {
               Slider(value: _size, min: 4, max: 96, onChanged: (v) => setState(() => _size = v)),
               Wrap(
                 children: [
-                  for (final c in const [Colors.black, Color(0xFF374151), Color(0xFFE11D48), Color(0xFF2563EB), Color(0xFF16A34A), Color(0xFFF59E0B), Colors.white])
-                    ColorDot(color: c, selected: c.toARGB32() == _color.toARGB32(), onTap: () => setState(() => _color = c), size: 26),
+                  for (final c in const [
+                    Colors.black,
+                    Color(0xFF374151),
+                    Color(0xFFE11D48),
+                    Color(0xFF2563EB),
+                    Color(0xFF16A34A),
+                    Color(0xFFF59E0B),
+                    Colors.white,
+                  ])
+                    ColorDot(
+                      color: c,
+                      selected: c.toARGB32() == _color.toARGB32(),
+                      onTap: () => setState(() => _color = c),
+                      size: 26,
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -450,7 +566,7 @@ class _TextBlockEditorState extends State<_TextBlockEditor> {
                     TextButton.icon(
                       style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
                       onPressed: () => Navigator.pop(context, {'text': ''}),
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const Icon(Symbols.delete_outline),
                       label: const Text('Delete'),
                     ),
                   const Spacer(),
@@ -505,20 +621,20 @@ class EditToolbar extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      switch (vs.editTool) {
-                        EditTool.select => 'Tap text or an image to edit it',
-                        EditTool.addText => 'Tap where to add text',
-                        EditTool.addImage => 'Tap where to place an image',
-                        EditTool.link => 'Drag to draw the link area',
-                        _ => 'Drag on the page to draw',
-                      },
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    child: Text(switch (vs.editTool) {
+                      EditTool.select => 'Tap text or an image to edit it',
+                      EditTool.addText => 'Tap where to add text',
+                      EditTool.addImage => 'Tap where to place an image',
+                      EditTool.link => 'Drag to draw the link area',
+                      _ => 'Drag on the page to draw',
+                    }, style: Theme.of(context).textTheme.bodySmall),
                   ),
-                  if (vs.editTool == EditTool.rect || vs.editTool == EditTool.ellipse || vs.editTool == EditTool.line || vs.editTool == EditTool.arrow)
+                  if (vs.editTool == EditTool.rect ||
+                      vs.editTool == EditTool.ellipse ||
+                      vs.editTool == EditTool.line ||
+                      vs.editTool == EditTool.arrow)
                     IconButton(
-                      icon: const Icon(Icons.palette_outlined),
+                      icon: const Icon(Symbols.palette),
                       onPressed: () => showStyleSheet(
                         context,
                         color: vs.inkColor,
@@ -539,7 +655,11 @@ class EditToolbar extends StatelessWidget {
                       ),
                     ),
                   if (vs.panLocked || vs.editTool != EditTool.select)
-                    IconButton(tooltip: vs.panLocked ? 'Scroll' : 'Draw', icon: Icon(vs.panLocked ? Icons.pan_tool_outlined : Icons.edit), onPressed: vs.togglePanLock),
+                    IconButton(
+                      tooltip: vs.panLocked ? 'Scroll' : 'Draw',
+                      icon: Icon(vs.panLocked ? Symbols.pan_tool : Symbols.edit),
+                      onPressed: vs.togglePanLock,
+                    ),
                 ],
               ),
             ),
@@ -549,16 +669,28 @@ class EditToolbar extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 children: [
-                  tool(EditTool.addText, Icons.title, 'Add text'),
-                  tool(EditTool.addImage, Icons.add_photo_alternate_outlined, 'Add image'),
-                  tool(EditTool.rect, Icons.crop_square, 'Rectangle'),
-                  tool(EditTool.ellipse, Icons.circle_outlined, 'Oval'),
-                  tool(EditTool.line, Icons.horizontal_rule, 'Line'),
-                  tool(EditTool.arrow, Icons.arrow_right_alt, 'Arrow'),
-                  tool(EditTool.link, Icons.link, 'Link'),
-                  _ToolButton(icon: Icons.water_drop_outlined, label: 'Watermark', onTap: () => showWatermarkDialog(context, session: host.session)),
-                  _ToolButton(icon: Icons.format_list_numbered, label: 'Page no.', onTap: () => showPageNumbersDialog(context, session: host.session)),
-                  _ToolButton(icon: Icons.layers_clear_outlined, label: 'Remove marks', onTap: () => showRemoveArtifactsDialog(context, session: host.session)),
+                  tool(EditTool.addText, Symbols.title, 'Add text'),
+                  tool(EditTool.addImage, Symbols.add_photo_alternate, 'Add image'),
+                  tool(EditTool.rect, Symbols.crop_square, 'Rectangle'),
+                  tool(EditTool.ellipse, Symbols.circle, 'Oval'),
+                  tool(EditTool.line, Symbols.horizontal_rule, 'Line'),
+                  tool(EditTool.arrow, Symbols.arrow_right_alt, 'Arrow'),
+                  tool(EditTool.link, Symbols.link, 'Link'),
+                  _ToolButton(
+                    icon: Symbols.water_drop,
+                    label: 'Watermark',
+                    onTap: () => showWatermarkDialog(context, session: host.session),
+                  ),
+                  _ToolButton(
+                    icon: Symbols.format_list_numbered,
+                    label: 'Page no.',
+                    onTap: () => showPageNumbersDialog(context, session: host.session),
+                  ),
+                  _ToolButton(
+                    icon: Symbols.layers_clear,
+                    label: 'Remove marks',
+                    onTap: () => showRemoveArtifactsDialog(context, session: host.session),
+                  ),
                 ],
               ),
             ),
@@ -586,13 +718,21 @@ class _ToolButton extends StatelessWidget {
       child: Container(
         width: 70,
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-        decoration: BoxDecoration(color: selected ? scheme.primary.withValues(alpha: 0.14) : null, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: selected ? scheme.primary.withValues(alpha: 0.14) : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: selected ? scheme.primary : scheme.onSurfaceVariant),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 11, color: selected ? scheme.primary : scheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: selected ? scheme.primary : scheme.onSurfaceVariant),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
