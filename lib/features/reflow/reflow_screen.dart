@@ -146,11 +146,13 @@ class _ReflowScreenState extends State<ReflowScreen> {
       data: Theme.of(context).copyWith(
         scaffoldBackgroundColor: colors.background,
         appBarTheme: Theme.of(context).appBarTheme.copyWith(
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           foregroundColor: colors.text,
-          titleTextStyle: TextStyle(color: colors.text, fontSize: 18, fontWeight: FontWeight.w600),
+          iconTheme: IconThemeData(color: colors.text, weight: 300),
+          actionsIconTheme: IconThemeData(color: colors.text, weight: 300),
+          titleTextStyle: TextStyle(fontFamily: 'SourceSans', color: colors.text, fontSize: 18, fontWeight: FontWeight.w600),
         ),
-        iconTheme: IconThemeData(color: colors.text),
+        iconTheme: IconThemeData(color: colors.text, weight: 300),
       ),
       child: Scaffold(
         appBar: AppBar(

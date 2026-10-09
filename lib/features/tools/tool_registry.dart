@@ -249,7 +249,7 @@ class ToolRegistry {
       title: 'Redact',
       subtitle: 'Permanently remove content',
       icon: Symbols.format_color_fill,
-      color: Colors.black87,
+      color: const Color(0xFF707070),
       category: ToolCategory.protect,
       launcher: (c, p, pw) => _viewer(c, p, pw, ViewerMode.redact),
     ),

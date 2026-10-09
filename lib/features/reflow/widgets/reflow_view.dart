@@ -334,9 +334,12 @@ class _ReflowViewState extends State<ReflowView> {
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
-                      child: _buildItem(context, index, style, query),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
+                        child: _buildItem(context, index, style, query),
+                      ),
                     ),
                   ),
                 ),

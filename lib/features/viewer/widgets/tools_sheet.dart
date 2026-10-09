@@ -52,7 +52,7 @@ final _tools = <_ViewerTool>[
   ),
   _ViewerTool('Compress', Symbols.compress, Brand.compress, (c, h) => _push(c, h, CompressScreen(session: h.session))),
   _ViewerTool('Protect', Symbols.lock_outline, Brand.protect, (c, h) => _push(c, h, ProtectScreen(session: h.session))),
-  _ViewerTool('Redact', Symbols.format_color_fill, Colors.black87, (c, h) => h.setMode(ViewerMode.redact)),
+  _ViewerTool('Redact', Symbols.format_color_fill, const Color(0xFF707070), (c, h) => h.setMode(ViewerMode.redact)),
   _ViewerTool('Watermark', Symbols.water_drop, Brand.edit, (c, h) => showWatermarkDialog(c, session: h.session)),
   _ViewerTool(
     'Page numbers',
