@@ -87,6 +87,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: TabBar(
                         controller: _tabs,
                         isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        labelPadding: const EdgeInsets.only(right: 24),
+                        indicatorSize: TabBarIndicatorSize.label,
                         tabs: const [Tab(text: 'Recent', height: 40), Tab(text: 'Starred', height: 40)],
                       ),
                     ),

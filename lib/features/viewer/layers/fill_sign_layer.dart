@@ -383,7 +383,7 @@ class FillSignToolbar extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Color and size',
-                    icon: Icon(Symbols.circle, color: vs.inkColor),
+                    icon: Icon(Symbols.circle, fill: 1, color: vs.inkColor),
                     onPressed: () => showStyleSheet(
                       context,
                       color: vs.inkColor,
@@ -431,7 +431,7 @@ class FillSignToolbar extends StatelessWidget {
                   btn(FillTool.text, const Icon(Symbols.text_fields), 'Text'),
                   btn(FillTool.check, const Icon(Symbols.check), 'Check'),
                   btn(FillTool.cross, const Icon(Symbols.close), 'Cross'),
-                  btn(FillTool.dot, const Icon(Symbols.circle, size: 12), 'Dot'),
+                  btn(FillTool.dot, const Icon(Symbols.circle, fill: 1, size: 12), 'Dot'),
                   btn(FillTool.signature, const Icon(Symbols.draw), 'Sign'),
                   btn(FillTool.initials, const Icon(Symbols.short_text), 'Initials'),
                 ],

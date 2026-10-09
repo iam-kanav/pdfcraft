@@ -336,7 +336,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
       },
       onInteractionEnd: horizontal ? (_) => _snapToPage() : (_) => _stableMatrix = controller.value.clone(),
       onPageChanged: _onPageChanged,
-      linkHandlerParams: PdfLinkHandlerParams(onLinkTap: _onLinkTap),
+      linkHandlerParams: PdfLinkHandlerParams(onLinkTap: _onLinkTap, linkColor: Colors.transparent),
       onGeneralTap: (context, c, details) {
         if (details.type == PdfViewerGeneralTapType.tap &&
             mode == ViewerMode.read &&

@@ -114,12 +114,10 @@ ThemeData buildTheme(Brightness brightness) {
       labelColor: onSurface,
       unselectedLabelColor: secondaryText,
       indicatorColor: onSurface,
-      indicatorSize: TabBarIndicatorSize.label,
+      indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: Colors.transparent,
       labelStyle: const TextStyle(fontFamily: Brand.fontFamily, fontSize: 15, fontWeight: FontWeight.w600),
       unselectedLabelStyle: const TextStyle(fontFamily: Brand.fontFamily, fontSize: 15),
-      tabAlignment: TabAlignment.start,
-      labelPadding: const EdgeInsets.only(right: 24),
       indicator: UnderlineTabIndicator(borderSide: BorderSide(color: onSurface, width: 2)),
     ),
     cardTheme: CardThemeData(
