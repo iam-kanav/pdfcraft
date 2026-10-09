@@ -20,7 +20,7 @@ class ReadingSettingsSheet extends StatelessWidget {
     );
   }
 
-  static const _familyLabels = {'sans': 'Sans', 'serif': 'Serif', 'mono': 'Mono'};
+  static const _familyLabels = {'original': 'Original', 'sans': 'Sans', 'serif': 'Serif', 'mono': 'Mono'};
 
   @override
   Widget build(BuildContext context) {

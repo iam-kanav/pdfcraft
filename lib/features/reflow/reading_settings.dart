@@ -104,7 +104,7 @@ class ReadingSettings extends ChangeNotifier {
   static const double maxFontScale = 2.0;
   static const double minLineHeight = 1.2;
   static const double maxLineHeight = 2.2;
-  static const List<String> fontFamilies = ['sans', 'serif', 'mono'];
+  static const List<String> fontFamilies = ['original', 'sans', 'serif', 'mono'];
 
   /// Base body text size before [fontScale] is applied.
   static const double baseFontSize = 16;
@@ -118,7 +118,7 @@ class ReadingSettings extends ChangeNotifier {
 
   double _fontScale = 1.0;
   double _lineHeight = 1.6;
-  String _fontFamily = 'sans';
+  String _fontFamily = 'original';
   TextAlign _textAlign = TextAlign.left;
   ReadingMargin _margin = ReadingMargin.normal;
   ReadingTheme _theme = ReadingTheme.light;
@@ -127,7 +127,7 @@ class ReadingSettings extends ChangeNotifier {
   double get fontScale => _fontScale;
   double get lineHeight => _lineHeight;
 
-  /// One of [fontFamilies]: `'sans'`, `'serif'` or `'mono'`.
+  /// One of [fontFamilies]: `'original'` (keep the document's fonts), `'sans'`, `'serif'` or `'mono'`.
   String get fontFamily => _fontFamily;
 
   /// Either [TextAlign.left] or [TextAlign.justify].
@@ -236,7 +236,7 @@ class ReadingSettings extends ChangeNotifier {
   Future<void> reset() {
     _fontScale = 1.0;
     _lineHeight = 1.6;
-    _fontFamily = 'sans';
+    _fontFamily = 'original';
     _textAlign = TextAlign.left;
     _margin = ReadingMargin.normal;
     _theme = ReadingTheme.light;

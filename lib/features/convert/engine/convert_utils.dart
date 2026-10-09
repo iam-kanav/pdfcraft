@@ -142,15 +142,21 @@ List<TextSpanData> mergeSpans(Iterable<TextSpanData> spans) {
   return out;
 }
 
-bool sameSpanStyle(TextSpanData a, TextSpanData b) =>
-    a.bold == b.bold && a.italic == b.italic && a.underline == b.underline && a.link == b.link;
+bool sameSpanStyle(TextSpanData a, TextSpanData b) => a.sameStyleAs(b);
+
+/// 'RRGGBB' hex for an ARGB color.
+String hexRgb(int argb) => (argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase();
 
 TextSpanData spanWith(TextSpanData s, {String? text, bool? bold, bool? italic, bool? underline}) => TextSpanData(
   text ?? s.text,
   bold: bold ?? s.bold,
   italic: italic ?? s.italic,
   underline: underline ?? s.underline,
+  strike: s.strike,
   link: s.link,
+  color: s.color,
+  fontFamily: s.fontFamily,
+  sizeRatio: s.sizeRatio,
 );
 
 /// Number formats used for ordered lists by nesting level, shared by the

@@ -131,9 +131,9 @@ class _DocxWriter {
       switch (block) {
         case HeadingBlock():
           final level = block.level.clamp(1, 6);
-          sb.write(_paragraph(block.spans, style: 'Heading$level'));
+          sb.write(_paragraph(block.spans, style: 'Heading$level', align: block.align));
         case ParagraphBlock():
-          sb.write(_paragraph(block.spans));
+          sb.write(_paragraph(block.spans, align: block.align));
         case QuoteBlock():
           sb.write(_paragraph(block.spans, style: 'Quote'));
         case ListItemBlock():
@@ -174,12 +174,14 @@ class _DocxWriter {
     return id;
   }
 
-  String _paragraph(List<TextSpanData> spans, {String? style, String? numPr}) {
+  String _paragraph(List<TextSpanData> spans, {String? style, String? numPr, BlockAlign align = BlockAlign.start}) {
     final sb = StringBuffer('<w:p>');
-    if (style != null || numPr != null) {
+    if (style != null || numPr != null || align != BlockAlign.start) {
       sb.write('<w:pPr>');
       if (style != null) sb.write('<w:pStyle w:val="$style"/>');
       if (numPr != null) sb.write(numPr);
+      if (align == BlockAlign.center) sb.write('<w:jc w:val="center"/>');
+      if (align == BlockAlign.end) sb.write('<w:jc w:val="right"/>');
       sb.write('</w:pPr>');
     }
     sb.write(_runs(spans));
@@ -206,8 +208,20 @@ class _DocxWriter {
   String _run(TextSpanData span, {bool hyperlink = false, bool forceBold = false}) {
     final rPr = StringBuffer();
     if (hyperlink) rPr.write('<w:rStyle w:val="Hyperlink"/>');
+    final font = switch (span.fontFamily) {
+      'serif' => 'Times New Roman',
+      'mono' => 'Courier New',
+      _ => null,
+    };
+    if (font != null) rPr.write('<w:rFonts w:ascii="$font" w:hAnsi="$font" w:cs="$font"/>');
     if (span.bold || forceBold) rPr.write('<w:b/><w:bCs/>');
     if (span.italic) rPr.write('<w:i/><w:iCs/>');
+    if (span.strike) rPr.write('<w:strike/>');
+    if (span.color != null && !hyperlink) rPr.write('<w:color w:val="${hexRgb(span.color!)}"/>');
+    if (span.sizeRatio != 1.0) {
+      final halfPoints = (22 * span.sizeRatio).round().clamp(8, 144);
+      rPr.write('<w:sz w:val="$halfPoints"/><w:szCs w:val="$halfPoints"/>');
+    }
     if (span.underline) rPr.write('<w:u w:val="single"/>');
     final sb = StringBuffer('<w:r>');
     if (rPr.isNotEmpty) sb.write('<w:rPr>$rPr</w:rPr>');

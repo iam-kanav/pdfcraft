@@ -75,6 +75,11 @@ class RawTextSpan {
     this.fontName = '',
     required this.x0,
     required this.x1,
+    this.color,
+    this.family,
+    this.underline = false,
+    this.strike = false,
+    this.link,
   });
 
   final String text;
@@ -84,6 +89,17 @@ class RawTextSpan {
   final String fontName;
   final double x0, x1;
 
+  /// Text color (ARGB) or null when it is plain black.
+  final int? color;
+
+  /// 'serif', 'sans' or 'mono' when known.
+  final String? family;
+  final bool underline;
+  final bool strike;
+
+  /// Target of a link annotation covering this span.
+  final String? link;
+
   factory RawTextSpan.fromMap(Map<dynamic, dynamic> m) => RawTextSpan(
     text: m['text'] as String,
     fontSize: (m['size'] as num).toDouble(),
@@ -92,6 +108,11 @@ class RawTextSpan {
     fontName: m['font'] as String? ?? '',
     x0: (m['x0'] as num).toDouble(),
     x1: (m['x1'] as num).toDouble(),
+    color: m['color'] as int?,
+    family: m['family'] as String?,
+    underline: m['underline'] as bool? ?? false,
+    strike: m['strike'] as bool? ?? false,
+    link: m['link'] as String?,
   );
 }
 

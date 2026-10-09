@@ -4,11 +4,14 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:pdfcraft/core/models/doc_structure.dart';
+import 'package:pdfcraft/core/models/raw_page_content.dart';
 import 'package:pdfcraft/core/native/pdf_engine.dart';
 import 'package:pdfcraft/core/pdf_render.dart';
 import 'package:pdfcraft/core/services.dart';
 import 'package:pdfcraft/features/convert/convert_service.dart';
 import 'package:pdfcraft/features/convert/ocr_service.dart';
+import 'package:pdfcraft/features/reflow/analyzer/reflow_analyzer.dart';
 import 'package:pdfcraft/features/viewer/viewer_state.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -456,6 +459,36 @@ void main() {
     final doc = await ConvertService.pdfToStructure(sample);
     expect(doc.headings.map((h) => h.text), contains('Chapter 1 Heading'));
     expect(doc.plainText, contains('Hello World page 2'));
+  });
+
+  test('smart reading keeps colors, fonts, decorations, links and alignment', () async {
+    final path = await samples.formattedDoc();
+    final raw = (await engine.extractPages(path)).single;
+    RawTextSpan spanWith(String text) => raw.lines.expand((l) => l.spans).firstWhere((s) => s.text.contains(text));
+    final red = spanWith('red words');
+    expect(red.color, isNotNull);
+    expect((red.color! >> 16) & 0xFF, greaterThan(180)); // red channel
+    expect(spanWith('underlined').underline, isTrue);
+    expect(spanWith('struck').strike, isTrue);
+    expect(spanWith('monospaced').family, 'mono');
+    expect(spanWith('This paragraph').family, 'serif');
+    expect(spanWith('Visit').link, 'https://example.com/docs');
+    expect(spanWith('This paragraph').color, isNull); // black ink = default
+
+    final doc = analyzeDocument([raw]);
+    final title = doc.blocks.whereType<HeadingBlock>().first;
+    expect(title.text, 'Formatting Showcase');
+    expect(title.align, BlockAlign.center);
+    expect(title.spans.first.color, isNotNull);
+    final paragraphs = doc.blocks.whereType<ParagraphBlock>().toList();
+    final body = paragraphs.firstWhere((p) => p.text.startsWith('This paragraph'));
+    expect(body.spans.any((s) => s.underline && s.text.contains('underlined')), isTrue);
+    expect(body.spans.any((s) => s.strike && s.text.contains('struck')), isTrue);
+    expect(body.spans.any((s) => s.fontFamily == 'mono'), isTrue);
+    final signed = paragraphs.firstWhere((p) => p.text.contains('Signed'));
+    expect(signed.align, BlockAlign.end);
+    final link = paragraphs.firstWhere((p) => p.text.contains('Visit'));
+    expect(link.spans.first.link, 'https://example.com/docs');
   });
 
   test('OCR layer makes invisible words searchable', () async {

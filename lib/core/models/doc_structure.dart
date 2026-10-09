@@ -26,31 +26,74 @@ sealed class DocBlock {
   String get plainText;
 }
 
+/// Horizontal alignment of a block as laid out in the source document.
+enum BlockAlign { start, center, end }
+
 /// A run of text with uniform styling.
 class TextSpanData {
-  const TextSpanData(this.text, {this.bold = false, this.italic = false, this.underline = false, this.link});
+  const TextSpanData(
+    this.text, {
+    this.bold = false,
+    this.italic = false,
+    this.underline = false,
+    this.strike = false,
+    this.link,
+    this.color,
+    this.fontFamily,
+    this.sizeRatio = 1.0,
+  });
 
   final String text;
   final bool bold;
   final bool italic;
   final bool underline;
+  final bool strike;
   final String? link;
 
-  TextSpanData copyWith({String? text}) =>
-      TextSpanData(text ?? this.text, bold: bold, italic: italic, underline: underline, link: link);
+  /// Original text color (ARGB), or null for the default ink color.
+  final int? color;
+
+  /// Original font family class: 'serif', 'sans' or 'mono' (null = unknown).
+  final String? fontFamily;
+
+  /// Size relative to the block's dominant size (1.0 = same; e.g. 0.7 for footnote marks).
+  final double sizeRatio;
+
+  bool sameStyleAs(TextSpanData o) =>
+      bold == o.bold &&
+      italic == o.italic &&
+      underline == o.underline &&
+      strike == o.strike &&
+      link == o.link &&
+      color == o.color &&
+      fontFamily == o.fontFamily &&
+      sizeRatio == o.sizeRatio;
+
+  TextSpanData copyWith({String? text}) => TextSpanData(
+    text ?? this.text,
+    bold: bold,
+    italic: italic,
+    underline: underline,
+    strike: strike,
+    link: link,
+    color: color,
+    fontFamily: fontFamily,
+    sizeRatio: sizeRatio,
+  );
 
   @override
-  String toString() => 'Span(${bold ? 'b' : ''}${italic ? 'i' : ''}"$text")';
+  String toString() => 'Span(${bold ? 'b' : ''}${italic ? 'i' : ''}${underline ? 'u' : ''}"$text")';
 }
 
 String spansToText(List<TextSpanData> spans) => spans.map((s) => s.text).join();
 
 class HeadingBlock extends DocBlock {
-  const HeadingBlock({required this.level, required this.spans, super.pageNumber});
+  const HeadingBlock({required this.level, required this.spans, this.align = BlockAlign.start, super.pageNumber});
 
   /// 1 (largest) .. 6.
   final int level;
   final List<TextSpanData> spans;
+  final BlockAlign align;
 
   String get text => spansToText(spans);
 
@@ -62,9 +105,10 @@ class HeadingBlock extends DocBlock {
 }
 
 class ParagraphBlock extends DocBlock {
-  const ParagraphBlock({required this.spans, super.pageNumber});
+  const ParagraphBlock({required this.spans, this.align = BlockAlign.start, super.pageNumber});
 
   final List<TextSpanData> spans;
+  final BlockAlign align;
 
   String get text => spansToText(spans);
 

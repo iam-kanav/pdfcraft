@@ -60,6 +60,52 @@ class Samples {
     return f.path;
   }
 
+  /// Colored, decorated, mixed-font, aligned and linked text (smart reading fidelity).
+  Future<String> formattedDoc({String name = 'formatting.pdf'}) async {
+    final sans = await _font('NotoSans-Regular');
+    final sansBold = await _font('NotoSans-Bold');
+    final serif = await _font('NotoSerif-Regular');
+    final serifItalic = await _font('NotoSerif-Italic');
+    final mono = pw.Font.courier();
+    final doc = pw.Document();
+    doc.addPage(
+      pw.Page(
+        build: (c) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Center(child: pw.Text('Formatting Showcase', style: pw.TextStyle(font: sansBold, fontSize: 26, color: PdfColor.fromHex('#1D4ED8')))),
+            pw.SizedBox(height: 6),
+            pw.Center(child: pw.Text('A centered subtitle line', style: pw.TextStyle(font: serifItalic, fontSize: 13))),
+            pw.SizedBox(height: 18),
+            pw.RichText(
+              text: pw.TextSpan(
+                style: pw.TextStyle(font: serif, fontSize: 12),
+                children: [
+                  const pw.TextSpan(text: 'This paragraph mixes '),
+                  pw.TextSpan(text: 'red words', style: pw.TextStyle(color: PdfColor.fromHex('#DC2626'))),
+                  const pw.TextSpan(text: ', '),
+                  const pw.TextSpan(text: 'underlined text', style: pw.TextStyle(decoration: pw.TextDecoration.underline)),
+                  const pw.TextSpan(text: ', '),
+                  const pw.TextSpan(text: 'struck text', style: pw.TextStyle(decoration: pw.TextDecoration.lineThrough)),
+                  const pw.TextSpan(text: ' and '),
+                  pw.TextSpan(text: 'monospaced code', style: pw.TextStyle(font: mono)),
+                  const pw.TextSpan(text: ' inside ordinary serif prose that wraps over more than one line of the page.'),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 14),
+            pw.UrlLink(destination: 'https://example.com/docs', child: pw.Text('Visit the documentation', style: pw.TextStyle(font: sans, fontSize: 12))),
+            pw.SizedBox(height: 14),
+            pw.Align(alignment: pw.Alignment.centerRight, child: pw.Text('Signed, The Team', style: pw.TextStyle(font: sans, fontSize: 12))),
+          ],
+        ),
+      ),
+    );
+    final f = File('${dir.path}/$name');
+    await f.writeAsBytes(await doc.save());
+    return f.path;
+  }
+
   /// A one-page AcroForm with a text field, a checkbox.
   Future<String> formDoc({String name = 'form.pdf'}) async {
     final regular = await _font('NotoSans-Regular');

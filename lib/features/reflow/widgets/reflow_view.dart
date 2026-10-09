@@ -388,8 +388,18 @@ class _ReflowViewState extends State<ReflowView> {
                   children: [
                     Expanded(
                       child: Text.rich(
-                        TextSpan(children: buildHighlightedSpans(h.spans, hs, query, st.colors.accent)),
+                        TextSpan(
+                          children: buildHighlightedSpans(
+                            h.spans,
+                            hs,
+                            query,
+                            st.colors.accent,
+                            background: st.colors.background,
+                            keepFamilies: st.keepFamilies,
+                          ),
+                        ),
                         style: hs,
+                        textAlign: blockTextAlign(h.align, TextAlign.start),
                       ),
                     ),
                     if (hasContent)
@@ -413,7 +423,9 @@ class _ReflowViewState extends State<ReflowView> {
           child: _RichParagraph(
             spans: p.spans,
             style: st.body,
-            textAlign: st.align,
+            textAlign: blockTextAlign(p.align, st.align),
+            background: st.colors.background,
+            keepFamilies: st.keepFamilies,
             query: query,
             accent: st.colors.accent,
             onLinkTap: widget.onLinkTap,
@@ -436,6 +448,8 @@ class _ReflowViewState extends State<ReflowView> {
                   spans: l.spans,
                   style: st.body,
                   textAlign: st.align,
+                  background: st.colors.background,
+                  keepFamilies: st.keepFamilies,
                   query: query,
                   accent: st.colors.accent,
                   onLinkTap: widget.onLinkTap,
@@ -456,6 +470,8 @@ class _ReflowViewState extends State<ReflowView> {
               spans: q.spans,
               style: st.body.copyWith(fontStyle: FontStyle.italic, color: st.colors.secondaryText),
               textAlign: st.align,
+              background: st.colors.background,
+              keepFamilies: st.keepFamilies,
               query: query,
               accent: st.colors.accent,
               onLinkTap: widget.onLinkTap,
@@ -548,6 +564,7 @@ class _Styles {
   _Styles(ReadingSettings s)
     : colors = s.colors,
       align = s.textAlign,
+      keepFamilies = s.fontFamily == 'original',
       body = TextStyle(
         fontSize: s.fontSize,
         height: s.lineHeight,
@@ -558,6 +575,7 @@ class _Styles {
 
   final ReadingThemeColors colors;
   final TextAlign align;
+  final bool keepFamilies;
   final TextStyle body;
 
   static const _scale = [1.75, 1.5, 1.3, 1.15, 1.05, 1.0];
@@ -577,12 +595,45 @@ class _Styles {
 
 /// Builds inline spans for [spans], highlighting case-insensitive matches of
 /// [query] (which may cross span boundaries) with [accent].
+/// Adapts an original text color so it stays readable on the reading theme
+/// background (keeps the hue, adjusts lightness when contrast is too low).
+Color adaptTextColor(Color original, Color background) {
+  double contrast(Color a, Color b) {
+    final la = a.computeLuminance(), lb = b.computeLuminance();
+    final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  if (contrast(original, background) >= 3) return original;
+  final towards = background.computeLuminance() < 0.5 ? Colors.white : Colors.black;
+  for (var t = 0.2; t <= 1.0; t += 0.2) {
+    final c = Color.lerp(original, towards, t)!;
+    if (contrast(c, background) >= 3) return c;
+  }
+  return towards;
+}
+
+String? _familyFor(String? family) => switch (family) {
+  'serif' => 'serif',
+  'mono' => 'monospace',
+  'sans' => 'sans-serif',
+  _ => null,
+};
+
+TextAlign blockTextAlign(BlockAlign align, TextAlign fallback) => switch (align) {
+  BlockAlign.center => TextAlign.center,
+  BlockAlign.end => TextAlign.right,
+  BlockAlign.start => fallback,
+};
+
 List<InlineSpan> buildHighlightedSpans(
   List<TextSpanData> spans,
   TextStyle base,
   String query,
   Color accent, {
   GestureRecognizer? Function(String link)? recognizerFor,
+  Color? background,
+  bool keepFamilies = true,
 }) {
   final plain = spansToText(spans);
   final ranges = <(int, int)>[];
@@ -605,7 +656,19 @@ List<InlineSpan> buildHighlightedSpans(
     var style = base;
     if (s.bold) style = style.copyWith(fontWeight: FontWeight.w700);
     if (s.italic) style = style.copyWith(fontStyle: FontStyle.italic);
-    if (s.underline || s.link != null) style = style.copyWith(decoration: TextDecoration.underline);
+    if (s.color != null) {
+      final c = Color(s.color!);
+      style = style.copyWith(color: background == null ? c : adaptTextColor(c, background));
+    }
+    if (keepFamilies && s.fontFamily != null) style = style.copyWith(fontFamily: _familyFor(s.fontFamily));
+    if (s.sizeRatio != 1.0 && base.fontSize != null) {
+      style = style.copyWith(fontSize: base.fontSize! * s.sizeRatio.clamp(0.55, 2.0));
+    }
+    final decorations = [
+      if (s.underline || s.link != null) TextDecoration.underline,
+      if (s.strike) TextDecoration.lineThrough,
+    ];
+    if (decorations.isNotEmpty) style = style.copyWith(decoration: TextDecoration.combine(decorations));
     if (s.link != null) style = style.copyWith(color: accent, decorationColor: accent);
     final recognizer = s.link != null && recognizerFor != null ? recognizerFor(s.link!) : null;
     final start = offset, end = offset + s.text.length;
@@ -644,6 +707,8 @@ class _RichParagraph extends StatefulWidget {
     required this.query,
     required this.accent,
     this.onLinkTap,
+    this.background,
+    this.keepFamilies = true,
   });
 
   final List<TextSpanData> spans;
@@ -652,6 +717,8 @@ class _RichParagraph extends StatefulWidget {
   final String query;
   final Color accent;
   final void Function(String link)? onLinkTap;
+  final Color? background;
+  final bool keepFamilies;
 
   @override
   State<_RichParagraph> createState() => _RichParagraphState();
@@ -682,6 +749,8 @@ class _RichParagraphState extends State<_RichParagraph> {
       widget.style,
       widget.query,
       widget.accent,
+      background: widget.background,
+      keepFamilies: widget.keepFamilies,
       recognizerFor: onLinkTap == null
           ? null
           : (link) {

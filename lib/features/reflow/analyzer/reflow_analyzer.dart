@@ -60,8 +60,29 @@ double _percentile(List<double> values, double q) {
 
 double _roundHalf(double v) => (v * 2).roundToDouble() / 2;
 
-bool _sameStyle(TextSpanData a, TextSpanData b) =>
-    a.bold == b.bold && a.italic == b.italic && a.underline == b.underline && a.link == b.link;
+bool _sameStyle(TextSpanData a, TextSpanData b) => a.sameStyleAs(b);
+
+/// Alignment of a group of lines within their column: centered or right-aligned
+/// when every line shows it consistently (titles, bylines, signatures, dates).
+BlockAlign _alignOf(List<_Item> lines) {
+  if (lines.isEmpty) return BlockAlign.start;
+  final first = lines.first;
+  final colW = first.colWidth;
+  if (colW <= 0) return BlockAlign.start;
+  var centered = true, right = true;
+  for (final l in lines) {
+    final left = l.x0 - l.colX0;
+    final rightGap = l.colX1 - l.x1;
+    final tol = math.max(0.6 * l.fontSize, 0.04 * colW);
+    if (!((left - rightGap).abs() <= tol && left > 0.08 * colW)) centered = false;
+    if (!(rightGap <= tol && left > 0.2 * colW)) right = false;
+  }
+  // A single full-width line is ambiguous; it's simply left-aligned.
+  if (lines.length == 1 && lines.first.width > 0.85 * colW) return BlockAlign.start;
+  if (centered) return BlockAlign.center;
+  if (right) return BlockAlign.end;
+  return BlockAlign.start;
+}
 
 /// Appends [s] to [out], merging with the previous span when the style is
 /// equal and collapsing double spaces at the junction.
@@ -400,6 +421,7 @@ void _appendWithContinuation(List<DocBlock> blocks, List<DocBlock> pageBlocks) {
         if (_startsLowercase(cont.text) || _hyphenEndRe.hasMatch(prevTail)) {
           blocks[blocks.length - 1] = ParagraphBlock(
             spans: _joinLines([prev.spans, cont.spans]),
+            align: prev.align,
             pageNumber: prev.pageNumber,
           );
           next.removeAt(k);
@@ -483,7 +505,31 @@ class _Item {
         final size = math.max(s.fontSize, prev.fontSize);
         if (gap > 0.15 * size && !out.last.text.endsWith(' ') && !t.startsWith(' ')) t = ' $t';
       }
-      _appendSpan(out, TextSpanData(t, bold: s.bold, italic: s.italic));
+      final ratio = fontSize > 0 ? s.fontSize / fontSize : 1.0;
+      final decorated = s.underline || s.strike || s.link != null;
+      if (decorated && t.startsWith(' ')) {
+        // Keep decorations off the separating space.
+        _appendSpan(out, TextSpanData(' ', bold: s.bold, italic: s.italic, color: s.color, fontFamily: s.family));
+        t = t.trimLeft();
+        if (t.isEmpty) {
+          prev = s;
+          continue;
+        }
+      }
+      _appendSpan(
+        out,
+        TextSpanData(
+          t,
+          bold: s.bold,
+          italic: s.italic,
+          underline: s.underline,
+          strike: s.strike,
+          link: s.link,
+          color: s.color,
+          fontFamily: s.family,
+          sizeRatio: (ratio - 1).abs() < 0.08 ? 1.0 : (ratio * 20).roundToDouble() / 20,
+        ),
+      );
       prev = s;
     }
     return _trimSpans(out);
@@ -1093,7 +1139,12 @@ class _PageAnalyzer {
         final group = items.sublist(i, hEnd + 1);
         out.add(
           _Blk(
-            HeadingBlock(level: _headingLevel, spans: _joinLines(group.map((g) => g.textSpans)), pageNumber: pageNo),
+            HeadingBlock(
+              level: _headingLevel,
+              spans: _joinLines(group.map((g) => g.textSpans)),
+              align: _alignOf(group),
+              pageNumber: pageNo,
+            ),
             group.first.y0,
             group.last.y1,
             colX0: it.colX0,
@@ -1171,7 +1222,7 @@ class _PageAnalyzer {
       }
     }
     return _Blk(
-      ParagraphBlock(spans: spans, pageNumber: page.pageNumber),
+      ParagraphBlock(spans: spans, align: _alignOf(lines), pageNumber: page.pageNumber),
       y0,
       y1,
       colX0: first.colX0,

@@ -31,9 +31,9 @@ String buildHtml(DocStructure doc, {String? title}) {
     switch (block) {
       case HeadingBlock():
         final l = block.level.clamp(1, 6);
-        sb.writeln('<h$l>${_spans(block.spans)}</h$l>');
+        sb.writeln('<h$l${_alignAttr(block.align)}>${_spans(block.spans)}</h$l>');
       case ParagraphBlock():
-        sb.writeln('<p>${_spans(block.spans)}</p>');
+        sb.writeln('<p${_alignAttr(block.align)}>${_spans(block.spans)}</p>');
       case QuoteBlock():
         sb.writeln('<blockquote><p>${_spans(block.spans)}</p></blockquote>');
       case ListItemBlock():
@@ -101,10 +101,24 @@ String? _safeHref(String? link) {
   return allowed.contains(scheme) ? l : null;
 }
 
+String _alignAttr(BlockAlign a) => switch (a) {
+  BlockAlign.center => ' style="text-align:center"',
+  BlockAlign.end => ' style="text-align:right"',
+  BlockAlign.start => '',
+};
+
 String _spans(List<TextSpanData> spans) {
   final sb = StringBuffer();
   for (final s in mergeSpans(spans)) {
     var inner = _textWithBreaks(s.text);
+    final css = [
+      if (s.color != null) 'color:#${hexRgb(s.color!)}',
+      if (s.fontFamily == 'serif') 'font-family:Georgia,serif',
+      if (s.fontFamily == 'mono') 'font-family:monospace',
+      if (s.sizeRatio != 1.0) 'font-size:${(s.sizeRatio * 100).round()}%',
+    ];
+    if (css.isNotEmpty) inner = '<span style="${css.join(';')}">$inner</span>';
+    if (s.strike) inner = '<s>$inner</s>';
     if (s.underline) inner = '<u>$inner</u>';
     if (s.italic) inner = '<em>$inner</em>';
     if (s.bold) inner = '<strong>$inner</strong>';
