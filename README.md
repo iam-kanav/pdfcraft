@@ -9,6 +9,7 @@
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Flutter 3.44](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter&logoColor=white)
 ![Works offline](https://img.shields.io/badge/works-100%25%20offline-EB1000)
+![MIT License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
 
@@ -212,6 +213,6 @@ PDFCraft builds on these excellent open-source projects:
 
 ## License
 
-PDFCraft doesn't have an open-source license yet, so all rights are reserved by the author.
+PDFCraft is open source under the [MIT License](LICENSE). You're free to use, change and share it.
 
 The bundled fonts are licensed under the SIL Open Font License. Their license files are in [assets/fonts](assets/fonts).
