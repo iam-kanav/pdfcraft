@@ -58,6 +58,7 @@ class MainActivity : FlutterActivity() {
                 "getImageObjects" -> ContentOps::getImageObjects
                 "editImage" -> ContentOps::editImage
                 "getVectorObjects" -> ContentOps::getVectorObjects
+                "stripText" -> ContentOps::stripText
                 "editVectors" -> ContentOps::editVectors
                 "addContent" -> ContentOps::addContent
                 "redact" -> ContentOps::redact

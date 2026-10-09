@@ -299,6 +299,9 @@ class PdfEngine {
     'imagePath': ?imagePath,
   });
 
+  /// Copy of [path] with all visible text removed (graphics and images kept).
+  Future<void> stripText(String path, String out, {String? password}) => _call('stripText', _base(path, password, out));
+
   Future<List<Map<String, dynamic>>> getVectorObjects(String path, int page, {String? password}) async {
     final r = await _call<List>('getVectorObjects', {..._base(path, password), 'page': page});
     return [for (final m in r!) (m as Map).cast<String, dynamic>()];

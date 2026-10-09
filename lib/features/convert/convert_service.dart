@@ -17,6 +17,8 @@ import 'engine/convert_engine.dart';
 
 enum ExportFormat {
   word('Microsoft Word', '.docx', 'Editable document with headings, lists, tables and images'),
+  excel('Microsoft Excel', '.xlsx', 'Tables and text as spreadsheet cells'),
+  powerpoint('Microsoft PowerPoint', '.pptx', 'One slide per page with editable text boxes'),
   text('Plain text', '.txt', 'Text only'),
   html('Web page (HTML)', '.html', 'Single file with embedded images'),
   markdown('Markdown', '.zip', 'Markdown with an images folder (zipped)'),
@@ -119,6 +121,12 @@ class ConvertService {
       }
     }
 
+    if (format == ExportFormat.powerpoint) {
+      final target = out('.pptx');
+      await File(target).writeAsBytes(await _pdfToPptx(path, password: password, pages: pages, onProgress: onProgress));
+      return target;
+    }
+
     final structure = await pdfToStructure(
       path,
       password: password,
@@ -132,6 +140,9 @@ class ConvertService {
       case ExportFormat.word:
         target = out('.docx');
         await File(target).writeAsBytes(buildDocx(structure, title: title));
+      case ExportFormat.excel:
+        target = out('.xlsx');
+        await File(target).writeAsBytes(buildXlsx(structureToSheets(structure), title: title));
       case ExportFormat.text:
         target = out('.txt');
         await File(target).writeAsString(structureToPlainText(structure));
@@ -158,6 +169,62 @@ class ConvertService {
     }
     onProgress?.call(1);
     return target;
+  }
+
+  /// Editable slides: page artwork (with text removed) as the background and the page's
+  /// text blocks as real text boxes at their original positions.
+  static Future<Uint8List> _pdfToPptx(String path, {String? password, List<int>? pages, void Function(double)? onProgress}) async {
+    final engine = PdfEngine.instance;
+    final dir = await Directory.systemTemp.createTemp('pptx');
+    try {
+      final stripped = p.join(dir.path, 'notext.pdf');
+      await engine.stripText(path, stripped, password: password);
+      final bg = await openPdf(stripped, password: password);
+      try {
+        final targets = pages ?? [for (var i = 0; i < bg.pages.length; i++) i];
+        final slides = <SlideSpec>[];
+        for (var k = 0; k < targets.length; k++) {
+          final i = targets[k];
+          final page = bg.pages[i];
+          final img = await renderPageImage(page, dpi: 144);
+          final png = img == null ? null : await imageToPng(img);
+          img?.dispose();
+          final blocks = await engine.getTextBlocks(path, i, password: password);
+          slides.add(
+            SlideSpec(
+              widthPt: page.width,
+              heightPt: page.height,
+              background: png,
+              textBoxes: [
+                for (final b in blocks)
+                  () {
+                    final r = b['rect'] as List;
+                    final left = (r[0] as num).toDouble(), top = (r[1] as num).toDouble();
+                    return SlideTextBox(
+                      left: left,
+                      top: top,
+                      width: (r[2] as num).toDouble() - left,
+                      height: (r[3] as num).toDouble() - top,
+                      lines: [for (final l in b['lines'] as List) (l as Map)['text'] as String],
+                      fontSize: (b['fontSize'] as num).toDouble(),
+                      bold: b['bold'] as bool? ?? false,
+                      italic: b['italic'] as bool? ?? false,
+                      serif: b['serif'] as bool? ?? false,
+                      color: b['color'] as int? ?? 0xFF000000,
+                    );
+                  }(),
+              ],
+            ),
+          );
+          onProgress?.call((k + 1) / targets.length);
+        }
+        return buildPptx(slides, title: p.basenameWithoutExtension(path));
+      } finally {
+        await bg.dispose();
+      }
+    } finally {
+      await dir.delete(recursive: true);
+    }
   }
 
   static Future<Uint8List> _encodeJpeg(Uint8List rgba, int w, int h) => _jpeg(rgba, w, h);

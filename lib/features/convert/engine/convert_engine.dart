@@ -11,4 +11,6 @@ export 'markdown_writer.dart';
 export 'pdf_builder.dart';
 export 'text_export.dart';
 export 'text_reader.dart';
+export 'pptx_writer.dart';
 export 'xlsx_reader.dart';
+export 'xlsx_writer.dart';

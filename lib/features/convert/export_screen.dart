@@ -99,6 +99,8 @@ class _ExportScreenState extends State<ExportScreen> {
                 subtitle: Text(f.description),
                 secondary: Icon(switch (f) {
                   ExportFormat.word => Symbols.description,
+                ExportFormat.excel => Symbols.table_chart,
+                ExportFormat.powerpoint => Symbols.slideshow,
                   ExportFormat.text => Symbols.notes,
                   ExportFormat.html => Symbols.html,
                   ExportFormat.markdown => Symbols.text_snippet,

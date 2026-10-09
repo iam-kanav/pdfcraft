@@ -304,6 +304,18 @@ object ContentOps {
         return ctm.multiply(upInv).multiply(a).multiply(up)
     }
 
+    /** Removes all visible text from every page (keeps graphics/images) — used for editable slide export. */
+    fun stripText(args: Map<String, Any?>) {
+        PdfIO.edit(args.path, args.password, args.out) { od ->
+            for (page in od.doc.pages) {
+                val scan = ContentScanner.scan(page)
+                val plan = RewritePlan()
+                scan.texts.filter { !it.invisible && it.glyphs.isNotEmpty() }.forEach { plan.removeAllGlyphs(it) }
+                ContentRewriter.apply(od.doc, page, scan, plan)
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- vector shapes
 
     private fun vectorPaths(scan: PageScan) = scan.paths.withIndex().filter { (_, p) ->
