@@ -301,8 +301,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 itemCount: _pages.length,
-                onReorder: (a, b) => setState(() {
-                  if (b > a) b--;
+                onReorderItem: (a, b) => setState(() {
                   _pages.insert(b, _pages.removeAt(a));
                 }),
                 itemBuilder: (context, i) => GestureDetector(

@@ -9,7 +9,11 @@ class AppLogo extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => SizedBox(width: size, height: size, child: CustomPaint(painter: _LogoPainter()));
+  Widget build(BuildContext context) => SizedBox(
+    width: size,
+    height: size,
+    child: CustomPaint(painter: _LogoPainter()),
+  );
 }
 
 class _LogoPainter extends CustomPainter {
@@ -32,7 +36,15 @@ class _LogoPainter extends CustomPainter {
       ..close();
     canvas.drawPath(corner, Paint()..color = const Color(0xFFFF8A80));
     final tp = TextPainter(
-      text: TextSpan(text: 'P', style: TextStyle(fontFamily: Brand.fontFamily, fontWeight: FontWeight.w700, fontSize: h * 0.62, color: Colors.white)),
+      text: TextSpan(
+        text: 'P',
+        style: TextStyle(
+          fontFamily: Brand.fontFamily,
+          fontWeight: FontWeight.w700,
+          fontSize: h * 0.62,
+          color: Colors.white,
+        ),
+      ),
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, Offset((w - tp.width) / 2 - w * 0.02, h * 0.58 - tp.height / 2));

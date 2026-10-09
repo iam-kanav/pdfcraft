@@ -131,8 +131,9 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
     for (final f in picked) {
       await _files.import(f, into: _dir);
     }
-    if (picked.isNotEmpty && mounted)
+    if (picked.isNotEmpty && mounted) {
       showSnack(context, 'Imported ${picked.length} file${picked.length == 1 ? '' : 's'}');
+    }
     _load();
   }
 
@@ -225,7 +226,10 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
         appBar: AppBar(toolbarHeight: 8),
         body: ListView(
           children: [
-            Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), child: Text('Files', style: theme.textTheme.headlineSmall)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Text('Files', style: theme.textTheme.headlineSmall),
+            ),
             loc(Symbols.smartphone, 'On this device', () {
               setState(() {
                 _rootMode = false;
@@ -269,19 +273,34 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
         if (!_atRoot)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text('My Files / ${p.relative(_dir.path, from: _files.root.path)}', style: Theme.of(context).textTheme.bodySmall),
+            child: Text(
+              'My Files / ${p.relative(_dir.path, from: _files.root.path)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         if (_loading)
-          const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: CircularProgressIndicator()),
+          )
         else if (_entries.isEmpty)
           const Padding(
             padding: EdgeInsets.all(32),
-            child: EmptyState(icon: Symbols.folder_open, title: 'This folder is empty', message: 'Import, scan or create PDFs to fill it.'),
+            child: EmptyState(
+              icon: Symbols.folder_open,
+              title: 'This folder is empty',
+              message: 'Import, scan or create PDFs to fill it.',
+            ),
           )
         else
           for (final e in _entries)
             if (e.isDirectory)
-              FolderTile(path: e.path, itemCount: e.childCount, onTap: () => _open(Directory(e.path)), onMore: () => _folderActions(e))
+              FolderTile(
+                path: e.path,
+                itemCount: e.childCount,
+                onTap: () => _open(Directory(e.path)),
+                onMore: () => _folderActions(e),
+              )
             else
               DocListTile(
                 path: e.path,
@@ -312,10 +331,11 @@ class _FilesScreenState extends State<FilesScreen> with WidgetsBindingObserver {
         ],
       );
     }
-    if (_device.isEmpty)
+    if (_device.isEmpty) {
       return ListView(
         children: const [EmptyState(icon: Symbols.search_off, title: 'No PDFs found on this device')],
       );
+    }
     return ListView.builder(
       itemCount: _device.length,
       itemBuilder: (context, i) {

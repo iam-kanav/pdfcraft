@@ -80,7 +80,10 @@ Future<void> showViewerTools(BuildContext context, ViewerHost host) => showModal
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-            child: Text('More tools', style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              'More tools',
+              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
           ),
           GridView.count(
             crossAxisCount: 4,

@@ -125,12 +125,13 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
               initial: 'Page ${widget.currentPage}',
               confirmLabel: 'Add',
             );
-            if (label != null)
+            if (label != null) {
               lib.addBookmark(
                 path,
                 widget.currentPage,
                 label.trim().isEmpty ? 'Page ${widget.currentPage}' : label.trim(),
               );
+            }
           },
         ),
         const Divider(),

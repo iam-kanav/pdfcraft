@@ -117,7 +117,7 @@ class RedactToolbar extends StatelessWidget {
       hint: 'Word, phrase, or e-mail',
       confirmLabel: 'Find',
     );
-    if (q == null || q.trim().isEmpty) return;
+    if (q == null || q.trim().isEmpty || !context.mounted) return;
     final doc = host.document;
     if (doc == null) return;
     final vs = host.viewerState;
@@ -134,8 +134,9 @@ class RedactToolbar extends StatelessWidget {
       return n;
     });
     vs.changed();
-    if (context.mounted && matches != null)
+    if (context.mounted && matches != null) {
       showSnack(context, matches == 0 ? 'No matches found' : 'Marked $matches occurrence${matches == 1 ? '' : 's'}');
+    }
   }
 
   Future<void> _apply(BuildContext context) async {

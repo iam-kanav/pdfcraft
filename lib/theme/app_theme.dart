@@ -71,7 +71,12 @@ ThemeData buildTheme(Brightness brightness) {
   );
   final t = base.textTheme;
   final text = t.copyWith(
-    headlineSmall: t.headlineSmall?.copyWith(fontSize: 24, fontWeight: FontWeight.w700, color: onSurface, letterSpacing: -0.2),
+    headlineSmall: t.headlineSmall?.copyWith(
+      fontSize: 24,
+      fontWeight: FontWeight.w700,
+      color: onSurface,
+      letterSpacing: -0.2,
+    ),
     titleLarge: t.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w700, color: onSurface),
     titleMedium: t.titleMedium?.copyWith(fontSize: 17, fontWeight: FontWeight.w600, color: onSurface),
     titleSmall: t.titleSmall?.copyWith(fontSize: 15, fontWeight: FontWeight.w600, color: onSurface),
@@ -81,7 +86,12 @@ ThemeData buildTheme(Brightness brightness) {
     labelLarge: t.labelLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
     labelSmall: t.labelSmall?.copyWith(fontSize: 12, color: secondaryText),
   );
-  final iconTheme = IconThemeData(color: light ? Brand.iconGrey : const Color(0xFFD0D0D0), size: 24, weight: 300, opticalSize: 24);
+  final iconTheme = IconThemeData(
+    color: light ? Brand.iconGrey : const Color(0xFFD0D0D0),
+    size: 24,
+    weight: 300,
+    opticalSize: 24,
+  );
   return base.copyWith(
     textTheme: text,
     iconTheme: iconTheme,
@@ -97,7 +107,12 @@ ThemeData buildTheme(Brightness brightness) {
       centerTitle: false,
       iconTheme: iconTheme,
       actionsIconTheme: iconTheme,
-      titleTextStyle: TextStyle(fontFamily: Brand.fontFamily, fontSize: 18, fontWeight: FontWeight.w600, color: onSurface),
+      titleTextStyle: TextStyle(
+        fontFamily: Brand.fontFamily,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+      ),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: surface,
@@ -124,7 +139,10 @@ ThemeData buildTheme(Brightness brightness) {
       color: surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4), side: BorderSide(color: divider)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(4),
+        side: BorderSide(color: divider),
+      ),
       margin: EdgeInsets.zero,
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -146,7 +164,12 @@ ThemeData buildTheme(Brightness brightness) {
       surfaceTintColor: Colors.transparent,
       backgroundColor: surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      titleTextStyle: TextStyle(fontFamily: Brand.fontFamily, fontSize: 20, fontWeight: FontWeight.w700, color: onSurface),
+      titleTextStyle: TextStyle(
+        fontFamily: Brand.fontFamily,
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+      ),
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: surface,
@@ -157,9 +180,18 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: false,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: light ? const Color(0xFFB3B3B3) : const Color(0xFF5A5A5A))),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: light ? const Color(0xFFB3B3B3) : const Color(0xFF5A5A5A))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: primary, width: 2)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(4),
+        borderSide: BorderSide(color: light ? const Color(0xFFB3B3B3) : const Color(0xFF5A5A5A)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(4),
+        borderSide: BorderSide(color: light ? const Color(0xFFB3B3B3) : const Color(0xFF5A5A5A)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(4),
+        borderSide: BorderSide(color: primary, width: 2),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       labelStyle: TextStyle(color: secondaryText),
       hintStyle: TextStyle(color: secondaryText),
@@ -190,14 +222,20 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((s) => Colors.white),
-      trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? primary : (light ? const Color(0xFFB3B3B3) : const Color(0xFF5A5A5A))),
+      trackColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? primary : (light ? const Color(0xFFB3B3B3) : const Color(0xFF5A5A5A)),
+      ),
       trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? primary : Colors.transparent),
+      fillColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? primary : Colors.transparent,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
     ),
-    radioTheme: RadioThemeData(fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? primary : secondaryText)),
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? primary : secondaryText),
+    ),
     sliderTheme: SliderThemeData(activeTrackColor: primary, thumbColor: primary, inactiveTrackColor: divider),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: primary, linearTrackColor: divider),
     chipTheme: ChipThemeData(

@@ -1,5 +1,3 @@
-import 'dart:ui' show Color, Rect;
-
 import 'package:flutter/services.dart';
 
 import '../models/raw_page_content.dart';

@@ -108,7 +108,10 @@ class DocListTile extends StatelessWidget {
         subtitle ??
         [
           'PDF',
-          if (rec?.lastOpened != null) formatRelativeDate(rec!.lastOpened!) else if (stat != null) formatRelativeDate(stat.modified),
+          if (rec?.lastOpened != null)
+            formatRelativeDate(rec!.lastOpened!)
+          else if (stat != null)
+            formatRelativeDate(stat.modified),
           if (stat != null) formatBytes(stat.size),
         ].join('  ·  ');
     final secondary = theme.colorScheme.onSurfaceVariant;
@@ -121,7 +124,11 @@ class DocListTile extends StatelessWidget {
         child: Row(
           children: [
             selected
-                ? SizedBox(width: 36, height: 44, child: Icon(Symbols.check_circle, fill: 1, color: theme.colorScheme.primary))
+                ? SizedBox(
+                    width: 36,
+                    height: 44,
+                    child: Icon(Symbols.check_circle, fill: 1, color: theme.colorScheme.primary),
+                  )
                 : DocThumbnail(path: path, width: 36, height: 44),
             const SizedBox(width: 16),
             Expanded(
@@ -131,9 +138,17 @@ class DocListTile extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(baseName(path), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16)),
+                        child: Text(
+                          baseName(path),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ),
-                      if (starred) ...[const SizedBox(width: 6), Icon(Symbols.star, fill: 1, size: 16, color: theme.colorScheme.primary)],
+                      if (starred) ...[
+                        const SizedBox(width: 6),
+                        Icon(Symbols.star, fill: 1, size: 16, color: theme.colorScheme.primary),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 2),
@@ -141,7 +156,14 @@ class DocListTile extends StatelessWidget {
                     children: [
                       Icon(inLibrary ? Symbols.smartphone : Symbols.folder, size: 14, color: secondary),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: secondary))),
+                      Expanded(
+                        child: Text(
+                          sub,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13, color: secondary),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -182,7 +204,10 @@ class FolderTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(p.basename(path), style: const TextStyle(fontSize: 16)),
-                  Text(itemCount == 1 ? '1 item' : '$itemCount items', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  Text(
+                    itemCount == 1 ? '1 item' : '$itemCount items',
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
                 ],
               ),
             ),
@@ -217,7 +242,11 @@ class EmptyState extends StatelessWidget {
             Text(title, style: t.textTheme.titleSmall?.copyWith(fontSize: 17), textAlign: TextAlign.center),
             if (message != null) ...[
               const SizedBox(height: 6),
-              Text(message!, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
+              Text(
+                message!,
+                style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
             ],
             if (action != null) ...[const SizedBox(height: 20), action!],
           ],

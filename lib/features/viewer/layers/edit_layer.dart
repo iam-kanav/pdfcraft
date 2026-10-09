@@ -170,8 +170,16 @@ class _EditLayerState extends State<EditLayer> {
           children: [
             ListTile(title: Text(v['filled'] == true ? 'Filled shape' : 'Line / outline shape')),
             const Divider(),
-            ListTile(leading: const Icon(Symbols.open_with), title: const Text('Move or resize'), onTap: () => Navigator.pop(ctx, 'move')),
-            ListTile(leading: const Icon(Symbols.palette), title: const Text('Change color'), onTap: () => Navigator.pop(ctx, 'color')),
+            ListTile(
+              leading: const Icon(Symbols.open_with),
+              title: const Text('Move or resize'),
+              onTap: () => Navigator.pop(ctx, 'move'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.palette),
+              title: const Text('Change color'),
+              onTap: () => Navigator.pop(ctx, 'color'),
+            ),
             ListTile(
               leading: Icon(Symbols.delete, color: Theme.of(ctx).colorScheme.error),
               title: const Text('Delete shape'),
@@ -189,13 +197,31 @@ class _EditLayerState extends State<EditLayer> {
         return;
       case 'color':
         Color? chosen;
-        await showStyleSheet(context, color: Color(v[v['filled'] == true ? 'fillColor' : 'strokeColor'] as int), onColor: (c) => chosen = c);
+        await showStyleSheet(
+          context,
+          color: Color(v[v['filled'] == true ? 'fillColor' : 'strokeColor'] as int),
+          onColor: (c) => chosen = c,
+        );
         if (chosen != null) {
-          await host.edit('Recolor shape', (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [id], action: 'recolor',
-              strokeColor: v['stroked'] == true ? chosen : null, fillColor: v['filled'] == true ? chosen : null, password: pw));
+          await host.edit(
+            'Recolor shape',
+            (i, o) => PdfEngine.instance.editVectors(
+              i,
+              o,
+              page: pageIndex,
+              ids: [id],
+              action: 'recolor',
+              strokeColor: v['stroked'] == true ? chosen : null,
+              fillColor: v['filled'] == true ? chosen : null,
+              password: pw,
+            ),
+          );
         }
       case 'delete':
-        await host.edit('Delete shape', (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [id], action: 'delete', password: pw));
+        await host.edit(
+          'Delete shape',
+          (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [id], action: 'delete', password: pw),
+        );
     }
     if (mounted) setState(() => _selectedVector = null);
   }
@@ -447,7 +473,11 @@ class _EditLayerState extends State<EditLayer> {
               if (_selectedVector != null && !_movingVector)
                 Positioned.fromRect(
                   rect: scaleRect(listToRect(_selectedVector!['rect'] as List).inflate(2), s),
-                  child: IgnorePointer(child: Container(decoration: BoxDecoration(border: Border.all(color: const Color(0xFFF59E0B), width: 2)))),
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(border: Border.all(color: const Color(0xFFF59E0B), width: 2)),
+                    ),
+                  ),
                 ),
               if (_selectedVector != null && _movingVector)
                 SelectionBox(
@@ -460,8 +490,19 @@ class _EditLayerState extends State<EditLayer> {
                       _selectedVector = null;
                       _movingVector = false;
                     });
-                    await host.edit('Move shape', (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [v['id'] as int],
-                        action: 'transform', from: listToRect(v['rect'] as List), to: r, password: pw));
+                    await host.edit(
+                      'Move shape',
+                      (i, o) => PdfEngine.instance.editVectors(
+                        i,
+                        o,
+                        page: pageIndex,
+                        ids: [v['id'] as int],
+                        action: 'transform',
+                        from: listToRect(v['rect'] as List),
+                        to: r,
+                        password: pw,
+                      ),
+                    );
                   },
                 ),
               if (_movingImage != null && objs != null)

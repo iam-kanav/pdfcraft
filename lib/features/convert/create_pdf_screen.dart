@@ -156,8 +156,7 @@ class _CreatePdfScreenState extends State<CreatePdfScreen> {
               child: ReorderableListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _images.length,
-                onReorder: (a, b) => setState(() {
-                  if (b > a) b--;
+                onReorderItem: (a, b) => setState(() {
                   _images.insert(b, _images.removeAt(a));
                 }),
                 itemBuilder: (context, i) => Padding(

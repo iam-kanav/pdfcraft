@@ -408,11 +408,12 @@ class FillSignToolbar extends StatelessWidget {
                               'Field values, signatures and comments become part of the page and can no longer be edited.',
                           confirmLabel: 'Flatten',
                         );
-                        if (ok)
+                        if (ok) {
                           await host.edit(
                             'Flatten',
                             (i, o) => PdfEngine.instance.flatten(i, o, password: host.session.password),
                           );
+                        }
                       }
                     },
                     itemBuilder: (_) => const [

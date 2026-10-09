@@ -51,8 +51,9 @@ class _ProtectScreenState extends State<ProtectScreen> {
       if (_open.text.length < 4) return showSnack(context, 'Use a password with at least 4 characters', error: true);
       if (_open.text != _openConfirm.text) return showSnack(context, 'Passwords do not match', error: true);
     }
-    if (_restrict && _owner.text.length < 4)
+    if (_restrict && _owner.text.length < 4) {
       return showSnack(context, 'Set a permissions password (4+ characters)', error: true);
+    }
     if (!_requireOpen && !_restrict) return showSnack(context, 'Choose at least one protection option', error: true);
     if (_requireOpen && _restrict && _open.text == _owner.text) {
       return showSnack(context, 'The permissions password must differ from the open password', error: true);

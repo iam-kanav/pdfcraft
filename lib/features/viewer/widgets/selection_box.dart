@@ -49,26 +49,30 @@ class _SelectionBoxState extends State<SelectionBox> {
   void _resize(Alignment corner, Offset delta) {
     final d = delta / widget.scale;
     var l = _rect.left, t = _rect.top, r = _rect.right, b = _rect.bottom;
-    if (corner.x < 0)
+    if (corner.x < 0) {
       l += d.dx;
-    else
+    } else {
       r += d.dx;
-    if (corner.y < 0)
+    }
+    if (corner.y < 0) {
       t += d.dy;
-    else
+    } else {
       b += d.dy;
+    }
     const minSize = 8.0;
     if (r - l < minSize) {
-      if (corner.x < 0)
+      if (corner.x < 0) {
         l = r - minSize;
-      else
+      } else {
         r = l + minSize;
+      }
     }
     if (b - t < minSize) {
-      if (corner.y < 0)
+      if (corner.y < 0) {
         t = b - minSize;
-      else
+      } else {
         b = t + minSize;
+      }
     }
     var next = Rect.fromLTRB(l, t, r, b);
     if (widget.keepAspect) {

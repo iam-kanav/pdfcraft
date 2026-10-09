@@ -9,7 +9,7 @@ import 'package:path/path.dart' as p;
 /// the previous version is kept as a snapshot for undo. Edits are saved to the
 /// document immediately (like Acrobat's auto-save).
 class DocumentSession extends ChangeNotifier {
-  DocumentSession({required String path, this.password, required this.tempDir}) : _path = path;
+  DocumentSession({required this._path, this.password, required this.tempDir});
 
   String _path;
   String? password;

@@ -55,8 +55,9 @@ class _DocumentPickerScreenState extends State<_DocumentPickerScreen> {
     final recents = services.library.recents.map((r) => r.path).toList();
     final library = <String>[];
     await for (final e in services.files.root.list(recursive: true, followLinks: false)) {
-      if (e is File && e.path.toLowerCase().endsWith('.pdf') && !p.basename(e.path).startsWith('.'))
+      if (e is File && e.path.toLowerCase().endsWith('.pdf') && !p.basename(e.path).startsWith('.')) {
         library.add(e.path);
+      }
     }
     final entries = library.map((f) => FileEntry.fromEntity(File(f))).whereType<FileEntry>().toList();
     final sorted = FileService.sortEntries(entries, SortField.date, true).map((e) => e.path);

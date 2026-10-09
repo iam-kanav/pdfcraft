@@ -38,9 +38,21 @@ class _MainShellState extends State<MainShell> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              item(Symbols.document_scanner, 'Scan a document', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen()))),
-              item(Symbols.note_add, 'Create a PDF', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreatePdfScreen()))),
-              item(Symbols.picture_as_pdf, 'Combine files', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CombineScreen()))),
+              item(
+                Symbols.document_scanner,
+                'Scan a document',
+                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScannerScreen())),
+              ),
+              item(
+                Symbols.note_add,
+                'Create a PDF',
+                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreatePdfScreen())),
+              ),
+              item(
+                Symbols.picture_as_pdf,
+                'Combine files',
+                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CombineScreen())),
+              ),
               item(Symbols.folder_open, 'Open a file', () => pickAndOpenPdf(context)),
               const SizedBox(height: 8),
             ],
@@ -60,9 +72,13 @@ class _MainShellState extends State<MainShell> {
     ];
     return Scaffold(
       body: IndexedStack(index: _tab, children: pages),
-      floatingActionButton: _tab <= 1 ? FloatingActionButton(tooltip: 'Create', onPressed: _showCreate, child: const Icon(Symbols.add, weight: 400)) : null,
+      floatingActionButton: _tab <= 1
+          ? FloatingActionButton(tooltip: 'Create', onPressed: _showCreate, child: const Icon(Symbols.add, weight: 400))
+          : null,
       bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).dividerColor))),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+        ),
         child: BottomNavigationBar(
           currentIndex: _tab,
           onTap: (i) {

@@ -114,8 +114,7 @@ class _CombineScreenState extends State<CombineScreen> {
                   )
                 : ReorderableListView.builder(
                     itemCount: _files.length,
-                    onReorder: (a, b) => setState(() {
-                      if (b > a) b--;
+                    onReorderItem: (a, b) => setState(() {
                       _files.insert(b, _files.removeAt(a));
                     }),
                     itemBuilder: (context, i) {

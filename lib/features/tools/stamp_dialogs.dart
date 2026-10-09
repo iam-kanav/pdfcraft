@@ -338,11 +338,12 @@ Future<void> showRemoveArtifactsDialog(BuildContext context, {required DocumentS
     'Remove page marks',
     (i, o) => PdfEngine.instance.removeArtifacts(i, o, password: session.password, kinds: kinds.toList()),
   );
-  if (context.mounted && n != null)
+  if (context.mounted && n != null) {
     showSnack(
       context,
       n == 0 ? 'No tagged watermarks, headers or footers found' : 'Removed $n item${n == 1 ? '' : 's'}',
     );
+  }
 }
 
 Future<T?> _apply<T>(

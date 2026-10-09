@@ -58,7 +58,9 @@ class SearchScreenState extends State<SearchScreen> {
     setState(() => _searching = true);
     final services = AppServices.instance;
     final lib = await services.files.search(query);
-    final recents = services.library.recents.map((r) => r.path).where((f) => p.basename(f).toLowerCase().contains(query));
+    final recents = services.library.recents
+        .map((r) => r.path)
+        .where((f) => p.basename(f).toLowerCase().contains(query));
     final device = (_devicePdfs ?? const []).where((f) => p.basename(f).toLowerCase().contains(query));
     final all = <String>{
       ...recents,
@@ -83,7 +85,10 @@ class SearchScreenState extends State<SearchScreen> {
         toolbarHeight: 64,
         title: Container(
           height: 44,
-          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(22)),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(22),
+          ),
           child: TextField(
             controller: _controller,
             focusNode: _focus,
@@ -124,7 +129,8 @@ class SearchScreenState extends State<SearchScreen> {
             )
           : ListView.builder(
               itemCount: _results.length,
-              itemBuilder: (context, i) => DocListTile(path: _results[i], onTap: () => openDocument(context, _results[i])),
+              itemBuilder: (context, i) =>
+                  DocListTile(path: _results[i], onTap: () => openDocument(context, _results[i])),
             ),
     );
   }

@@ -14,7 +14,10 @@ class ToolsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 32),
         children: [
-          Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Text('All tools', style: theme.textTheme.headlineSmall)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text('All tools', style: theme.textTheme.headlineSmall),
+          ),
           for (final cat in ToolCategory.values) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -27,7 +30,9 @@ class ToolsScreen extends StatelessWidget {
                 final w = (c.maxWidth - 16) / cols;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Wrap(children: [for (final t in tools) ToolChip(tool: t, width: w, onTap: () => t.launch(context))]),
+                  child: Wrap(
+                    children: [for (final t in tools) ToolChip(tool: t, width: w, onTap: () => t.launch(context))],
+                  ),
                 );
               },
             ),

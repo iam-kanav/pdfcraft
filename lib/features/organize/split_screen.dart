@@ -100,67 +100,56 @@ class _SplitScreenState extends State<SplitScreen> {
       appBar: AppBar(title: const Text('Split PDF')),
       body: count == null
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text('${p.basename(widget.path)} · $count pages', style: Theme.of(context).textTheme.bodyMedium),
-                const SizedBox(height: 12),
-                RadioListTile(
-                  value: SplitMode.everyN,
-                  groupValue: _mode,
-                  onChanged: (v) => setState(() => _mode = v!),
-                  title: const Text('Split every N pages'),
-                ),
-                if (_mode == SplitMode.everyN)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 56, right: 16),
-                    child: TextField(
-                      controller: _n,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Pages per file'),
+          : RadioGroup<SplitMode>(
+              groupValue: _mode,
+              onChanged: (v) => setState(() => _mode = v!),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text('${p.basename(widget.path)} · $count pages', style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 12),
+                  RadioListTile(value: SplitMode.everyN, title: const Text('Split every N pages')),
+                  if (_mode == SplitMode.everyN)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 56, right: 16),
+                      child: TextField(
+                        controller: _n,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Pages per file'),
+                      ),
                     ),
-                  ),
-                RadioListTile(
-                  value: SplitMode.ranges,
-                  groupValue: _mode,
-                  onChanged: (v) => setState(() => _mode = v!),
-                  title: const Text('Custom ranges'),
-                ),
-                if (_mode == SplitMode.ranges)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 56, right: 16),
-                    child: TextField(
-                      controller: _ranges,
-                      decoration: InputDecoration(labelText: 'Ranges', hintText: 'e.g. 1-3, 4-$count'),
+                  RadioListTile(value: SplitMode.ranges, title: const Text('Custom ranges')),
+                  if (_mode == SplitMode.ranges)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 56, right: 16),
+                      child: TextField(
+                        controller: _ranges,
+                        decoration: InputDecoration(labelText: 'Ranges', hintText: 'e.g. 1-3, 4-$count'),
+                      ),
                     ),
-                  ),
-                RadioListTile(
-                  value: SplitMode.single,
-                  groupValue: _mode,
-                  onChanged: (v) => setState(() => _mode = v!),
-                  title: const Text('One file per page'),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _busy ? null : _split,
-                  icon: const Icon(Symbols.call_split),
-                  label: Text(_busy ? 'Splitting…' : 'Split'),
-                ),
-                if (_outputs != null) ...[
+                  RadioListTile(value: SplitMode.single, title: const Text('One file per page')),
                   const SizedBox(height: 16),
-                  Text(
-                    'Created ${_outputs!.length} files in "${p.basename(p.dirname(_outputs!.first))}"',
-                    style: Theme.of(context).textTheme.titleSmall,
+                  FilledButton.icon(
+                    onPressed: _busy ? null : _split,
+                    icon: const Icon(Symbols.call_split),
+                    label: Text(_busy ? 'Splitting…' : 'Split'),
                   ),
-                  for (final o in _outputs!)
-                    ListTile(
-                      leading: const Icon(Symbols.picture_as_pdf),
-                      title: Text(p.basename(o)),
-                      subtitle: Text(formatBytes(File(o).lengthSync())),
-                      onTap: () => openDocument(context, o),
+                  if (_outputs != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Created ${_outputs!.length} files in "${p.basename(p.dirname(_outputs!.first))}"',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
+                    for (final o in _outputs!)
+                      ListTile(
+                        leading: const Icon(Symbols.picture_as_pdf),
+                        title: Text(p.basename(o)),
+                        subtitle: Text(formatBytes(File(o).lengthSync())),
+                        onTap: () => openDocument(context, o),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
     );
   }

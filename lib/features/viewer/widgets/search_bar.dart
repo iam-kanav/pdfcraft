@@ -68,7 +68,13 @@ class _ViewerSearchBarState extends State<ViewerSearchBar> {
         controller: _controller,
         autofocus: true,
         textInputAction: TextInputAction.search,
-        decoration: const InputDecoration(hintText: 'Search document', filled: false, border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none),
+        decoration: const InputDecoration(
+          hintText: 'Search document',
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
         onChanged: (_) {
           _debounce?.cancel();
           _debounce = Timer(const Duration(milliseconds: 400), _search);

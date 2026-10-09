@@ -34,6 +34,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 /// Shared handle given to mode layers so they can talk to the viewer.
 class ViewerHost {
+  // ignore: library_private_types_in_public_api
   ViewerHost(this._state);
 
   final _ViewerScreenState _state;
@@ -374,11 +375,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
       loadingBannerBuilder: (context, bytes, total) => const Center(child: CircularProgressIndicator()),
       errorBannerBuilder: (context, error, stack, ref) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_loadFailed)
+          if (mounted && !_loadFailed) {
             setState(() {
               _loadFailed = true;
               _loadError = error.toString();
             });
+          }
         });
         return const SizedBox.shrink();
       },
@@ -590,6 +592,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
       await commitInk(host);
     }
     if (vs.mode == ViewerMode.redact && vs.redactionCount > 0) {
+      if (!mounted) return;
       final discard = await confirmDialog(
         context,
         title: 'Discard redaction marks?',
@@ -634,7 +637,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
             onPressed: session.canRedo ? () => _undoRedo(false) : null,
           ),
           if (mode == ViewerMode.comment)
-            IconButton(tooltip: 'Comments list', icon: const Icon(Symbols.forum), onPressed: () => showCommentsList(host)),
+            IconButton(
+              tooltip: 'Comments list',
+              icon: const Icon(Symbols.forum),
+              onPressed: () => showCommentsList(host),
+            ),
         ],
       );
     }
@@ -665,7 +672,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
           onPressed: () async {
             final page = await Navigator.of(context).push<int>(
               MaterialPageRoute(
-                builder: (_) => ReflowScreen(path: session.path, password: session.password, startPage: pageNumber ?? 1),
+                builder: (_) =>
+                    ReflowScreen(path: session.path, password: session.password, startPage: pageNumber ?? 1),
               ),
             );
             if (page != null && controller.isReady) controller.goToPage(pageNumber: page);
@@ -676,15 +684,21 @@ class _ViewerScreenState extends State<ViewerScreen> {
           icon: const Icon(Symbols.volume_up),
           onPressed: document == null ? null : () => tts.active ? tts.stop() : tts.start(fromPage: pageNumber ?? 1),
         ),
-        IconButton(tooltip: 'Search', icon: const Icon(Symbols.search), onPressed: _searcher == null ? null : () => setState(() => searching = true)),
+        IconButton(
+          tooltip: 'Search',
+          icon: const Icon(Symbols.search),
+          onPressed: _searcher == null ? null : () => setState(() => searching = true),
+        ),
         IconButton(tooltip: 'Share', icon: const Icon(Symbols.share), onPressed: () => shareFiles([session.path])),
         IconButton(tooltip: 'More', icon: const Icon(Symbols.more_vert), onPressed: _showMoreSheet),
       ],
     );
   }
 
-  PreferredSize _divider() =>
-      PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(height: 1, color: Theme.of(context).dividerColor));
+  PreferredSize _divider() => PreferredSize(
+    preferredSize: const Size.fromHeight(1),
+    child: Container(height: 1, color: Theme.of(context).dividerColor),
+  );
 
   /// Acrobat-style overflow sheet: document header, view & navigation, tools, file actions.
   Future<void> _showMoreSheet() async {
@@ -715,7 +729,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
               shrinkWrap: true,
               children: [
                 ListTile(
-                  title: Text(baseName(session.path), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    baseName(session.path),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                   subtitle: Row(
                     children: [
                       const Icon(Symbols.smartphone, size: 14),
@@ -724,7 +743,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
                     ],
                   ),
                   trailing: IconButton(
-                    icon: Icon(Symbols.star, fill: starred ? 1 : 0, color: starred ? Theme.of(ctx).colorScheme.primary : null),
+                    icon: Icon(
+                      Symbols.star,
+                      fill: starred ? 1 : 0,
+                      color: starred ? Theme.of(ctx).colorScheme.primary : null,
+                    ),
                     onPressed: () {
                       Navigator.pop(ctx);
                       _onMenu('star');
@@ -735,7 +758,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 row(Symbols.eyeglasses, 'View settings', 'view', chevron: true),
                 row(Symbols.grid_view, 'Pages', 'pages', chevron: true),
                 row(Symbols.bookmarks, 'Bookmarks & Table of Contents', 'bookmarks', chevron: true),
-                row(bookmarked ? Symbols.bookmark_remove : Symbols.bookmark_add, bookmarked ? 'Remove bookmark' : 'Add bookmark', 'bookmark'),
+                row(
+                  bookmarked ? Symbols.bookmark_remove : Symbols.bookmark_add,
+                  bookmarked ? 'Remove bookmark' : 'Add bookmark',
+                  'bookmark',
+                ),
                 row(Symbols.headphones, 'Read aloud', 'tts'),
                 row(Symbols.low_priority, 'Go to page', 'goto'),
                 const Divider(indent: 16, endIndent: 16),
@@ -787,7 +814,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
       case 'tools':
         showViewerTools(context, host);
       case 'export':
-        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ExportScreen(path: session.path, password: session.password)));
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ExportScreen(path: session.path, password: session.password),
+          ),
+        );
       case 'protect':
         await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProtectScreen(session: session)));
       case 'bookmark':
@@ -866,7 +897,6 @@ class _PageChip extends StatelessWidget {
   );
 }
 
-
 /// Acrobat-style bottom quick tools bar in reading mode.
 class _ReadToolbar extends StatelessWidget {
   const _ReadToolbar({required this.host});
@@ -902,7 +932,9 @@ class _ReadToolbar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: DecoratedBox(
-          decoration: BoxDecoration(border: Border(top: BorderSide(color: theme.dividerColor))),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: theme.dividerColor)),
+          ),
           child: Row(
             children: [
               item(Symbols.add_comment, 'Comment', () => comment(CommentTool.note)),
@@ -928,7 +960,11 @@ class LiquidModeIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = IconTheme.of(context).color ?? Colors.black;
-    return SizedBox(width: size, height: size, child: CustomPaint(painter: _LiquidPainter(color)));
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(painter: _LiquidPainter(color)),
+    );
   }
 }
 

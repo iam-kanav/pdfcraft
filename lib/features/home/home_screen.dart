@@ -90,7 +90,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         tabAlignment: TabAlignment.start,
                         labelPadding: const EdgeInsets.only(right: 24),
                         indicatorSize: TabBarIndicatorSize.label,
-                        tabs: const [Tab(text: 'Recent', height: 40), Tab(text: 'Starred', height: 40)],
+                        tabs: const [
+                          Tab(text: 'Recent', height: 40),
+                          Tab(text: 'Starred', height: 40),
+                        ],
                       ),
                     ),
                     PopupMenuButton<String>(
@@ -111,9 +114,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         icon: Symbols.picture_as_pdf,
                         title: 'No recent files',
                         message: 'Files you open will appear here.',
-                        action: FilledButton(onPressed: () => pickAndOpenPdf(context), child: const Text('Open a file')),
+                        action: FilledButton(
+                          onPressed: () => pickAndOpenPdf(context),
+                          child: const Text('Open a file'),
+                        ),
                       )
-                    : const EmptyState(icon: Symbols.star, title: 'No starred files', message: 'Star files to find them quickly.'),
+                    : const EmptyState(
+                        icon: Symbols.star,
+                        title: 'No starred files',
+                        message: 'Star files to find them quickly.',
+                      ),
               )
             else
               SliverList.builder(
@@ -133,7 +143,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 }
 
 class _FeatureCard extends StatelessWidget {
-  const _FeatureCard({required this.title, required this.body, required this.action, required this.color, required this.icon, required this.onTap});
+  const _FeatureCard({
+    required this.title,
+    required this.body,
+    required this.action,
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
 
   final String title;
   final String body;
@@ -147,7 +164,10 @@ class _FeatureCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4), side: BorderSide(color: theme.dividerColor)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(4),
+        side: BorderSide(color: theme.dividerColor),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -157,7 +177,9 @@ class _FeatureCard extends StatelessWidget {
             children: [
               Container(
                 width: 82,
-                color: theme.brightness == Brightness.dark ? color.withValues(alpha: 0.25) : Brand.tileBackground(color),
+                color: theme.brightness == Brightness.dark
+                    ? color.withValues(alpha: 0.25)
+                    : Brand.tileBackground(color),
                 alignment: Alignment.center,
                 child: Icon(icon, size: 40, color: color, weight: 300),
               ),
@@ -170,11 +192,19 @@ class _FeatureCard extends StatelessWidget {
                       Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 2),
                       Expanded(
-                        child: Text(body, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13.5, height: 1.25, color: theme.colorScheme.onSurfaceVariant)),
+                        child: Text(
+                          body,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13.5, height: 1.25, color: theme.colorScheme.onSurfaceVariant),
+                        ),
                       ),
                       Align(
                         alignment: Alignment.bottomRight,
-                        child: Text(action, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 14)),
+                        child: Text(
+                          action,
+                          style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
                       ),
                     ],
                   ),
