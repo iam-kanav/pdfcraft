@@ -416,6 +416,9 @@ class _CropQuadScreenState extends State<CropQuadScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(color: Colors.white),
         title: const Text('Adjust corners'),
         actions: [
           TextButton(

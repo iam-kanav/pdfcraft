@@ -1,129 +1,130 @@
-# PDFCraft feature checklist
+# Feature checklist
 
-Offline Android PDF app. Everything runs on the device: no backend, no accounts, no cloud or AI services.
+This page lists everything PDFCraft can do, what's still missing, and how each feature was tested.
 
-Legend: ✅ done · 🟡 partial · ⛔ blocked / not planned
+**Status:** ✅ done · 🟡 partly done · ⛔ not supported yet
 
-How each item was checked:
-- **UI**: exercised by hand on the Android emulator (release build)
-- **E2E**: covered by `integration_test/` on the emulator
-- **Unit**: covered by `test/` on the host
+**How it was tested:**
+- **Manual:** tried by hand on an Android emulator, using the release build
+- **Device test:** covered by automated tests that run on an Android device (`integration_test/`)
+- **Unit test:** covered by automated tests that run on a computer (`test/`)
 
-## Reader
+## Reading
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Continuous scroll, pinch zoom, fit-width, zoom kept across toolbar changes | ✅ | UI |
-| Single-page mode, page indicator, go to page | ✅ | UI |
-| Search with match case / whole words, next/previous, highlighted hits | ✅ | UI |
-| Text selection, copy, share selection | ✅ | UI |
-| Bookmarks (user) and document outline (table of contents) | ✅ | UI, E2E |
-| Page thumbnails / pages grid | ✅ | UI |
-| App dark theme and inverted "dark pages" | ✅ | UI |
-| Read aloud (device TTS) with sentence highlight, skip, pause | ✅ | UI |
-| Password-protected files (prompt, reuse on reload) | ✅ | UI, E2E |
-| Open from other apps (VIEW / SEND intents) | ✅ | UI |
+| Smooth scrolling and pinch to zoom; zoom stays put when toolbars change | ✅ | Manual |
+| Single-page and continuous layouts, page indicator, go to page | ✅ | Manual |
+| Search with highlighted results, next and previous match | ✅ | Manual |
+| Select, copy and share text | ✅ | Manual |
+| Your own bookmarks and the document's table of contents | ✅ | Manual, device test |
+| Page thumbnails | ✅ | Manual |
+| Dark theme, plus inverted "night mode" pages | ✅ | Manual |
+| Read aloud with the current sentence highlighted | ✅ | Manual |
+| Open password-protected files (asks once per session) | ✅ | Manual, device test |
+| Open PDFs shared from other apps | ✅ | Manual |
 
-## Smart reading (Liquid Mode alternative)
+## Smart reading
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Reflowed headings, paragraphs, lists, tables, images, collapsible sections | ✅ | UI, Unit |
-| Keeps original formatting: colors, bold/italic, serif/sans/mono, underline, strike, links, alignment | ✅ | UI, E2E, Unit |
-| Font size, spacing, theme, font family ("Original" by default) | ✅ | UI |
-| Search and read aloud inside smart reading | ✅ | UI |
-| Form field values shown in reflow | ⛔ | Not implemented |
+| Reflows headings, paragraphs, lists, tables and images to fit the screen | ✅ | Manual, unit test |
+| Keeps colors, bold and italic, font style, underline, strikethrough, links and alignment | ✅ | Manual, device test, unit test |
+| Adjustable text size, spacing, font and theme | ✅ | Manual |
+| Search and read aloud inside smart reading | ✅ | Manual |
+| Shows the values typed into form fields | ⛔ | — |
 
 ## Editing
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Edit existing text (font, size, color detected and kept) | ✅ | UI, E2E |
-| Add text boxes and images; move, resize, replace, delete images | ✅ | UI, E2E |
-| Add shapes; move, resize, recolor, delete existing vector shapes | ✅ | UI, E2E |
-| Add links (web / page) | ✅ | E2E |
-| Watermarks (text or image, opacity, rotation, behind content) | ✅ | UI, E2E |
-| Headers, footers, page numbers | ✅ | E2E |
-| Undo / redo for every edit | ✅ | UI, Unit |
+| Edit existing text, keeping its font, size and color | ✅ | Manual, device test |
+| Add text boxes and images; move, resize, replace or delete images | ✅ | Manual, device test |
+| Add shapes; move, resize, recolor or delete existing drawings | ✅ | Manual, device test |
+| Add links to web pages or other pages | ✅ | Device test |
+| Text or image watermarks | ✅ | Manual, device test |
+| Page numbers, headers and footers | ✅ | Device test |
+| Undo and redo for every change | ✅ | Manual, unit test |
 
-## Comments and annotations
+## Comments
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Highlight, underline, strikethrough, squiggly (word-snapped) | ✅ | UI, E2E |
-| Freehand drawing, rectangles, ellipses, lines, arrows | ✅ | UI, E2E |
-| Sticky notes and text boxes | ✅ | UI, E2E |
-| Comment list, edit and delete existing annotations | ✅ | UI, E2E |
-| Signatures: draw, type or image; saved for reuse | ✅ | UI |
+| Highlight, underline, strike out and squiggly underline (snaps to whole words) | ✅ | Manual, device test |
+| Freehand drawing, rectangles, ellipses, lines and arrows | ✅ | Manual, device test |
+| Sticky notes and text boxes | ✅ | Manual, device test |
+| List, edit and delete existing comments | ✅ | Manual, device test |
 
-## Fill & Sign / forms
+## Forms and signatures
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Fill AcroForm text fields, checkboxes, radio buttons, choice lists | ✅ | UI, E2E |
-| Fill non-form PDFs: text, ✓, ✗, dot, signature, initials | ✅ | UI |
-| Flatten forms and annotations | ✅ | E2E |
-| Cryptographic (certificate) digital signatures | ⛔ | Not implemented |
+| Fill in text fields, checkboxes, radio buttons and lists | ✅ | Manual, device test |
+| Fill in PDFs that have no form fields: text, ✓, ✗, dots | ✅ | Manual |
+| Signatures and initials: draw, type or import a photo; saved for reuse | ✅ | Manual |
+| Flatten forms and comments into the page | ✅ | Device test |
+| Certificate-based digital signatures | ⛔ | — |
 
 ## Pages
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Reorder, rotate, delete, duplicate, insert blank, insert from another PDF | ✅ | UI, E2E |
-| Extract pages to a new PDF | ✅ | E2E |
-| Combine (merge) PDFs | ✅ | UI, E2E |
-| Split by every N pages, ranges, one file per page | ✅ | UI, E2E |
-| Crop (auto-fits content margins; one page or all) | ✅ | UI, E2E |
-| Compress (3 levels, optional grayscale) | ✅ | UI, E2E |
+| Reorder, rotate, delete, duplicate and insert pages (blank or from another PDF) | ✅ | Manual, device test |
+| Extract pages into a new PDF | ✅ | Device test |
+| Combine several PDFs into one | ✅ | Manual, device test |
+| Split by page count, by ranges, or into single pages | ✅ | Manual, device test |
+| Crop margins (fits the content automatically, for one page or all) | ✅ | Manual, device test |
+| Compress at three levels, with optional grayscale | ✅ | Manual, device test |
 
-## Convert
+## Converting
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Images → PDF (page size, orientation, margins, reorder) | ✅ | UI, Unit |
-| Word (.docx), Excel (.xlsx), text, Markdown → PDF | ✅ | Unit |
-| PDF → Word (.docx) with headings, lists, tables, images, formatting | ✅ | UI, Unit |
-| PDF → Excel (.xlsx): text plus one sheet per table | ✅ | UI, Unit |
-| PDF → PowerPoint (.pptx): one slide per page, editable text boxes | ✅ | UI, Unit |
-| PDF → HTML, Markdown, plain text, PNG, JPEG | ✅ | Unit |
-| Blank PDF | ✅ | UI |
+| Photos to PDF, with page size, orientation, margins and ordering | ✅ | Manual, unit test |
+| Word, Excel, text and Markdown files to PDF | ✅ | Unit test |
+| PDF to Word, keeping headings, lists, tables, images and text styles | ✅ | Manual, unit test |
+| PDF to Excel: all text, plus one sheet per table | ✅ | Manual, unit test |
+| PDF to PowerPoint: one slide per page with editable text | ✅ | Manual, unit test |
+| PDF to HTML, Markdown, plain text, PNG or JPEG | ✅ | Unit test |
+| Blank PDF | ✅ | Manual |
 
-## Scanner and OCR
+## Scanning and text recognition
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Camera capture with live edge detection and auto-capture | ✅ | UI, Unit |
-| Import photos; manual corner crop; perspective correction | ✅ | UI, Unit |
-| Filters: original, auto color, grayscale, black & white, whiteboard, photo | ✅ | Unit |
-| Offline OCR (ML Kit, bundled) → invisible, searchable text layer | ✅ | UI, E2E |
-| OCR for non-Latin scripts (Chinese, Japanese, Korean, Devanagari) | ⛔ | Only the Latin model is bundled |
+| Camera with live edge detection and auto-capture | ✅ | Manual, unit test |
+| Import photos, adjust corners, straighten the page | ✅ | Manual, unit test |
+| Filters: original, auto color, grayscale, black & white, whiteboard, photo | ✅ | Unit test |
+| Asks before discarding scanned pages that haven't been saved | ✅ | Manual |
+| Offline text recognition that makes scans searchable | ✅ | Manual, device test |
+| Text recognition for Chinese, Japanese, Korean or Devanagari | ⛔ | — |
 
 ## Security
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Open password, AES-256 encryption (edits keep a file's existing encryption) | ✅ | UI, E2E |
-| Permissions password and restrictions (print, copy, edit…) | ✅ | E2E |
-| Remove security | ✅ | E2E |
-| Edit metadata (title, author, subject, keywords) | ✅ | E2E |
-| True redaction: removes glyphs, image pixels, vector paths and annotations underneath | ✅ | UI, E2E |
-| Redaction by area, text selection, or find-and-mark | ✅ | UI |
+| Password protection with AES-256 encryption | ✅ | Manual, device test |
+| Permission password and restrictions (printing, copying, editing) | ✅ | Device test |
+| Remove passwords and restrictions | ✅ | Device test |
+| Edit document properties (title, author, subject, keywords) | ✅ | Device test |
+| Permanent redaction that removes text, images and drawings underneath | ✅ | Manual, device test |
+| Redact by area, by selected text, or by searching | ✅ | Manual |
 
 ## Files
 
-| Feature | Status | Checked |
+| Feature | Status | Tested by |
 | --- | --- | --- |
-| Recents, starred, folders (create, rename, move, delete) | ✅ | UI, Unit |
-| Sort by name / date / size; search across the library | ✅ | UI, Unit |
-| Rename, duplicate, share, save a copy to Downloads, print | ✅ | UI |
-| Reopening the same external file returns your edited copy (no duplicates) | ✅ | Unit |
-| Browse device storage (all-files access on Android 11+) | ✅ | UI |
+| Recent and starred files; create, rename, move and delete folders | ✅ | Manual, unit test |
+| Sort by name, date or size; search the whole library | ✅ | Manual, unit test |
+| Rename, duplicate, share, print and save a copy to Downloads | ✅ | Manual |
+| Opening the same file again shows your edited copy instead of a duplicate | ✅ | Manual, unit test |
+| Browse PDFs anywhere on the device (optional all-files access) | ✅ | Manual |
 
 ## Known limitations
 
-- **pdfrx pinned to 2.4.8.** Newer versions need Dart 3.13.
-- **No certificate-based digital signatures.** Signatures are visual only.
-- **OCR is Latin-script only.** Other ML Kit models are not bundled, to keep the APK small.
-- **Scanner tuning used synthetic and emulator-camera images.** It hasn't been tried on many real-world photos.
+- **Signatures are visual only.** Certificate-based digital signatures aren't supported.
+- **Text recognition reads Latin-script languages only.** Other ML Kit models aren't bundled, to keep the app small.
+- **The scanner was tuned mostly on test images.** It hasn't been tried on a wide range of real-world photos yet.
 - **Smart reading doesn't show form field values.**
-- **Release APKs are signed with the debug key.** Add a real signing config before publishing.
+- **pdfrx is held at version 2.4.8.** Newer versions need a newer Dart release than this project uses.
+- **Release builds are signed with the debug key.** Add a real signing key before publishing.

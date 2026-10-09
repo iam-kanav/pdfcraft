@@ -29,4 +29,12 @@ void main() {
     expect(formatRelativeDate(DateTime(2026, 10, 9, 9), now: now), 'Yesterday');
     expect(formatRelativeDate(DateTime(2025, 1, 2), now: now), contains('2025'));
   });
+
+  test('humanizeFieldName makes raw field names readable', () {
+    expect(humanizeFieldName('full_name'), 'Full name');
+    expect(humanizeFieldName('emailAddress'), 'Email address');
+    expect(humanizeFieldName('form1.zip-code'), 'Zip code');
+    expect(humanizeFieldName('Your full name'), 'Your full name');
+    expect(humanizeFieldName('Q3'), 'Q3');
+  });
 }

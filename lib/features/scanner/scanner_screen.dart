@@ -39,6 +39,10 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
   // Live detection state (normalized 0..1 coordinates in portrait preview space).
   List<Offset>? _liveQuad;
   bool _detecting = false;
+  bool _initializing = false;
+
+  /// Imported photos still being processed (shown as a spinner on the page stack).
+  int _processing = 0;
   DateTime _lastDetect = DateTime(0);
   List<Offset>? _stableRef;
   DateTime? _stableSince;
@@ -59,17 +63,22 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final c = _camera;
-    if (c == null || !c.value.isInitialized) return;
-    if (state == AppLifecycleState.inactive) {
-      c.dispose();
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      // Release the camera while another activity (photo picker, settings) is in front.
+      final c = _camera;
+      if (c == null) return;
       _camera = null;
-    } else if (state == AppLifecycleState.resumed) {
+      _liveQuad = null;
+      if (mounted) setState(() {});
+      c.dispose();
+    } else if (state == AppLifecycleState.resumed && _camera == null && !_initializing) {
       _init();
     }
   }
 
   Future<void> _init() async {
+    if (_initializing) return;
+    _initializing = true;
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -98,13 +107,16 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       });
       await c.startImageStream(_onFrame);
     } on CameraException catch (e) {
+      if (!mounted) return;
       setState(
         () => _error = e.code == 'CameraAccessDenied'
             ? 'Camera permission was denied. Allow it in Settings, or import photos instead.'
             : 'Camera error: ${e.description}',
       );
     } catch (e) {
-      setState(() => _error = 'Camera error: $e');
+      if (mounted) setState(() => _error = 'Camera error: $e');
+    } finally {
+      _initializing = false;
     }
   }
 
@@ -167,10 +179,18 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
 
   Future<void> _import() async {
     final r = await pickLocalFiles(type: FileType.image, multiple: true);
+    if (r.isEmpty || !mounted) return;
+    setState(() => _processing += r.length);
     for (final f in r) {
-      final bytes = await File(f.path).readAsBytes();
-      final page = await ScanPage.create(bytes);
-      if (mounted) setState(() => _pages.add(page));
+      try {
+        final bytes = await File(f.path).readAsBytes();
+        final page = await ScanPage.create(bytes);
+        if (mounted) setState(() => _pages.add(page));
+      } catch (e) {
+        if (mounted) showSnack(context, 'Could not read ${f.name}: ${friendlyError(e)}', error: true);
+      } finally {
+        if (mounted) setState(() => _processing--);
+      }
     }
   }
 
@@ -190,10 +210,12 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       // Saved: replace the scanner with the viewer for the new PDF.
       await Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ViewerScreen(path: result)));
     } else if (result is List<ScanPage>) {
+      // The review screen may hand back this same list, so copy before clearing.
+      final pages = List<ScanPage>.of(result);
       setState(() {
         _pages
           ..clear()
-          ..addAll(result);
+          ..addAll(pages);
       });
       final c = _camera;
       if (c != null && c.value.isInitialized && !c.value.isStreamingImages) await c.startImageStream(_onFrame);
@@ -203,128 +225,161 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     final c = _camera;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    // Pages captured here that would be lost by leaving.
+    final unsaved = _pages.length - (widget.existing?.length ?? 0);
+    return PopScope(
+      canPop: unsaved <= 0,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final discard = await confirmDialog(
+          context,
+          title: 'Discard $unsaved scanned page${unsaved == 1 ? '' : 's'}?',
+          message: unsaved == 1 ? 'It hasn\'t been saved to a PDF yet.' : 'They haven\'t been saved to a PDF yet.',
+          confirmLabel: 'Discard',
+          destructive: true,
+        );
+        if (discard && context.mounted) {
+          setState(_pages.clear);
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: const Text('Scan'),
-        actions: [
-          IconButton(
-            tooltip: _flash ? 'Flash off' : 'Flash on',
-            icon: Icon(_flash ? Symbols.flash_on : Symbols.flash_off),
-            onPressed: c == null
-                ? null
-                : () async {
-                    _flash = !_flash;
-                    await c.setFlashMode(_flash ? FlashMode.torch : FlashMode.off).catchError((_) {});
-                    setState(() {});
-                  },
-          ),
-          TextButton(
-            onPressed: () => setState(() => _autoCapture = !_autoCapture),
-            child: Text(_autoCapture ? 'Auto' : 'Manual', style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
+          actionsIconTheme: const IconThemeData(color: Colors.white),
+          titleTextStyle: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(color: Colors.white),
+          title: const Text('Scan'),
+          actions: [
+            IconButton(
+              tooltip: _flash ? 'Flash off' : 'Flash on',
+              icon: Icon(_flash ? Symbols.flash_on : Symbols.flash_off),
+              onPressed: c == null
+                  ? null
+                  : () async {
+                      _flash = !_flash;
+                      await c.setFlashMode(_flash ? FlashMode.torch : FlashMode.off).catchError((_) {});
+                      setState(() {});
+                    },
+            ),
+            TextButton(
+              onPressed: () => setState(() => _autoCapture = !_autoCapture),
+              child: Text(_autoCapture ? 'Auto' : 'Manual', style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: _error != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70),
+                        ),
                       ),
-                    ),
-                  )
-                : c == null || !c.value.isInitialized
-                ? const Center(child: CircularProgressIndicator())
-                : Center(
-                    child: AspectRatio(
-                      aspectRatio: 1 / c.value.aspectRatio,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          CameraPreview(c),
-                          CustomPaint(painter: _QuadPainter(_liveQuad, stable: _stableSince != null)),
-                          if (_capturing) Container(color: Colors.white24),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-          Container(
-            color: Colors.black,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: _import,
-                    icon: const Icon(Symbols.photo_library, color: Colors.white),
-                    tooltip: 'Import photos',
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: _capture,
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _capturing ? Colors.white54 : Colors.white,
+                    )
+                  : c == null || !c.value.isInitialized
+                  ? const Center(child: CircularProgressIndicator())
+                  : Center(
+                      child: AspectRatio(
+                        aspectRatio: 1 / c.value.aspectRatio,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CameraPreview(c),
+                            CustomPaint(painter: _QuadPainter(_liveQuad, stable: _stableSince != null)),
+                            if (_capturing) Container(color: Colors.white24),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: _review,
-                    child: SizedBox(
-                      width: 56,
-                      height: 64,
-                      child: _pages.isEmpty
-                          ? const SizedBox()
-                          : Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.memory(_pages.last.thumbnail, fit: BoxFit.cover),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: CircleAvatar(
-                                    radius: 11,
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    child: Text(
-                                      '${_pages.length}',
-                                      style: const TextStyle(fontSize: 11, color: Colors.white),
+            ),
+            Container(
+              color: Colors.black,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _import,
+                      icon: const Icon(Symbols.photo_library, color: Colors.white),
+                      tooltip: 'Import photos',
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _capture,
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _capturing ? Colors.white54 : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _review,
+                      child: SizedBox(
+                        width: 56,
+                        height: 64,
+                        child: _pages.isEmpty && _processing == 0
+                            ? const SizedBox()
+                            : _pages.isEmpty
+                            ? const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                            : Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Image.memory(_pages.last.thumbnail, fit: BoxFit.cover),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  if (_processing > 0)
+                                    const Positioned.fill(
+                                      child: Center(
+                                        child: SizedBox.square(
+                                          dimension: 24,
+                                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                                        ),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: CircleAvatar(
+                                      radius: 11,
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      child: Text(
+                                        '${_pages.length}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

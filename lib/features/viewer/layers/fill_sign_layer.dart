@@ -5,6 +5,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../../../core/native/pdf_engine.dart';
 import '../../../core/services.dart';
+import '../../../core/util/format.dart';
 import '../../common/dialogs.dart';
 import '../../sign/signature_pad_screen.dart';
 import '../../sign/signature_store.dart';
@@ -99,7 +100,7 @@ class _FillSignLayerState extends State<FillSignLayer> {
       return;
     }
     final name = f['name'] as String;
-    final label = (f['label'] as String?) ?? name;
+    final label = humanizeFieldName((f['label'] as String?) ?? name);
     switch (f['type']) {
       case 'text':
         final maxLen = f['maxLen'] as int? ?? -1;

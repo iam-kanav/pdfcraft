@@ -56,3 +56,21 @@ List<int> parsePageRanges(String text, int pageCount) {
   if (result.isEmpty) throw const FormatException('Enter at least one page');
   return result.toList()..sort();
 }
+
+/// Turns a raw form-field name ("full_name", "emailAddress", "form1.zip-code") into a readable label.
+/// Names that already read naturally (contain spaces) are returned unchanged.
+String humanizeFieldName(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty || trimmed.contains(' ')) return trimmed;
+  // Keep only the last part of hierarchical names like "form1.address.zip".
+  final last = trimmed.split('.').lastWhere((p) => p.isNotEmpty, orElse: () => trimmed);
+  final words = last
+      .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+      .split(RegExp(r'[_\-\s]+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => w.toLowerCase())
+      .toList();
+  if (words.isEmpty) return trimmed;
+  final text = words.join(' ');
+  return text[0].toUpperCase() + text.substring(1);
+}
