@@ -172,7 +172,14 @@ class _ViewerScreenState extends State<ViewerScreen> {
     controller.textSelectionDelegate.clearTextSelection();
   }
 
+  int _passwordRevision = -1;
+
   Future<String?> _passwordProvider() async {
+    // Each reload (new revision) first retries the known password.
+    if (_passwordRevision != session.revision) {
+      _passwordRevision = session.revision;
+      _passwordAttempts = 0;
+    }
     if (_passwordAttempts == 0 && session.password != null) {
       _passwordAttempts++;
       return session.password;

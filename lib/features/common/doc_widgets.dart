@@ -59,11 +59,13 @@ class _DocThumbnailState extends State<DocThumbnail> {
         builder: (context, snap) {
           final f = snap.data;
           if (f != null) return Image.file(f, fit: BoxFit.cover, alignment: Alignment.topCenter, gaplessPlayback: true);
+          // A finished load without an image means the file couldn't be rendered (usually encrypted).
+          final failed = snap.connectionState == ConnectionState.done;
           return Center(
             child: Icon(
-              Symbols.picture_as_pdf,
-              color: snap.connectionState == ConnectionState.done ? scheme.primary : scheme.outline,
-              size: widget.width * 0.5,
+              failed ? Symbols.lock : Symbols.picture_as_pdf,
+              color: scheme.outline,
+              size: widget.width * 0.45,
             ),
           );
         },
