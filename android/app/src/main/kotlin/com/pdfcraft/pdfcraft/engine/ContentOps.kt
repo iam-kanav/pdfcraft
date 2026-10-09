@@ -304,6 +304,89 @@ object ContentOps {
         return ctm.multiply(upInv).multiply(a).multiply(up)
     }
 
+    // ---------------------------------------------------------------- vector shapes
+
+    private fun vectorPaths(scan: PageScan) = scan.paths.withIndex().filter { (_, p) ->
+        !p.clipOnly && (p.box.width >= 3f || p.box.height >= 3f) &&
+            // Ignore full-page backgrounds.
+            !(p.box.width > scan.geom.width * 0.95f && p.box.height > scan.geom.height * 0.95f)
+    }
+
+    fun getVectorObjects(args: Map<String, Any?>): List<Map<String, Any?>> = PdfIO.read(args.path, args.password) { od ->
+        val page = od.doc.getPage((args["page"] as Number).toInt())
+        val scan = ContentScanner.scan(page)
+        vectorPaths(scan).map { (i, p) ->
+            mapOf(
+                "id" to i, "rect" to p.box.toList(), "stroked" to p.stroked, "filled" to p.filled,
+                "strokeColor" to p.strokeColor.toLong(), "fillColor" to p.fillColor.toLong(),
+            )
+        }
+    }
+
+    /**
+     * Edits existing vector paths. `ids`: path ids from [getVectorObjects];
+     * `action`: delete | transform (from rect → to rect, display space) | recolor (strokeColor?, fillColor?).
+     */
+    fun editVectors(args: Map<String, Any?>) {
+        PdfIO.edit(args.path, args.password, args.out) { od ->
+            val doc = od.doc
+            val page = doc.getPage((args["page"] as Number).toInt())
+            val scan = ContentScanner.scan(page)
+            val g = scan.geom
+            val ids = (args["ids"] as List<*>).map { (it as Number).toInt() }
+            val paths = ids.map { scan.paths.getOrNull(it) ?: throw EngineException("ARGS", "Shape not found") }
+            val plan = RewritePlan()
+            when (args["action"]) {
+                "delete" -> paths.forEach { plan.noPaintOps.add(it.unit to it.ordinal) }
+                "transform" -> {
+                    val from = RectF.fromAny(args["from"])
+                    val to = RectF.fromAny(args["to"])
+                    val up = g.displayUpMatrix
+                    val sx = if (from.width > 0.01f) to.width / from.width else 1f
+                    val sy = if (from.height > 0.01f) to.height / from.height else 1f
+                    val a = Matrix(sx, 0f, 0f, sy, to.l - from.l * sx, (g.height - to.b) - (g.height - from.b) * sy)
+                    val t = ContentRewriter.invert(up).multiply(a).multiply(up)
+                    for (p in paths) {
+                        // c × X × CTM = c × CTM × T  ⇒  X = CTM × T × CTM⁻¹
+                        val x = p.ctm.multiply(t).multiply(ContentRewriter.invert(p.ctm))
+                        plan.insertBefore.getOrPut(p.unit to p.startOrdinal) { ArrayList() }.addAll(
+                            listOf(
+                                com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("q"),
+                                com.tom_roush.pdfbox.cos.COSFloat(x.scaleX), com.tom_roush.pdfbox.cos.COSFloat(x.shearY),
+                                com.tom_roush.pdfbox.cos.COSFloat(x.shearX), com.tom_roush.pdfbox.cos.COSFloat(x.scaleY),
+                                com.tom_roush.pdfbox.cos.COSFloat(x.translateX), com.tom_roush.pdfbox.cos.COSFloat(x.translateY),
+                                com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("cm"),
+                            ),
+                        )
+                        plan.insertAfter.getOrPut(p.unit to p.ordinal) { ArrayList() }
+                            .add(com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("Q"))
+                    }
+                }
+                "recolor" -> {
+                    val stroke = args["strokeColor"]?.let { colorComponents(parseColor(it)) }
+                    val fill = args["fillColor"]?.let { colorComponents(parseColor(it)) }
+                    for (p in paths) {
+                        val tokens = ArrayList<Any>()
+                        tokens.add(com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("q"))
+                        if (stroke != null) {
+                            stroke.forEach { tokens.add(com.tom_roush.pdfbox.cos.COSFloat(it)) }
+                            tokens.add(com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("RG"))
+                        }
+                        if (fill != null) {
+                            fill.forEach { tokens.add(com.tom_roush.pdfbox.cos.COSFloat(it)) }
+                            tokens.add(com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("rg"))
+                        }
+                        plan.insertBefore.getOrPut(p.unit to p.startOrdinal) { ArrayList() }.addAll(tokens)
+                        plan.insertAfter.getOrPut(p.unit to p.ordinal) { ArrayList() }
+                            .add(com.tom_roush.pdfbox.contentstream.operator.Operator.getOperator("Q"))
+                    }
+                }
+                else -> throw EngineException("ARGS", "Unknown shape action")
+            }
+            ContentRewriter.apply(doc, page, scan, plan)
+        }
+    }
+
     // ---------------------------------------------------------------- add content
 
     /**

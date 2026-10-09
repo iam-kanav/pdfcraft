@@ -75,7 +75,19 @@ class ImageOp(
     val pixelHeight: Int,
 )
 
-class PathOp(val unit: Int, val ordinal: Int, val box: RectF, val clipOnly: Boolean)
+class PathOp(
+    val unit: Int,
+    val ordinal: Int,
+    val box: RectF,
+    val clipOnly: Boolean,
+    /** Ordinal of the first path-construction operator. */
+    val startOrdinal: Int = ordinal,
+    val ctm: Matrix = Matrix(),
+    val stroked: Boolean = false,
+    val filled: Boolean = false,
+    val strokeColor: Int = 0xFF000000.toInt(),
+    val fillColor: Int = 0xFF000000.toInt(),
+)
 
 class FormOp(val unit: Int, val ordinal: Int, val name: COSName, val childUnit: Int, val box: RectF)
 
@@ -266,7 +278,10 @@ class ContentScanner private constructor(page: PDPage) : PDFGraphicsStreamEngine
         result.images.add(ImageOp(curUnit, curOrdinal, name, stream, ctm, box, pdImage.width, pdImage.height))
     }
 
+    private var pathStart = -1
+
     private fun addPoint(x: Float, y: Float) {
+        if (pathStart < 0 && suppress == 0) pathStart = curOrdinal
         pathMinX = min(pathMinX, x); pathMinY = min(pathMinY, y)
         pathMaxX = max(pathMaxX, x); pathMaxY = max(pathMaxY, y)
     }
@@ -276,14 +291,26 @@ class ContentScanner private constructor(page: PDPage) : PDFGraphicsStreamEngine
         pathMaxX = -Float.MAX_VALUE; pathMaxY = -Float.MAX_VALUE
     }
 
-    private fun finishPath(clipOnly: Boolean) {
+    private fun finishPath(clipOnly: Boolean, stroked: Boolean = false, filled: Boolean = false) {
         if (suppress == 0 && pathMinX <= pathMaxX) {
             val d = userRectToDisplay(
                 listOf(floatArrayOf(pathMinX, pathMinY), floatArrayOf(pathMaxX, pathMaxY), floatArrayOf(pathMinX, pathMaxY), floatArrayOf(pathMaxX, pathMinY)),
             )
-            result.paths.add(PathOp(curUnit, curOrdinal, d, clipOnly))
+            val gs = graphicsState
+            fun rgb(c: com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor?) =
+                try { (c?.toRGB() ?: 0) or 0xFF000000.toInt() } catch (_: Exception) { 0xFF000000.toInt() }
+            result.paths.add(
+                PathOp(
+                    curUnit, curOrdinal, d, clipOnly,
+                    startOrdinal = if (pathStart >= 0) pathStart else curOrdinal,
+                    ctm = gs.currentTransformationMatrix.clone(),
+                    stroked = stroked, filled = filled,
+                    strokeColor = rgb(gs.strokingColor), fillColor = rgb(gs.nonStrokingColor),
+                ),
+            )
         }
         pendingClip = false
+        pathStart = -1
         resetPath()
     }
 
@@ -314,11 +341,11 @@ class ContentScanner private constructor(page: PDPage) : PDFGraphicsStreamEngine
 
     override fun endPath() = finishPath(clipOnly = true)
 
-    override fun strokePath() = finishPath(clipOnly = false)
+    override fun strokePath() = finishPath(clipOnly = false, stroked = true)
 
-    override fun fillPath(windingRule: Path.FillType) = finishPath(clipOnly = false)
+    override fun fillPath(windingRule: Path.FillType) = finishPath(clipOnly = false, filled = true)
 
-    override fun fillAndStrokePath(windingRule: Path.FillType) = finishPath(clipOnly = false)
+    override fun fillAndStrokePath(windingRule: Path.FillType) = finishPath(clipOnly = false, stroked = true, filled = true)
 
     override fun shadingFill(shadingName: COSName) {}
 }

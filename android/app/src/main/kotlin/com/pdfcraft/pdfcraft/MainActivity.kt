@@ -57,6 +57,8 @@ class MainActivity : FlutterActivity() {
                 "editTextBlocks" -> ContentOps::editTextBlocks
                 "getImageObjects" -> ContentOps::getImageObjects
                 "editImage" -> ContentOps::editImage
+                "getVectorObjects" -> ContentOps::getVectorObjects
+                "editVectors" -> ContentOps::editVectors
                 "addContent" -> ContentOps::addContent
                 "redact" -> ContentOps::redact
                 "watermark" -> Stamps::watermark

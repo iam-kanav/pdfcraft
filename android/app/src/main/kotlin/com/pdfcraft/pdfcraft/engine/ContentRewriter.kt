@@ -38,6 +38,10 @@ class RewritePlan {
     /** Replace an operator (and its operands) with arbitrary tokens. */
     val replaceOps = HashMap<OpKey, List<Any>>()
 
+    /** Tokens inserted before an operator (and its operands) / after an operator. */
+    val insertBefore = HashMap<OpKey, MutableList<Any>>()
+    val insertAfter = HashMap<OpKey, MutableList<Any>>()
+
     /** New name for the XObject operand of a `Do` operator. */
     val renameXObject = HashMap<OpKey, COSName>()
 
@@ -54,7 +58,8 @@ class RewritePlan {
     }
 
     fun touchedUnits(): Set<Int> =
-        (removeGlyphs.keys + dropOps + noPaintOps + replaceOps.keys + renameXObject.keys).map { it.first }.toSet()
+        (removeGlyphs.keys + dropOps + noPaintOps + replaceOps.keys + renameXObject.keys + insertBefore.keys + insertAfter.keys)
+            .map { it.first }.toSet()
 
     val isEmpty get() = touchedUnits().isEmpty()
 }
@@ -128,6 +133,7 @@ object ContentRewriter {
             }
             val key = unit to ordinal++
             val name = t.name
+            plan.insertBefore[key]?.let { out.addAll(it) }
             when {
                 key in plan.replaceOps -> out.addAll(plan.replaceOps[key]!!)
                 key in plan.dropOps -> {}
@@ -156,6 +162,7 @@ object ContentRewriter {
                     out.add(t)
                 }
             }
+            plan.insertAfter[key]?.let { out.addAll(it) }
             operands.clear()
         }
         out.addAll(operands)

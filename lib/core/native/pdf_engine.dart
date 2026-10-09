@@ -301,6 +301,34 @@ class PdfEngine {
     'imagePath': ?imagePath,
   });
 
+  Future<List<Map<String, dynamic>>> getVectorObjects(String path, int page, {String? password}) async {
+    final r = await _call<List>('getVectorObjects', {..._base(path, password), 'page': page});
+    return [for (final m in r!) (m as Map).cast<String, dynamic>()];
+  }
+
+  /// [action]: 'delete', 'transform' (with [from]/[to] rects) or 'recolor' (with stroke/fill colors).
+  Future<void> editVectors(
+    String path,
+    String out, {
+    required int page,
+    required List<int> ids,
+    required String action,
+    Rect? from,
+    Rect? to,
+    Color? strokeColor,
+    Color? fillColor,
+    String? password,
+  }) => _call('editVectors', {
+    ..._base(path, password, out),
+    'page': page,
+    'ids': ids,
+    'action': action,
+    if (from != null) 'from': rectToList(from),
+    if (to != null) 'to': rectToList(to),
+    if (strokeColor != null) 'strokeColor': colorToInt(strokeColor),
+    if (fillColor != null) 'fillColor': colorToInt(fillColor),
+  });
+
   Future<void> addContent(String path, String out, List<Map<String, Object?>> items, {String? password}) =>
       _call('addContent', {..._base(path, password, out), 'items': items});
 

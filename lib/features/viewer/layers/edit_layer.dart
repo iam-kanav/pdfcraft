@@ -17,10 +17,11 @@ import '../widgets/selection_box.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 class _PageObjects {
-  _PageObjects(this.texts, this.images);
+  _PageObjects(this.texts, this.images, this.vectors);
 
   final List<Map<String, dynamic>> texts;
   final List<Map<String, dynamic>> images;
+  final List<Map<String, dynamic>> vectors;
 }
 
 final _cache = <String, Future<_PageObjects>>{};
@@ -33,7 +34,8 @@ Future<_PageObjects> _loadObjects(ViewerHost host, int pageIndex) {
     final pw = host.session.password;
     final texts = await engine.getTextBlocks(host.session.path, pageIndex, password: pw);
     final images = await engine.getImageObjects(host.session.path, pageIndex, password: pw);
-    return _PageObjects(texts, images);
+    final vectors = await engine.getVectorObjects(host.session.path, pageIndex, password: pw);
+    return _PageObjects(texts, images, vectors);
   });
 }
 
@@ -55,6 +57,8 @@ class _EditLayerState extends State<EditLayer> {
   Offset? _dragStart;
   Offset? _dragEnd;
   int? _movingImage;
+  Map<String, dynamic>? _selectedVector;
+  bool _movingVector = false;
 
   ViewerHost get host => widget.host;
   ViewerState get vs => host.viewerState;
@@ -156,6 +160,46 @@ class _EditLayerState extends State<EditLayer> {
     }
   }
 
+  Future<void> _vectorActions(Map<String, dynamic> v) async {
+    setState(() => _selectedVector = v);
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: Text(v['filled'] == true ? 'Filled shape' : 'Line / outline shape')),
+            const Divider(),
+            ListTile(leading: const Icon(Symbols.open_with), title: const Text('Move or resize'), onTap: () => Navigator.pop(ctx, 'move')),
+            ListTile(leading: const Icon(Symbols.palette), title: const Text('Change color'), onTap: () => Navigator.pop(ctx, 'color')),
+            ListTile(
+              leading: Icon(Symbols.delete, color: Theme.of(ctx).colorScheme.error),
+              title: const Text('Delete shape'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    final id = v['id'] as int;
+    switch (action) {
+      case 'move':
+        setState(() => _movingVector = true);
+        return;
+      case 'color':
+        Color? chosen;
+        await showStyleSheet(context, color: Color(v[v['filled'] == true ? 'fillColor' : 'strokeColor'] as int), onColor: (c) => chosen = c);
+        if (chosen != null) {
+          await host.edit('Recolor shape', (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [id], action: 'recolor',
+              strokeColor: v['stroked'] == true ? chosen : null, fillColor: v['filled'] == true ? chosen : null, password: pw));
+        }
+      case 'delete':
+        await host.edit('Delete shape', (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [id], action: 'delete', password: pw));
+    }
+    if (mounted) setState(() => _selectedVector = null);
+  }
+
   Future<String?> _pickImage() async {
     final r = await pickLocalFile(type: FileType.image);
     return r?.path;
@@ -182,6 +226,13 @@ class _EditLayerState extends State<EditLayer> {
         for (final img in objs.images.reversed) {
           if (listToRect(img['rect'] as List).contains(p)) return _imageActions(img);
         }
+        // Smallest vector shape under the finger.
+        final hits = objs.vectors.where((v) => listToRect(v['rect'] as List).inflate(4).contains(p)).toList()
+          ..sort((a, b) {
+            final ra = listToRect(a['rect'] as List), rb = listToRect(b['rect'] as List);
+            return (ra.width * ra.height).compareTo(rb.width * rb.height);
+          });
+        if (hits.isNotEmpty) return _vectorActions(hits.first);
       case EditTool.addText:
         final r = await showModalBottomSheet<Map<String, Object?>>(
           context: context,
@@ -392,6 +443,26 @@ class _EditLayerState extends State<EditLayer> {
                       painter: _ShapePreview(tool, _dragStart! * s, _dragEnd! * s, vs.inkColor, vs.strokeWidth * s),
                     ),
                   ),
+                ),
+              if (_selectedVector != null && !_movingVector)
+                Positioned.fromRect(
+                  rect: scaleRect(listToRect(_selectedVector!['rect'] as List).inflate(2), s),
+                  child: IgnorePointer(child: Container(decoration: BoxDecoration(border: Border.all(color: const Color(0xFFF59E0B), width: 2)))),
+                ),
+              if (_selectedVector != null && _movingVector)
+                SelectionBox(
+                  rect: listToRect(_selectedVector!['rect'] as List),
+                  scale: s,
+                  color: const Color(0xFFF59E0B),
+                  onChanged: (r) async {
+                    final v = _selectedVector!;
+                    setState(() {
+                      _selectedVector = null;
+                      _movingVector = false;
+                    });
+                    await host.edit('Move shape', (i, o) => PdfEngine.instance.editVectors(i, o, page: pageIndex, ids: [v['id'] as int],
+                        action: 'transform', from: listToRect(v['rect'] as List), to: r, password: pw));
+                  },
                 ),
               if (_movingImage != null && objs != null)
                 SelectionBox(

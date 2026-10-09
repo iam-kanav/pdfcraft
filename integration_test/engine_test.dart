@@ -318,6 +318,34 @@ void main() {
     expect(await engine.getImageObjects(o3, 0), isEmpty);
   });
 
+  test('existing vector shapes: list, move, recolor, delete', () async {
+    final o = out('shapes.pdf');
+    await engine.addContent(sample, o, [
+      {'type': 'rect', 'page': 0, 'rect': [300, 600, 400, 650], 'strokeColor': 0xFFE11D48, 'strokeWidth': 2},
+    ]);
+    var vectors = await engine.getVectorObjects(o, 0);
+    final rect = vectors.firstWhere((v) {
+      final r = listToRect(v['rect'] as List);
+      return (r.left - 300).abs() < 2 && (r.top - 600).abs() < 2;
+    });
+    final o2 = out('shapes_moved.pdf');
+    await engine.editVectors(o, o2, page: 0, ids: [rect['id'] as int], action: 'transform',
+        from: listToRect(rect['rect'] as List), to: const Rect.fromLTWH(100, 700, 200, 50));
+    vectors = await engine.getVectorObjects(o2, 0);
+    final moved = vectors.map((v) => listToRect(v['rect'] as List)).where((r) => (r.left - 100).abs() < 2 && (r.top - 700).abs() < 2);
+    expect(moved, isNotEmpty);
+    expect(moved.first.width, closeTo(200, 2));
+    final movedId = vectors.firstWhere((v) => (listToRect(v['rect'] as List).left - 100).abs() < 2)['id'] as int;
+    final o3 = out('shapes_recolored.pdf');
+    await engine.editVectors(o2, o3, page: 0, ids: [movedId], action: 'recolor', strokeColor: const Color(0xFF16A34A));
+    final recolored = (await engine.getVectorObjects(o3, 0)).firstWhere((v) => (listToRect(v['rect'] as List).left - 100).abs() < 2);
+    expect((recolored['strokeColor'] as int) & 0xFFFFFF, 0x16A34A);
+    final o4 = out('shapes_deleted.pdf');
+    await engine.editVectors(o3, o4, page: 0, ids: [recolored['id'] as int], action: 'delete');
+    expect((await engine.getVectorObjects(o4, 0)).where((v) => (listToRect(v['rect'] as List).left - 100).abs() < 2), isEmpty);
+    expect((await pageTexts(o4))[0], contains('Hello World')); // text untouched
+  });
+
   test('add text, image and shapes as page content', () async {
     final png = File(out('add.png'))..writeAsBytesSync(samples.testImage());
     final o = out('content_added.pdf');
