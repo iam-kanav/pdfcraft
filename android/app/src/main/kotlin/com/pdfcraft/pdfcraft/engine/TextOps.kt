@@ -7,6 +7,10 @@ import com.tom_roush.pdfbox.pdmodel.font.PDFont
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.pdmodel.graphics.state.RenderingMode
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -34,8 +38,44 @@ object TextOps {
         return bold to italic
     }
 
+    /**
+     * The document of the last [extractPages] call. Smart reading extracts a
+     * document in many small batches; re-parsing the file for each one is a
+     * large part of its loading time. Closed after a short idle period, and
+     * reloaded when the file changes.
+     */
+    private class CachedDoc(val key: List<Any?>, val od: OpenedDoc)
+
+    private val cacheLock = Any()
+    private var cached: CachedDoc? = null
+    private var closeTask: ScheduledFuture<*>? = null
+    private val scheduler = Executors.newSingleThreadScheduledExecutor()
+
+    private fun <T> readCached(path: String, password: String?, block: (OpenedDoc) -> T): T = synchronized(cacheLock) {
+        closeTask?.cancel(false)
+        val file = File(path)
+        val key = listOf(file.absolutePath, file.lastModified(), file.length(), password)
+        val entry = cached?.takeIf { it.key == key } ?: run {
+            cached?.od?.close()
+            cached = null
+            CachedDoc(key, PdfIO.load(path, password)).also { cached = it }
+        }
+        try {
+            block(entry.od)
+        } finally {
+            closeTask = scheduler.schedule({
+                synchronized(cacheLock) {
+                    if (cached === entry) {
+                        entry.od.close()
+                        cached = null
+                    }
+                }
+            }, 20, TimeUnit.SECONDS)
+        }
+    }
+
     /** Returns RawPageContent maps for the requested pages (0-based). */
-    fun extractPages(args: Map<String, Any?>): List<Map<String, Any?>> = PdfIO.read(args.path, args.password) { od ->
+    fun extractPages(args: Map<String, Any?>): List<Map<String, Any?>> = readCached(args.path, args.password) { od ->
         val doc = od.doc
         val pages = (args["pages"] as List<*>?)?.map { (it as Number).toInt() } ?: (0 until doc.numberOfPages).toList()
         val withImages = args["images"] != false

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -42,6 +44,9 @@ class _ReflowScreenState extends State<ReflowScreen> {
   bool _speaking = false;
   bool _disposed = false;
 
+  /// Number of pages in the analysis currently shown.
+  int _analyzedPages = 0;
+
   @override
   void initState() {
     super.initState();
@@ -60,17 +65,48 @@ class _ReflowScreenState extends State<ReflowScreen> {
     try {
       final info = await PdfEngine.instance.info(widget.path, password: widget.password);
       _total = info.pageCount;
-      const batch = 6;
-      for (var i = 0; i < _total && !_disposed; i += batch) {
-        final pages = [for (var k = i; k < (i + batch).clamp(0, _total); k++) k];
-        _raw.addAll(await PdfEngine.instance.extractPages(widget.path, password: widget.password, pages: pages));
+      // The analyzer looks at the whole document (repeated headers, body font
+      // size), so every pass re-analyzes all loaded pages. Passes run in the
+      // background while the next pages are extracted, and only once the page
+      // count has doubled, which keeps the total work linear. A small first
+      // batch gets text on screen quickly.
+      Future<void>? pass;
+      var nextPass = 1;
+      while (_raw.length < _total && !_disposed) {
+        final from = _raw.length;
+        final to = math.min(from + (from == 0 ? 3 : 12), _total);
+        _raw.addAll(
+          await PdfEngine.instance.extractPages(
+            widget.path,
+            password: widget.password,
+            pages: [for (var k = from; k < to; k++) k],
+          ),
+        );
         if (_disposed) return;
-        setState(() => _doc = analyzeDocument(List.of(_raw)));
+        setState(() {}); // Progress.
+        if (pass == null && _raw.length >= nextPass) {
+          nextPass = _raw.length * 2;
+          pass = _analyze().whenComplete(() => pass = null);
+        }
       }
+      await pass;
+      if (!_disposed && _analyzedPages < _raw.length) await _analyze();
     } catch (e) {
       if (!_disposed) setState(() => _error = e);
     } finally {
       if (!_disposed) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _analyze() async {
+    final pages = List.of(_raw);
+    try {
+      final doc = await _analyzeInBackground(pages);
+      if (_disposed || pages.length <= _analyzedPages) return;
+      _analyzedPages = pages.length;
+      setState(() => _doc = doc);
+    } catch (e) {
+      if (!_disposed) setState(() => _error = e);
     }
   }
 
@@ -241,3 +277,6 @@ class _ReflowScreenState extends State<ReflowScreen> {
     );
   }
 }
+
+/// Top-level so the isolate closure captures only [pages].
+Future<DocStructure> _analyzeInBackground(List<RawPageContent> pages) => Isolate.run(() => analyzeDocument(pages));
