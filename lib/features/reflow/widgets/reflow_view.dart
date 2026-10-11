@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfcraft/core/models/doc_structure.dart';
+import 'package:pdfcraft/features/common/fast_scroller.dart';
 import 'package:pdfcraft/features/reflow/reading_settings.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -364,44 +365,62 @@ class _ReflowViewState extends State<ReflowView> {
     return ColoredBox(
       key: ReflowView.backgroundKey,
       color: colors.background,
-      child: DefaultSelectionStyle(
-        selectionColor: colors.accent.withValues(alpha: 0.3),
-        cursorColor: colors.accent,
-        // One selection across the whole document, so it can span paragraphs
-        // and keep growing while scrolling.
-        child: SelectionArea(
-          contextMenuBuilder: _contextMenu,
-          child: Scrollbar(
-            controller: _scroll,
-            child: ListView.builder(
-              controller: _scroll,
-              padding: EdgeInsets.only(top: _listPadTop, bottom: 48 + MediaQuery.paddingOf(context).bottom),
-              itemCount: _visible.length,
-              itemBuilder: (context, pos) {
-                final index = _visible[pos];
-                return _ItemHost(
-                  key: ValueKey(index),
-                  index: index,
-                  built: _built,
-                  heights: _heights,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
-                          child: _buildItem(context, index, style, query),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DefaultSelectionStyle(
+            selectionColor: colors.accent.withValues(alpha: 0.3),
+            cursorColor: colors.accent,
+            // One selection across the whole document, so it can span paragraphs
+            // and keep growing while scrolling.
+            child: SelectionArea(
+              contextMenuBuilder: _contextMenu,
+              child: ListView.builder(
+                controller: _scroll,
+                padding: EdgeInsets.only(top: _listPadTop, bottom: 48 + MediaQuery.paddingOf(context).bottom),
+                itemCount: _visible.length,
+                itemBuilder: (context, pos) {
+                  final index = _visible[pos];
+                  return _ItemHost(
+                    key: ValueKey(index),
+                    index: index,
+                    built: _built,
+                    heights: _heights,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
+                            child: _buildItem(context, index, style, query),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
+                  );
+                },
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: FastScroller(
+              listenable: _scroll,
+              position: () {
+                final p = _scroll.hasClients ? _scroll.position : null;
+                if (p == null || !p.hasContentDimensions || p.maxScrollExtent <= 0) return null;
+                return _scroll.offset / _scroll.position.maxScrollExtent;
+              },
+              onDrag: (f) => _scroll.jumpTo(f * _scroll.position.maxScrollExtent),
+              label: () {
+                final i = _firstVisibleBlock();
+                final page = i == null ? null : widget.doc.blocks[i].pageNumber;
+                return page == null ? null : 'Page $page';
               },
             ),
           ),
-        ),
+        ],
       ),
     );
   }

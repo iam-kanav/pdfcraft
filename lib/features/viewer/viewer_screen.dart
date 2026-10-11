@@ -15,6 +15,7 @@ import '../../core/session/document_session.dart';
 import '../../core/util/format.dart';
 import '../convert/export_screen.dart';
 import '../security/protect_screen.dart';
+import '../common/fast_scroller.dart';
 import '../common/dialogs.dart';
 import '../common/file_actions.dart';
 import '../common/open_actions.dart';
@@ -355,21 +356,15 @@ class _ViewerScreenState extends State<ViewerScreen> {
         return false;
       },
       viewerOverlayBuilder: (context, size, handleLinkTap) => [
-        if (!horizontal)
-          PdfViewerScrollThumb(
-            controller: controller,
-            orientation: ScrollbarOrientation.right,
-            thumbSize: const Size(46, 28),
-            thumbBuilder: (context, thumbSize, page, c) => Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
-                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 4)],
-              ),
-              alignment: Alignment.center,
-              child: Text(page?.toString() ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-            ),
+        Positioned.fill(
+          child: FastScroller(
+            listenable: controller,
+            enabled: !viewerState.panLocked,
+            position: () => _scrollFraction(horizontal),
+            onDrag: (f) => _scrollToFraction(f, horizontal),
+            label: () => '${controller.pageNumber ?? 1} / ${controller.pageCount}',
           ),
+        ),
       ],
       pageOverlaysBuilder: (context, rect, page) => _pageOverlays(context, rect, page),
       loadingBannerBuilder: (context, bytes, total) => const Center(child: CircularProgressIndicator()),
@@ -396,6 +391,31 @@ class _ViewerScreenState extends State<ViewerScreen> {
       x += page.width + params.margin * 2;
     }
     return PdfPageLayout(pageLayouts: layouts, documentSize: Size(x, height));
+  }
+
+  /// Position in the document for the fast scroller: by scroll offset when
+  /// pages are stacked vertically, by page in single-page mode.
+  double? _scrollFraction(bool horizontal) {
+    if (!controller.isReady) return null;
+    if (horizontal) {
+      final n = controller.pageCount;
+      return n < 2 ? null : ((controller.pageNumber ?? 1) - 1) / (n - 1);
+    }
+    final range = controller.documentSize.height - controller.visibleRect.height;
+    return range <= 0 ? null : controller.visibleRect.top / range;
+  }
+
+  void _scrollToFraction(double f, bool horizontal) {
+    if (horizontal) {
+      final page = 1 + (f * (controller.pageCount - 1)).round();
+      if (page != controller.pageNumber) {
+        controller.goToPage(pageNumber: page, anchor: PdfPageAnchor.all, duration: Duration.zero);
+      }
+      return;
+    }
+    final range = controller.documentSize.height - controller.visibleRect.height;
+    final m = controller.value.clone()..y = -f * range;
+    controller.value = controller.makeMatrixInSafeRange(m);
   }
 
   void _snapToPage() {
@@ -524,7 +544,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ),
             if (document != null && mode == ViewerMode.read)
               Positioned(
-                right: 10,
+                left: 10,
                 top: 10,
                 child: AnimatedOpacity(
                   opacity: _showIndicator ? 1 : 0.0,

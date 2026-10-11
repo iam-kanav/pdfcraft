@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfcraft/core/models/doc_structure.dart';
+import 'package:pdfcraft/features/common/fast_scroller.dart';
 import 'package:pdfcraft/features/reflow/reading_settings.dart';
 import 'package:pdfcraft/features/reflow/widgets/reading_settings_sheet.dart';
 import 'package:pdfcraft/features/reflow/widgets/reflow_view.dart';
@@ -278,6 +279,54 @@ void main() {
     expect(copied, contains('1. Step one'));
     expect(copied, contains('Name\tValue\na\t1'));
     expect(copied, endsWith('The end.'));
+  });
+
+  testWidgets('the fast scroller appears on scroll and drags through a long document', (tester) async {
+    final settings = await loadedSettings();
+    final doc = DocStructure(
+      blocks: [
+        for (var i = 0; i < 300; i++)
+          ParagraphBlock(
+            spans: [TextSpanData('Paragraph $i. ${'Lorem ipsum dolor sit amet. ' * 3}')],
+            pageNumber: i ~/ 10 + 1,
+          ),
+      ],
+    );
+    final scroll = ScrollController();
+    addTearDown(scroll.dispose);
+    await tester.pumpWidget(host(ReflowView(doc: doc, settings: settings, controller: scroll)));
+    final handle = find.byKey(FastScroller.handleKey);
+    expect(handle, findsNothing, reason: 'hidden until the document scrolls');
+
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pump();
+    expect(handle, findsOneWidget);
+
+    // Drag the handle to the bottom of the track.
+    final gesture = await tester.startGesture(tester.getCenter(handle));
+    await gesture.moveBy(const Offset(0, 20));
+    await tester.pump();
+    final view = tester.getRect(find.byType(ReflowView));
+    for (var y = tester.getCenter(handle).dy; y < view.bottom; y += 60) {
+      await gesture.moveTo(Offset(tester.getCenter(handle).dx, y));
+      await tester.pump();
+    }
+    await gesture.moveTo(Offset(tester.getCenter(handle).dx, view.bottom + 40));
+    await tester.pump();
+    expect(find.textContaining(RegExp(r'^Page \d+$')), findsOneWidget, reason: 'page bubble while dragging');
+    await gesture.up();
+    await tester.pump();
+
+    expect(scroll.offset, greaterThan(scroll.position.maxScrollExtent * 0.9));
+    expect(find.textContaining('Paragraph 299.'), findsOneWidget);
+
+    // It fades out once idle.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<AnimatedOpacity>(find.ancestor(of: handle, matching: find.byType(AnimatedOpacity))).opacity,
+      0,
+    );
   });
 
   testWidgets('ReflowOutline lists headings with indentation and reports selection', (tester) async {
