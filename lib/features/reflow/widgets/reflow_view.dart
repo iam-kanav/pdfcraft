@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -50,6 +51,22 @@ class ReflowController extends ChangeNotifier {
   /// Block index of the first block currently laid out in the viewport.
   int? get firstVisibleBlock => _state?._firstVisibleBlock();
 
+  /// The block at the top of the screen, updated after each scroll.
+  ValueListenable<int?> get topBlock => _top;
+  final ValueNotifier<int?> _top = ValueNotifier(null);
+
+  /// How far through the document the view is, from 0 to 1 (1 at the very
+  /// end), or null when it doesn't scroll.
+  ValueListenable<double?> get position => _position;
+  final ValueNotifier<double?> _position = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _top.dispose();
+    _position.dispose();
+    super.dispose();
+  }
+
   void _attach(_ReflowViewState s) => _state = s;
 
   void _detach(_ReflowViewState s) {
@@ -70,9 +87,13 @@ class ReflowView extends StatefulWidget {
     this.highlightQuery,
     this.reflowController,
     this.onLinkTap,
+    this.initialBlock = 0,
   });
 
   final DocStructure doc;
+
+  /// Block shown at the top when the view opens.
+  final int initialBlock;
   final ReadingSettings settings;
   final ScrollController? controller;
 
@@ -131,6 +152,12 @@ class _ReflowViewState extends State<ReflowView> {
   final ValueNotifier<double?> _fraction = ValueNotifier(null);
   bool _fractionScheduled = false;
 
+  /// Block at the top of the screen and how far it is scrolled past, as of
+  /// the last frame. Used to keep the reading position when the document is
+  /// re-analyzed with more pages.
+  int? _topBlock;
+  double _topOffset = 0;
+
   static const double _listPadTop = 16;
   static const double _maxContentWidth = 760;
 
@@ -139,6 +166,7 @@ class _ReflowViewState extends State<ReflowView> {
   @override
   void initState() {
     super.initState();
+    _anchor = widget.initialBlock.clamp(0, math.max(0, widget.doc.blocks.length - 1));
     _computeStructure();
     widget.reflowController?._attach(this);
     widget.settings.addListener(_onSettings);
@@ -149,11 +177,18 @@ class _ReflowViewState extends State<ReflowView> {
   void didUpdateWidget(covariant ReflowView old) {
     super.didUpdateWidget(old);
     if (!identical(old.doc, widget.doc)) {
+      final keep = _topBlock == null ? null : _sameBlockIn(old.doc, _topBlock!, widget.doc);
       _collapsed = {};
       _heights.clear();
       _selection.clear();
       _computeStructure();
-      _anchor = math.min(_anchor, math.max(0, widget.doc.blocks.length - 1));
+      if (keep != null && _scroll.hasClients) {
+        // Stay on the block being read, e.g. when earlier pages load later.
+        _anchor = keep;
+        _scroll.position.correctPixels(_topOffset);
+      } else {
+        _anchor = math.min(_anchor, math.max(0, widget.doc.blocks.length - 1));
+      }
     }
     if (!identical(old.controller, widget.controller)) {
       (old.controller ?? _ownController)?.removeListener(_measureFraction);
@@ -262,6 +297,26 @@ class _ReflowViewState extends State<ReflowView> {
     return viewport.getOffsetToReveal(ro, 0).offset;
   }
 
+  /// Index in [to] of the block matching [index] in [from]: the same position
+  /// among the blocks of its source page.
+  static int? _sameBlockIn(DocStructure from, int index, DocStructure to) {
+    if (index >= from.blocks.length || to.blocks.isEmpty) return null;
+    final page = from.blocks[index].pageNumber;
+    if (page == null) return math.min(index, to.blocks.length - 1);
+    var ordinal = 0;
+    for (var i = index - 1; i >= 0 && from.blocks[i].pageNumber == page; i--) {
+      ordinal++;
+    }
+    int? first, last;
+    for (var i = 0; i < to.blocks.length; i++) {
+      if (to.blocks[i].pageNumber != page) continue;
+      first ??= i;
+      last = i;
+      if (i - first == ordinal) return i;
+    }
+    return last;
+  }
+
   /// Position in [_visible] of the anchor block (or the next visible block
   /// when it is hidden in a collapsed section).
   int get _anchorPos {
@@ -336,7 +391,18 @@ class _ReflowViewState extends State<ReflowView> {
     _fractionScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _fractionScheduled = false;
-      if (mounted) _fraction.value = _scrollFraction();
+      if (!mounted) return;
+      _fraction.value = _scrollFraction();
+      final top = _firstVisibleBlock();
+      final ctx = top == null ? null : _built[top];
+      final itemTop = ctx == null ? null : _itemTop(ctx);
+      if (top != null && itemTop != null && _scroll.hasClients) {
+        _topBlock = top;
+        _topOffset = _scroll.offset - itemTop;
+      }
+      widget.reflowController
+        ?.._top.value = top
+        .._position.value = _fraction.value;
     });
     SchedulerBinding.instance.ensureVisualUpdate();
   }

@@ -193,7 +193,6 @@ PDFCraft is a Flutter app with a native PDF engine written in Kotlin.
 
 - **Signatures are visual only.** Certificate-based digital signatures aren't supported yet.
 - **Text recognition reads Latin-script languages only**, such as English, Spanish, French and German.
-- **Smart reading doesn't show form field values** yet.
 - **The scanner has been tuned mostly on test images**, not a wide range of real-world photos.
 
 ## Contributing

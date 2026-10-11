@@ -358,6 +358,44 @@ void main() {
     }
   });
 
+  testWidgets('opens at a block and stays there when earlier pages load', (tester) async {
+    final settings = await loadedSettings();
+    ParagraphBlock para(int i) => ParagraphBlock(
+      spans: [TextSpanData('Paragraph $i. ${'Lorem ipsum dolor sit amet. ' * (1 + i % 3)}')],
+      pageNumber: i ~/ 5 + 1,
+    );
+    // Pages 21+ load first (the page being read), then the earlier ones.
+    final later = DocStructure(blocks: [for (var i = 100; i < 200; i++) para(i)]);
+    final whole = DocStructure(blocks: [for (var i = 0; i < 200; i++) para(i)]);
+    final controller = ReflowController();
+    addTearDown(controller.dispose);
+    Widget view(DocStructure doc, {int initial = 0}) =>
+        host(ReflowView(doc: doc, settings: settings, reflowController: controller, initialBlock: initial));
+
+    await tester.pumpWidget(view(later, initial: 50));
+    await tester.pump();
+    final target = find.textContaining('Paragraph 150.');
+    final viewTop = tester.getTopLeft(find.byType(ReflowView)).dy;
+    // At the top, under its "p. 31" page marker.
+    expect(tester.getTopLeft(find.text('p. 31')).dy, lessThan(viewTop + 10));
+    expect(tester.getTopLeft(target).dy, lessThan(viewTop + 60));
+    expect(controller.topBlock.value, 50);
+
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -30));
+    await tester.pump();
+    final before = tester.getTopLeft(target).dy;
+
+    await tester.pumpWidget(view(whole));
+    await tester.pump();
+    expect(tester.getTopLeft(target).dy, closeTo(before, 1), reason: 'same paragraph, same place');
+    expect(controller.topBlock.value, 150);
+
+    // Earlier pages are reachable by scrolling up.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 400));
+    await tester.pump();
+    expect(find.textContaining('Paragraph 148.'), findsOneWidget);
+  });
+
   testWidgets('ReflowOutline lists headings with indentation and reports selection', (tester) async {
     final doc = sampleDoc();
     final outline = buildOutline(doc);

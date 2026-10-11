@@ -1,7 +1,17 @@
 package com.pdfcraft.pdfcraft.engine
 
 import android.graphics.Bitmap
+import com.tom_roush.pdfbox.cos.COSDictionary
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDCheckBox
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDChoice
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDRadioButton
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTerminalField
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDVariableText
 import com.tom_roush.pdfbox.pdmodel.common.PDStream
 import com.tom_roush.pdfbox.pdmodel.font.PDFont
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
@@ -79,6 +89,7 @@ object TextOps {
         val doc = od.doc
         val pages = (args["pages"] as List<*>?)?.map { (it as Number).toInt() } ?: (0 until doc.numberOfPages).toList()
         val withImages = args["images"] != false
+        val fields = fieldsByWidget(doc)
         pages.filter { it in 0 until doc.numberOfPages }.map { pi ->
             val page = doc.getPage(pi)
             val scan = try { ContentScanner.scan(page) } catch (_: Exception) { null }
@@ -94,7 +105,7 @@ object TextOps {
                 "page" to pi + 1,
                 "width" to g.width.toDouble(),
                 "height" to g.height.toDouble(),
-                "lines" to (scan?.let { buildLines(it, links) } ?: emptyList()),
+                "lines" to (scan?.let { buildLines(it, links, fieldTexts(page, g, fields)) } ?: emptyList()),
                 "images" to if (withImages && scan != null) extractImages(scan) else emptyList<Any>(),
             )
         }
@@ -133,7 +144,85 @@ object TextOps {
         )
     }
 
-    private fun buildLines(scan: PageScan, links: List<Pair<RectF, String>> = emptyList()): List<Map<String, Any?>> {
+    /** Terminal form fields by the dictionary of each of their widgets. */
+    private fun fieldsByWidget(doc: PDDocument): Map<COSDictionary, PDTerminalField> {
+        val form = try { doc.documentCatalog.acroForm } catch (_: Exception) { null } ?: return emptyMap()
+        val out = HashMap<COSDictionary, PDTerminalField>()
+        try {
+            for (f in form.fieldTree) if (f is PDTerminalField) for (w in f.widgets) out[w.cosObject] = f
+        } catch (_: Exception) {}
+        return out
+    }
+
+    /** A form field's value, placed where its widget is (display coordinates). */
+    private class FieldText(val box: RectF, val text: String, val size: Float)
+
+    /**
+     * Values typed into the form fields on [page]. They live in widget
+     * annotations, not the page content, so the content scan doesn't see them.
+     */
+    private fun fieldTexts(page: PDPage, g: PageGeom, fields: Map<COSDictionary, PDTerminalField>): List<FieldText> {
+        if (fields.isEmpty()) return emptyList()
+        val out = ArrayList<FieldText>()
+        val widgets = try { page.annotations.filterIsInstance<PDAnnotationWidget>() } catch (_: Exception) { emptyList() }
+        for (w in widgets) {
+            try {
+                val f = fields[w.cosObject] ?: continue
+                if (w.isHidden || w.isNoView) continue
+                val r = g.rectToDisplay(w.rectangle ?: continue)
+                val box = RectF(r[0], r[1], r[2], r[3])
+                val onState = w.appearance?.normalAppearance?.takeIf { it.isSubDictionary }
+                    ?.subDictionary?.keys?.map { it.name }?.firstOrNull { it != "Off" }
+                val text = when (f) {
+                    is PDTextField -> if (f.isPassword) null else f.value
+                    is PDCheckBox -> if (w.appearanceState?.name?.let { it != "Off" } ?: f.isChecked) "☑" else "☐"
+                    is PDRadioButton -> if (onState != null && f.valueAsString == onState) "◉" else "○"
+                    is PDChoice -> f.value.joinToString(", ")
+                    else -> null
+                }?.trim()
+                if (text.isNullOrEmpty()) continue
+                val da = (f as? PDVariableText)?.defaultAppearance ?: ""
+                val daSize = Regex("([0-9.]+)\\s+Tf").find(da)?.groupValues?.get(1)?.toFloatOrNull() ?: 0f
+                // 0 means "auto size": fit the box, as viewers do.
+                val size = if (daSize > 0f) daSize else min(box.height * 0.7f, 12f).coerceAtLeast(6f)
+                out.add(FieldText(box, text, size))
+            } catch (_: Exception) {}
+        }
+        return out
+    }
+
+    /**
+     * Adds form field values to [lines]: onto the line beside the field (e.g.
+     * "Name:"), or as lines of their own. The analyzer orders spans by x and
+     * lines by y, so they only need the right position.
+     */
+    private fun addFieldTexts(lines: MutableList<LineBuilder>, fields: List<FieldText>) {
+        for (f in fields) {
+            val parts = f.text.split(Regex("\r\n|\r|\n")).map { it.trim() }.filter { it.isNotEmpty() }
+            val single = parts.size == 1
+            for ((k, part) in parts.withIndex()) {
+                val baseline = if (single) (f.box.t + f.box.b) / 2 + f.size * 0.35f else f.box.t + f.size * (k + 1) * 1.15f
+                val beside = lines.filter { abs(it.baseline - baseline) < max(it.size, f.size) * 0.6f }
+                    .minByOrNull { abs(it.baseline - baseline) }
+                val size = beside?.size ?: f.size
+                val x0 = f.box.l + 2f
+                val x1 = min(f.box.r, x0 + part.length * size * 0.5f).coerceAtLeast(x0 + size * 0.5f)
+                val line = beside ?: LineBuilder(baseline, size).also { lines.add(it) }
+                line.spans.add(SpanBuilder(size, false, false, "", x0, 0xFF000000.toInt(), "sans").apply {
+                    text.append(part)
+                    this.x1 = x1
+                })
+                line.x0 = min(line.x0, x0); line.x1 = max(line.x1, x1)
+                line.y0 = min(line.y0, baseline - size * 0.8f); line.y1 = max(line.y1, baseline + size * 0.2f)
+            }
+        }
+    }
+
+    private fun buildLines(
+        scan: PageScan,
+        links: List<Pair<RectF, String>> = emptyList(),
+        fields: List<FieldText> = emptyList(),
+    ): List<Map<String, Any?>> {
         val lines = ArrayList<LineBuilder>()
         // Thin painted paths (underline / strikethrough candidates).
         val thin = scan.paths.filter { !it.clipOnly && it.box.height <= 2.5f && it.box.width > 2f }
@@ -198,6 +287,7 @@ object TextOps {
                 }
             }
         }
+        addFieldTexts(lines, fields)
         return lines.filter { l -> l.spans.any { it.text.isNotBlank() } }.map { l ->
             l.spans.forEach { s -> while (s.text.endsWith(" ")) s.text.setLength(s.text.length - 1) }
             l.toMap()

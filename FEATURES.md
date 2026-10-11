@@ -32,7 +32,11 @@ This page lists everything PDFCraft can do, what's still missing, and how each f
 | Keeps colors, bold and italic, font style, underline, strikethrough, links and alignment | ✅ | Manual, device test, unit test |
 | Adjustable text size, spacing, font and theme | ✅ | Manual |
 | Search and read aloud inside smart reading | ✅ | Manual |
-| Shows the values typed into form fields | ⛔ | — |
+| Shows the values typed into form fields, next to their labels | ✅ | Unit test (layout only; not yet tried on a device) |
+| Opens at the page you were reading, and back returns to the page you reached | ✅ | Unit test (reading view only) |
+| Reopens instantly: results are saved (except for password-protected files) | ✅ | Unit test |
+| Shows the current section, how far through you are and the reading time left | ✅ | Unit test |
+| Fast-scroll handle with a page bubble (also in the page view) | ✅ | Unit test |
 
 ## Editing
 
@@ -125,6 +129,5 @@ This page lists everything PDFCraft can do, what's still missing, and how each f
 - **Signatures are visual only.** Certificate-based digital signatures aren't supported.
 - **Text recognition reads Latin-script languages only.** Other ML Kit models aren't bundled, to keep the app small.
 - **The scanner was tuned mostly on test images.** It hasn't been tried on a wide range of real-world photos yet.
-- **Smart reading doesn't show form field values.**
 - **pdfrx is held at version 2.4.8.** Newer versions need a newer Dart release than this project uses.
 - **Release builds are signed with the debug key.** Add a real signing key before publishing.
