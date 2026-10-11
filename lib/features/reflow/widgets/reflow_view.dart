@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -118,8 +120,21 @@ class _ReflowViewState extends State<ReflowView> {
   /// blocks that have scrolled out of view (and were disposed).
   final _Selection _selection = _Selection();
 
+  /// Block at scroll offset 0. The list is built outward from it (above it
+  /// in reverse), so jumping anywhere only lays out what ends up on screen,
+  /// instead of every block in between.
+  int _anchor = 0;
+  static const _centerKey = ValueKey('reflow-center');
+
+  /// Fast-scroller position, measured after layout: measuring items during a
+  /// build reads half-updated ones.
+  final ValueNotifier<double?> _fraction = ValueNotifier(null);
+  bool _fractionScheduled = false;
+
   static const double _listPadTop = 16;
   static const double _maxContentWidth = 760;
+
+  double get _listPadBottom => 48 + MediaQuery.paddingOf(context).bottom;
 
   @override
   void initState() {
@@ -127,6 +142,7 @@ class _ReflowViewState extends State<ReflowView> {
     _computeStructure();
     widget.reflowController?._attach(this);
     widget.settings.addListener(_onSettings);
+    _scroll.addListener(_measureFraction);
   }
 
   @override
@@ -137,6 +153,11 @@ class _ReflowViewState extends State<ReflowView> {
       _heights.clear();
       _selection.clear();
       _computeStructure();
+      _anchor = math.min(_anchor, math.max(0, widget.doc.blocks.length - 1));
+    }
+    if (!identical(old.controller, widget.controller)) {
+      (old.controller ?? _ownController)?.removeListener(_measureFraction);
+      _scroll.addListener(_measureFraction);
     }
     if (!identical(old.reflowController, widget.reflowController)) {
       old.reflowController?._detach(this);
@@ -153,6 +174,8 @@ class _ReflowViewState extends State<ReflowView> {
   void dispose() {
     widget.settings.removeListener(_onSettings);
     widget.reflowController?._detach(this);
+    _scroll.removeListener(_measureFraction);
+    _fraction.dispose();
     _ownController?.dispose();
     super.dispose();
   }
@@ -239,18 +262,92 @@ class _ReflowViewState extends State<ReflowView> {
     return viewport.getOffsetToReveal(ro, 0).offset;
   }
 
-  double _averageHeight() {
-    if (_heights.isEmpty) return widget.settings.fontSize * widget.settings.lineHeight * 4;
-    return _heights.values.reduce((a, b) => a + b) / _heights.length;
+  /// Position in [_visible] of the anchor block (or the next visible block
+  /// when it is hidden in a collapsed section).
+  int get _anchorPos {
+    var lo = 0, hi = _visible.length;
+    while (lo < hi) {
+      final mid = (lo + hi) >> 1;
+      if (_visible[mid] < _anchor) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return math.min(lo, math.max(0, _visible.length - 1));
   }
 
-  double _estimatedExtent(int fromPos, int toPos) {
-    final avg = _averageHeight();
-    var sum = 0.0;
-    for (var p = fromPos; p < toPos; p++) {
-      sum += _heights[_visible[p]] ?? avg;
+  /// Shows the block at visible position [pos] at the top, rebuilding the
+  /// list around it. Near the end, scrolls back so the screen stays full.
+  void _anchorAt(int pos) {
+    if (_visible.isEmpty || !_scroll.hasClients) return;
+    setState(() => _anchor = _visible[pos.clamp(0, _visible.length - 1)]);
+    _scroll.jumpTo(0);
+    SchedulerBinding.instance.addPostFrameCallback((_) => _fillToEnd());
+  }
+
+  /// When the blocks after the anchor don't fill the screen, re-anchors on a
+  /// block above so the last block sits at the bottom, as a normal list would.
+  void _fillToEnd() {
+    if (!mounted || !_scroll.hasClients || _visible.isEmpty) return;
+    final last = _built[_visible.last];
+    final lastTop = last == null || !last.mounted ? null : _itemTop(last);
+    final lastHeight = _heights[_visible.last];
+    if (lastTop == null || lastHeight == null) return;
+    final p = _scroll.position;
+    final end = lastTop + lastHeight + _listPadBottom - p.viewportDimension;
+    if (p.pixels <= end + 0.5) return;
+    // Find the block at the top once scrolled to the end and anchor on it.
+    for (var pos = _visibleIndexOf(_visible.last); pos >= 0; pos--) {
+      final ctx = _built[_visible[pos]];
+      final top = ctx == null || !ctx.mounted ? null : _itemTop(ctx);
+      if (top == null) {
+        // Not built yet (above the screen): show it next frame and retry.
+        p.jumpTo(math.max(end, p.minScrollExtent));
+        SchedulerBinding.instance.addPostFrameCallback((_) => _fillToEnd());
+        return;
+      }
+      if (top <= end) {
+        setState(() => _anchor = _visible[pos]);
+        p.jumpTo(end - top);
+        return;
+      }
     }
-    return sum;
+  }
+
+  /// Position from 0 (top) to 1 (end) for the fast scroller, by block rather
+  /// than pixels: the total height is only estimated and keeps changing.
+  double? _scrollFraction() {
+    final p = _scroll.hasClients ? _scroll.position : null;
+    if (p == null || !p.hasContentDimensions || _visible.length < 2) return null;
+    if (p.maxScrollExtent - p.minScrollExtent < p.viewportDimension) return null;
+    final lastCtx = _built[_visible.last];
+    if (lastCtx != null && lastCtx.mounted && p.pixels >= p.maxScrollExtent - 0.5) return 1;
+    final first = _firstVisibleBlock();
+    if (first == null) return null;
+    final top = _itemTop(_built[first]!);
+    final height = _heights[first] ?? 0;
+    final within = top == null || height <= 0 ? 0.0 : ((p.pixels - top) / height).clamp(0.0, 1.0);
+    return ((_visibleIndexOf(first) + within) / (_visible.length - 1)).clamp(0.0, 1.0);
+  }
+
+  void _measureFraction() {
+    if (_fractionScheduled) return;
+    _fractionScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _fractionScheduled = false;
+      if (mounted) _fraction.value = _scrollFraction();
+    });
+    SchedulerBinding.instance.ensureVisualUpdate();
+  }
+
+  int _posAtFraction(double f) => (f * (_visible.length - 1)).round();
+
+  void _scrollToFraction(double f) {
+    if (_visible.isEmpty) return;
+    final pos = _posAtFraction(f);
+    if (_firstVisibleBlock() == _visible[pos]) return;
+    _anchorAt(pos);
   }
 
   Future<void> _jumpToBlock(int index) async {
@@ -264,35 +361,13 @@ class _ReflowViewState extends State<ReflowView> {
     }
     final pos = _visibleIndexOf(index);
     if (pos < 0) return;
-    for (var attempt = 0; attempt < 12; attempt++) {
-      if (!mounted) return;
-      final ctx = _built[index];
-      if (ctx != null && ctx.mounted) {
-        await Scrollable.ensureVisible(ctx, alignment: 0, duration: Duration.zero);
-        return;
-      }
-      if (!_scroll.hasClients) return;
-      final position = _scroll.position;
-      // Anchor on the built item closest to the target, whose exact scroll
-      // offset is known, and add the estimated extent of the items between.
-      double? target;
-      var bestDistance = 1 << 30;
-      for (final e in _built.entries) {
-        final p = _visibleIndexOf(e.key);
-        if (p < 0 || !e.value.mounted) continue;
-        final top = _itemTop(e.value);
-        if (top == null) continue;
-        final distance = (p - pos).abs();
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          target = p <= pos ? top + _estimatedExtent(p, pos) : top - _estimatedExtent(pos, p);
-        }
-      }
-      target ??= _listPadTop + _estimatedExtent(0, pos);
-      final clamped = target.clamp(position.minScrollExtent, position.maxScrollExtent).toDouble();
-      position.jumpTo(clamped);
-      await SchedulerBinding.instance.endOfFrame;
+    final ctx = _built[index];
+    if (ctx != null && ctx.mounted) {
+      await Scrollable.ensureVisible(ctx, alignment: 0, duration: Duration.zero);
+      return;
     }
+    _anchorAt(pos);
+    await SchedulerBinding.instance.endOfFrame;
   }
 
   /// Text of the current selection, including blocks that have scrolled out
@@ -362,6 +437,8 @@ class _ReflowViewState extends State<ReflowView> {
     final colors = s.colors;
     final style = _Styles(s);
     final query = widget.highlightQuery?.trim() ?? '';
+    final anchorPos = _anchorPos;
+    _measureFraction();
     return ColoredBox(
       key: ReflowView.backgroundKey,
       color: colors.background,
@@ -375,52 +452,69 @@ class _ReflowViewState extends State<ReflowView> {
             // and keep growing while scrolling.
             child: SelectionArea(
               contextMenuBuilder: _contextMenu,
-              child: ListView.builder(
+              child: CustomScrollView(
                 controller: _scroll,
-                padding: EdgeInsets.only(top: _listPadTop, bottom: 48 + MediaQuery.paddingOf(context).bottom),
-                itemCount: _visible.length,
-                itemBuilder: (context, pos) {
-                  final index = _visible[pos];
-                  return _ItemHost(
-                    key: ValueKey(index),
-                    index: index,
-                    built: _built,
-                    heights: _heights,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
-                            child: _buildItem(context, index, style, query),
-                          ),
-                        ),
-                      ),
+                center: _centerKey,
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, i) => _listItem(context, anchorPos - 1 - i, style, query),
+                      childCount: anchorPos,
                     ),
-                  );
-                },
+                  ),
+                  SliverList(
+                    key: _centerKey,
+                    delegate: SliverChildBuilderDelegate(
+                      (context, i) => _listItem(context, anchorPos + i, style, query),
+                      childCount: _visible.length - anchorPos,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: SizedBox(height: _listPadBottom)),
+                ],
               ),
             ),
           ),
           Positioned.fill(
             child: FastScroller(
               listenable: _scroll,
-              position: () {
-                final p = _scroll.hasClients ? _scroll.position : null;
-                if (p == null || !p.hasContentDimensions || p.maxScrollExtent <= 0) return null;
-                return _scroll.offset / _scroll.position.maxScrollExtent;
-              },
-              onDrag: (f) => _scroll.jumpTo(f * _scroll.position.maxScrollExtent),
-              label: () {
-                final i = _firstVisibleBlock();
-                final page = i == null ? null : widget.doc.blocks[i].pageNumber;
+              position: () => _fraction.value,
+              positionChanged: _fraction,
+              onDrag: _scrollToFraction,
+              label: (f) {
+                final page = widget.doc.blocks[_visible[_posAtFraction(f)]].pageNumber;
                 return page == null ? null : 'Page $page';
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _listItem(BuildContext context, int pos, _Styles style, String query) {
+    final index = _visible[pos];
+    return _ItemHost(
+      key: ValueKey(index),
+      index: index,
+      built: _built,
+      heights: _heights,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+          child: SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                widget.settings.margin.padding,
+                pos == 0 ? _listPadTop : 0,
+                widget.settings.margin.padding,
+                0,
+              ),
+              child: _buildItem(context, index, style, query),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -737,6 +831,19 @@ class _ItemHostState extends State<_ItemHost> {
   void didUpdateWidget(covariant _ItemHost old) {
     super.didUpdateWidget(old);
     if (old.index != widget.index && identical(old.built[old.index], context)) old.built.remove(old.index);
+    widget.built[widget.index] = context;
+  }
+
+  // Inactive items (being moved or removed) must not be measured.
+  @override
+  void deactivate() {
+    if (identical(widget.built[widget.index], context)) widget.built.remove(widget.index);
+    super.deactivate();
+  }
+
+  @override
+  void activate() {
+    super.activate();
     widget.built[widget.index] = context;
   }
 

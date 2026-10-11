@@ -233,7 +233,7 @@ void main() {
     final gesture = await tester.startGesture(tester.getTopLeft(find.text('Title')), kind: PointerDeviceKind.mouse);
     addTearDown(gesture.removePointer);
     await tester.pump();
-    await gesture.moveTo(tester.getBottomRight(find.byType(ListView)) + const Offset(0, 20));
+    await gesture.moveTo(tester.getBottomRight(find.byType(CustomScrollView)) + const Offset(0, 20));
     for (var i = 0; i < 200 && scroll.offset < 2000; i++) {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -298,7 +298,7 @@ void main() {
     final handle = find.byKey(FastScroller.handleKey);
     expect(handle, findsNothing, reason: 'hidden until the document scrolls');
 
-    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
     await tester.pump();
     expect(handle, findsOneWidget);
 
@@ -317,8 +317,15 @@ void main() {
     await gesture.up();
     await tester.pump();
 
-    expect(scroll.offset, greaterThan(scroll.position.maxScrollExtent * 0.9));
-    expect(find.textContaining('Paragraph 299.'), findsOneWidget);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    // The end of the document fills the screen: last paragraph at the bottom.
+    final last = find.textContaining('Paragraph 299.');
+    expect(last, findsOneWidget);
+    expect(tester.getBottomLeft(last).dy, greaterThan(view.bottom - 120));
+    expect(tester.getBottomLeft(last).dy, lessThanOrEqualTo(view.bottom));
+    expect(find.textContaining('Paragraph 296.'), findsOneWidget);
 
     // It fades out once idle.
     await tester.pump(const Duration(seconds: 2));
@@ -327,6 +334,28 @@ void main() {
       tester.widget<AnimatedOpacity>(find.ancestor(of: handle, matching: find.byType(AnimatedOpacity))).opacity,
       0,
     );
+  });
+
+  testWidgets('the fast scroller moves steadily while scrolling by hand', (tester) async {
+    final settings = await loadedSettings();
+    // Very uneven paragraph lengths make the list's total height estimate jump.
+    final doc = DocStructure(
+      blocks: [
+        for (var i = 0; i < 200; i++)
+          ParagraphBlock(spans: [TextSpanData('Paragraph $i. ${'Lorem ipsum dolor sit amet. ' * (1 + (i * 7) % 23)}')]),
+      ],
+    );
+    await tester.pumpWidget(host(ReflowView(doc: doc, settings: settings)));
+    final handle = find.byKey(FastScroller.handleKey);
+    var previous = -1.0;
+    for (var i = 0; i < 25; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -250));
+      await tester.pump();
+      await tester.pump();
+      final top = tester.getTopLeft(handle).dy;
+      expect(top, greaterThanOrEqualTo(previous - 0.5), reason: 'handle went back up after scroll $i');
+      previous = top;
+    }
   });
 
   testWidgets('ReflowOutline lists headings with indentation and reports selection', (tester) async {

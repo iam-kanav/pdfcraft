@@ -362,7 +362,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
             enabled: !viewerState.panLocked,
             position: () => _scrollFraction(horizontal),
             onDrag: (f) => _scrollToFraction(f, horizontal),
-            label: () => '${controller.pageNumber ?? 1} / ${controller.pageCount}',
+            label: (f) => '${_pageAtFraction(f, horizontal)} / ${controller.pageCount}',
           ),
         ),
       ],
@@ -401,21 +401,43 @@ class _ViewerScreenState extends State<ViewerScreen> {
       final n = controller.pageCount;
       return n < 2 ? null : ((controller.pageNumber ?? 1) - 1) / (n - 1);
     }
-    final range = controller.documentSize.height - controller.visibleRect.height;
-    return range <= 0 ? null : controller.visibleRect.top / range;
+    final range = _verticalRange();
+    return range <= 0 ? null : -controller.value.y / range;
   }
 
+  /// Scrollable height in document units at the current zoom.
+  double _verticalRange() =>
+      controller.layout.documentSize.height - controller.viewSize.height / controller.currentZoom;
+
   void _scrollToFraction(double f, bool horizontal) {
+    if (!controller.isReady) return;
     if (horizontal) {
-      final page = 1 + (f * (controller.pageCount - 1)).round();
+      final page = _pageAtFraction(f, true);
       if (page != controller.pageNumber) {
         controller.goToPage(pageNumber: page, anchor: PdfPageAnchor.all, duration: Duration.zero);
       }
       return;
     }
-    final range = controller.documentSize.height - controller.visibleRect.height;
-    final m = controller.value.clone()..y = -f * range;
+    final m = controller.value.clone()..y = -f * _verticalRange();
     controller.value = controller.makeMatrixInSafeRange(m);
+  }
+
+  /// Page shown in the middle of the screen when scrolled to fraction [f].
+  int _pageAtFraction(double f, bool horizontal) {
+    final n = controller.pageCount;
+    if (horizontal) return 1 + (f * (n - 1)).round();
+    final y = f * _verticalRange() + controller.viewSize.height / controller.currentZoom / 2;
+    final pages = controller.layout.pageLayouts;
+    var lo = 0, hi = pages.length - 1;
+    while (lo < hi) {
+      final mid = (lo + hi) >> 1;
+      if (pages[mid].bottom < y) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return lo + 1;
   }
 
   void _snapToPage() {

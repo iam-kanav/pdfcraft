@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Acrobat-style fast-scroll handle: a tab on the right edge that appears
@@ -15,6 +16,7 @@ class FastScroller extends StatefulWidget {
     required this.listenable,
     required this.position,
     required this.onDrag,
+    this.positionChanged,
     this.label,
     this.enabled = true,
     this.padding = const EdgeInsets.symmetric(vertical: 8),
@@ -27,11 +29,15 @@ class FastScroller extends StatefulWidget {
   /// the content doesn't scroll.
   final double? Function() position;
 
-  /// Called while dragging with the target fraction.
+  /// Notifies when [position] changes without the content scrolling (e.g. a
+  /// value measured after layout). Moves the handle without showing it.
+  final Listenable? positionChanged;
+
+  /// Called while dragging with the target fraction, at most once a frame.
   final ValueChanged<double> onDrag;
 
-  /// Text of the bubble shown while dragging, e.g. "12 / 340".
-  final String? Function()? label;
+  /// Text of the bubble shown while dragging to a fraction, e.g. "12 / 340".
+  final String? Function(double fraction)? label;
 
   final bool enabled;
 
@@ -59,10 +65,16 @@ class _FastScrollerState extends State<FastScroller> {
   /// Distance from the handle's top to the finger when the drag started.
   double _grab = 0;
 
+  /// Drag target not yet passed to [FastScroller.onDrag]. Touch events can
+  /// arrive several times a frame; each jump costs a layout, so only the
+  /// latest one per frame is applied.
+  double? _pending;
+
   @override
   void initState() {
     super.initState();
     widget.listenable.addListener(_onScroll);
+    widget.positionChanged?.addListener(_onPositionChanged);
   }
 
   @override
@@ -72,19 +84,49 @@ class _FastScrollerState extends State<FastScroller> {
       old.listenable.removeListener(_onScroll);
       widget.listenable.addListener(_onScroll);
     }
+    if (!identical(old.positionChanged, widget.positionChanged)) {
+      old.positionChanged?.removeListener(_onPositionChanged);
+      widget.positionChanged?.addListener(_onPositionChanged);
+    }
   }
 
   @override
   void dispose() {
     widget.listenable.removeListener(_onScroll);
+    widget.positionChanged?.removeListener(_onPositionChanged);
     _hide?.cancel();
     super.dispose();
   }
 
   void _onScroll() {
     if (!mounted) return;
+    // Scroll positions can change during layout, when setState isn't allowed.
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) => _onScroll());
+      return;
+    }
     setState(() => _visible = true);
     if (_dragFraction == null) _scheduleHide();
+  }
+
+  void _onPositionChanged() {
+    if (mounted && SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) setState(() {});
+  }
+
+  void _dragTo(double f) {
+    setState(() => _dragFraction = f);
+    if (_pending != null) {
+      _pending = f;
+      return;
+    }
+    _pending = f;
+    SchedulerBinding.instance.scheduleFrameCallback((_) => _flush());
+  }
+
+  void _flush() {
+    final f = _pending;
+    _pending = null;
+    if (f != null && mounted) widget.onDrag(f);
   }
 
   void _scheduleHide() {
@@ -109,7 +151,7 @@ class _FastScrollerState extends State<FastScroller> {
         final fraction = _dragFraction ?? current.clamp(0.0, 1.0);
         final top = widget.padding.top + fraction * (track > 0 ? track : 0);
         final dragging = _dragFraction != null;
-        final label = dragging ? widget.label?.call() : null;
+        final label = dragging ? widget.label?.call(fraction) : null;
         return Stack(
           children: [
             if (label != null)
@@ -161,9 +203,7 @@ class _FastScrollerState extends State<FastScroller> {
                       },
                       onVerticalDragUpdate: (d) {
                         final box = context.findRenderObject()! as RenderBox;
-                        final f = _fractionAt(box.globalToLocal(d.globalPosition).dy, track);
-                        setState(() => _dragFraction = f);
-                        widget.onDrag(f);
+                        _dragTo(_fractionAt(box.globalToLocal(d.globalPosition).dy, track));
                       },
                       onVerticalDragEnd: (_) => _endDrag(),
                       onVerticalDragCancel: _endDrag,
@@ -197,6 +237,7 @@ class _FastScrollerState extends State<FastScroller> {
 
   void _endDrag() {
     if (!mounted || _dragFraction == null) return;
+    _flush();
     setState(() => _dragFraction = null);
     _scheduleHide();
   }
