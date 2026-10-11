@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfcraft/core/models/doc_structure.dart';
 import 'package:pdfcraft/features/reflow/reading_settings.dart';
@@ -9,8 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'fixtures.dart';
 
 Finder selectable(String text) => find.byWidgetPredicate(
-  (w) => w is SelectableText && (w.data ?? w.textSpan?.toPlainText()) == text,
-  description: 'SelectableText "$text"',
+  (w) => w is Text && (w.data ?? w.textSpan?.toPlainText()) == text,
+  description: 'Text "$text"',
 );
 
 DocStructure sampleDoc() => DocStructure(
@@ -46,6 +48,14 @@ Future<ReadingSettings> loadedSettings() async {
 
 Widget host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
+/// A button of the reflow view's selection menu.
+ContextMenuButtonItem menuButton(WidgetTester tester, ContextMenuButtonType type) {
+  final area = tester.widget<SelectionArea>(find.byType(SelectionArea));
+  final region = tester.state<SelectableRegionState>(find.byType(SelectableRegion));
+  final menu = area.contextMenuBuilder!(region.context, region) as AdaptiveTextSelectionToolbar;
+  return menu.buttonItems!.firstWhere((b) => b.type == type);
+}
+
 void main() {
   testWidgets('renders headings, paragraphs, lists, quotes, tables, images and page markers', (tester) async {
     final settings = await loadedSettings();
@@ -67,8 +77,8 @@ void main() {
     expect(find.text('p. 2'), findsOneWidget);
 
     // Bold span is rendered bold.
-    final para = tester.widget<SelectableText>(selectable('Intro text with bold'));
-    final boldSpan = (para.textSpan!.children!).cast<TextSpan>().firstWhere((s) => s.text == 'bold');
+    final para = tester.widget<Text>(selectable('Intro text with bold'));
+    final boldSpan = ((para.textSpan! as TextSpan).children!).cast<TextSpan>().firstWhere((s) => s.text == 'bold');
     expect(boldSpan.style!.fontWeight, FontWeight.w700);
 
     await tester.tap(find.text('p. 2'));
@@ -118,15 +128,15 @@ void main() {
     await settings.setTheme(ReadingTheme.sepia);
     await tester.pump();
     expect(bg(), ReadingTheme.sepia.colors.background);
-    final text = tester.widget<SelectableText>(selectable('Install the tool.'));
+    final text = tester.widget<Text>(selectable('Install the tool.'));
     expect(text.style!.color, ReadingTheme.sepia.colors.text);
   });
 
   testWidgets('highlightQuery marks case-insensitive matches with the accent color', (tester) async {
     final settings = await loadedSettings();
     await tester.pumpWidget(host(ReflowView(doc: sampleDoc(), settings: settings, highlightQuery: 'TOOL')));
-    final para = tester.widget<SelectableText>(selectable('Install the tool.'));
-    final spans = para.textSpan!.children!.cast<TextSpan>();
+    final para = tester.widget<Text>(selectable('Install the tool.'));
+    final spans = (para.textSpan! as TextSpan).children!.cast<TextSpan>();
     final hit = spans.singleWhere((s) => s.style?.backgroundColor != null);
     expect(hit.text, 'tool');
     expect(hit.style!.backgroundColor, ReadingTheme.light.colors.accent.withValues(alpha: 0.35));
@@ -174,7 +184,7 @@ void main() {
 
     expect(controller.isCollapsed(300), isFalse);
     final target = find.byWidgetPredicate(
-      (w) => w is SelectableText && (w.textSpan?.toPlainText() ?? '').startsWith('Paragraph 312.'),
+      (w) => w is Text && (w.textSpan?.toPlainText() ?? '').startsWith('Paragraph 312.'),
     );
     expect(target, findsOneWidget);
     final top = tester.getTopLeft(target).dy;
@@ -191,10 +201,83 @@ void main() {
     await back;
     await tester.pump();
     final early = find.byWidgetPredicate(
-      (w) => w is SelectableText && (w.textSpan?.toPlainText() ?? '').startsWith('Paragraph 26.'),
+      (w) => w is Text && (w.textSpan?.toPlainText() ?? '').startsWith('Paragraph 26.'),
     );
     expect(early, findsOneWidget);
     expect(tester.getTopLeft(early).dy, lessThan(viewport.top + 120));
+  });
+
+  testWidgets('a selection spans blocks and copies text that scrolled out of view', (tester) async {
+    final settings = await loadedSettings();
+    final doc = DocStructure(
+      blocks: [
+        const HeadingBlock(level: 1, spans: [TextSpanData('Title')], pageNumber: 1),
+        for (var i = 0; i < 120; i++)
+          ParagraphBlock(spans: [TextSpanData('Paragraph $i. ${'Lorem ipsum dolor sit amet. ' * 3}')], pageNumber: 1),
+      ],
+    );
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final scroll = ScrollController();
+    addTearDown(scroll.dispose);
+    await tester.pumpWidget(host(ReflowView(doc: doc, settings: settings, controller: scroll)));
+    await tester.pumpAndSettle(); // Nested selectables register over a few frames.
+
+    // Drag from the title to past the bottom edge, so the view auto-scrolls
+    // well beyond the first paragraphs.
+    final gesture = await tester.startGesture(tester.getTopLeft(find.text('Title')), kind: PointerDeviceKind.mouse);
+    addTearDown(gesture.removePointer);
+    await tester.pump();
+    await gesture.moveTo(tester.getBottomRight(find.byType(ListView)) + const Offset(0, 20));
+    for (var i = 0; i < 200 && scroll.offset < 2000; i++) {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await gesture.up();
+    await tester.pump();
+
+    final view = tester.getRect(find.byType(ReflowView));
+    expect(scroll.offset, greaterThan(view.height * 2));
+    expect(find.text('Title'), findsNothing, reason: 'the start of the selection is no longer built');
+
+    menuButton(tester, ContextMenuButtonType.copy).onPressed!();
+    await tester.pump();
+
+    expect(copied, isNotNull);
+    expect(copied, startsWith('Title\n\nParagraph 0. '));
+    final last = RegExp(r'Paragraph (\d+)\.').allMatches(copied!).map((m) => int.parse(m.group(1)!)).toList();
+    expect(last.length, greaterThan(10));
+    expect(last, List.generate(last.length, (i) => i), reason: 'every paragraph in between is copied, in order');
+  });
+
+  testWidgets('select all copies the whole document', (tester) async {
+    final settings = await loadedSettings();
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final doc = sampleDoc();
+    await tester.pumpWidget(host(ReflowView(doc: doc, settings: settings)));
+    await tester.pumpAndSettle();
+    // Long-press a word first so the menu exists.
+    final press = await tester.startGesture(tester.getTopLeft(find.text('Guide')) + const Offset(8, 8));
+    await tester.pump(const Duration(milliseconds: 500));
+    await press.up();
+    await tester.pumpAndSettle();
+    menuButton(tester, ContextMenuButtonType.selectAll).onPressed!();
+    await tester.pump();
+    menuButton(tester, ContextMenuButtonType.copy).onPressed!();
+    await tester.pump();
+    expect(copied, startsWith('Guide\n\nIntro text with bold\n\nSetup'));
+    expect(copied, contains('1. Step one'));
+    expect(copied, contains('Name\tValue\na\t1'));
+    expect(copied, endsWith('The end.'));
   });
 
   testWidgets('ReflowOutline lists headings with indentation and reports selection', (tester) async {

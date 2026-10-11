@@ -1,9 +1,8 @@
-import 'dart:typed_data';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:pdfcraft/core/models/doc_structure.dart';
 import 'package:pdfcraft/features/reflow/reading_settings.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -114,6 +113,10 @@ class _ReflowViewState extends State<ReflowView> {
   /// Contexts of currently built items, by block index.
   final Map<int, BuildContext> _built = {};
 
+  /// What is selected, kept per block so copying a long selection includes
+  /// blocks that have scrolled out of view (and were disposed).
+  final _Selection _selection = _Selection();
+
   static const double _listPadTop = 16;
   static const double _maxContentWidth = 760;
 
@@ -131,6 +134,7 @@ class _ReflowViewState extends State<ReflowView> {
     if (!identical(old.doc, widget.doc)) {
       _collapsed = {};
       _heights.clear();
+      _selection.clear();
       _computeStructure();
     }
     if (!identical(old.reflowController, widget.reflowController)) {
@@ -290,6 +294,52 @@ class _ReflowViewState extends State<ReflowView> {
     }
   }
 
+  /// Text of the current selection, including blocks that have scrolled out
+  /// of view. "Select all" gives the whole document. Flutter only reports the selected text of blocks that are still
+  /// built, so the text of the others comes from [_selection.text] and the doc.
+  String? _selectionText() {
+    if (_selection.all) return _visible.isEmpty ? null : _joinBlocks(0, _visible.length - 1);
+    final selected = [
+      for (final i in _selection.text.keys)
+        if (_visibleIndexOf(i) case final p when p >= 0) p,
+    ]..sort();
+    if (selected.isEmpty) return null;
+    var first = selected.first, last = selected.last;
+    // Records of blocks that scrolled away can be stale (the selection was
+    // shrunk after they were disposed). When the selection ends inside the
+    // built items, those items are authoritative for that end.
+    final built = [
+      for (final i in _built.keys)
+        if (widget.doc.blocks[i].plainText.isNotEmpty && _visibleIndexOf(i) >= 0) _visibleIndexOf(i),
+    ]..sort();
+    final builtSelected = selected.where((p) => _built.containsKey(_visible[p])).toList();
+    if (built.isNotEmpty && builtSelected.isNotEmpty) {
+      if (builtSelected.first > built.first) first = builtSelected.first;
+      if (builtSelected.last < built.last) last = builtSelected.last;
+    }
+    return _joinBlocks(first, last, useSelection: true);
+  }
+
+  /// Plain text of visible blocks at positions [first]..[last] (inclusive).
+  String _joinBlocks(int first, int last, {bool useSelection = false}) {
+    final out = StringBuffer();
+    DocBlock? prev;
+    for (var p = first; p <= last; p++) {
+      final block = widget.doc.blocks[_visible[p]];
+      final recorded = useSelection ? _selection.text[_visible[p]] : null;
+      final text = switch (block) {
+        TableBlock() => block.plainText,
+        ListItemBlock l when recorded == null || recorded == l.text => '${_listMarker(l)} ${l.text}',
+        _ => recorded ?? block.plainText,
+      };
+      if (text.trim().isEmpty) continue;
+      if (out.isNotEmpty) out.write(block is ListItemBlock && prev is ListItemBlock ? '\n' : '\n\n');
+      out.write(text);
+      prev = block;
+    }
+    return out.toString();
+  }
+
   int _visibleIndexOf(int block) {
     var lo = 0, hi = _visible.length - 1;
     while (lo <= hi) {
@@ -317,49 +367,103 @@ class _ReflowViewState extends State<ReflowView> {
       child: DefaultSelectionStyle(
         selectionColor: colors.accent.withValues(alpha: 0.3),
         cursorColor: colors.accent,
-        child: Scrollbar(
-          controller: _scroll,
-          child: ListView.builder(
+        // One selection across the whole document, so it can span paragraphs
+        // and keep growing while scrolling.
+        child: SelectionArea(
+          contextMenuBuilder: _contextMenu,
+          child: Scrollbar(
             controller: _scroll,
-            padding: EdgeInsets.only(top: _listPadTop, bottom: 48 + MediaQuery.paddingOf(context).bottom),
-            itemCount: _visible.length,
-            itemBuilder: (context, pos) {
-              final index = _visible[pos];
-              return _ItemHost(
-                key: ValueKey(index),
-                index: index,
-                built: _built,
-                heights: _heights,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
-                        child: _buildItem(context, index, style, query),
+            child: ListView.builder(
+              controller: _scroll,
+              padding: EdgeInsets.only(top: _listPadTop, bottom: 48 + MediaQuery.paddingOf(context).bottom),
+              itemCount: _visible.length,
+              itemBuilder: (context, pos) {
+                final index = _visible[pos];
+                return _ItemHost(
+                  key: ValueKey(index),
+                  index: index,
+                  built: _built,
+                  heights: _heights,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: s.margin.padding),
+                          child: _buildItem(context, index, style, query),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
     );
   }
 
+  /// The standard selection menu, with Copy, Share and Select all working on
+  /// the whole selection rather than only the blocks still on screen.
+  Widget _contextMenu(BuildContext context, SelectableRegionState region) {
+    String text() => _selectionText() ?? '';
+    final items = [
+      for (final item in region.contextMenuButtonItems)
+        switch (item.type) {
+          ContextMenuButtonType.copy => item.copyWith(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: text()));
+              region.hideToolbar();
+              region.clearSelection();
+            },
+          ),
+          ContextMenuButtonType.share => item.copyWith(
+            onPressed: () {
+              SystemChannels.platform.invokeMethod('Share.invoke', text());
+              region.hideToolbar();
+              region.clearSelection();
+            },
+          ),
+          ContextMenuButtonType.selectAll => item.copyWith(
+            onPressed: () {
+              region.selectAll(SelectionChangedCause.toolbar);
+              _selection.all = true;
+            },
+          ),
+          _ => item,
+        },
+    ];
+    // Not region.contextMenuAnchors: it needs the glyph height at both ends,
+    // and throws when one end has scrolled out of view (and was disposed).
+    final box = region.context.findRenderObject()! as RenderBox;
+    final lineHeight = widget.settings.fontSize * widget.settings.lineHeight;
+    final anchors = TextSelectionToolbarAnchors.fromSelection(
+      renderBox: box,
+      startGlyphHeight: lineHeight,
+      endGlyphHeight: lineHeight,
+      selectionEndpoints: region.selectionEndpoints,
+    );
+    return AdaptiveTextSelectionToolbar.buttonItems(anchors: anchors, buttonItems: items);
+  }
+
   Widget _buildItem(BuildContext context, int index, _Styles st, String query) {
     final block = widget.doc.blocks[index];
-    final child = _buildBlock(context, index, block, st, query);
+    final child = _BlockSelection(
+      index: index,
+      selection: _selection,
+      child: _buildBlock(context, index, block, st, query),
+    );
     if (!_pageStarts.contains(index)) return child;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _PageMarker(page: block.pageNumber!, styles: st, onTap: widget.onOpenPage),
+        SelectionContainer.disabled(
+          child: _PageMarker(page: block.pageNumber!, styles: st, onTap: widget.onOpenPage),
+        ),
         child,
       ],
     );
@@ -432,7 +536,6 @@ class _ReflowViewState extends State<ReflowView> {
           ),
         );
       case ListItemBlock l:
-        final markerText = l.ordered ? (l.marker ?? '•') : const ['•', '◦', '▪'][l.indent % 3];
         final indentWidth = st.body.fontSize! * 1.4;
         return Padding(
           padding: EdgeInsets.only(left: indentWidth * l.indent, bottom: gap * 0.45),
@@ -441,7 +544,9 @@ class _ReflowViewState extends State<ReflowView> {
             children: [
               SizedBox(
                 width: st.body.fontSize! * (l.ordered ? 2.2 : 1.4),
-                child: Text(markerText, style: st.body.copyWith(color: st.colors.secondaryText)),
+                child: SelectionContainer.disabled(
+                  child: Text(_listMarker(l), style: st.body.copyWith(color: st.colors.secondaryText)),
+                ),
               ),
               Expanded(
                 child: _RichParagraph(
@@ -493,6 +598,98 @@ class _ReflowViewState extends State<ReflowView> {
           padding: EdgeInsets.symmetric(vertical: gap),
           child: Divider(color: st.colors.divider, height: 1),
         );
+    }
+  }
+}
+
+String _listMarker(ListItemBlock l) => l.ordered ? (l.marker ?? '•') : const ['•', '◦', '▪'][l.indent % 3];
+
+/// What is selected in the reflowed document.
+class _Selection {
+  /// Selected text of each block, by block index.
+  final Map<int, String> text = {};
+
+  /// "Select all" was used: the whole document is selected, though only
+  /// built blocks are highlighted.
+  bool all = false;
+
+  void clear() {
+    text.clear();
+    all = false;
+  }
+}
+
+/// Records the selected text of one block into [selection].
+class _BlockSelection extends StatefulWidget {
+  const _BlockSelection({required this.index, required this.selection, required this.child});
+
+  final int index;
+  final _Selection selection;
+  final Widget child;
+
+  @override
+  State<_BlockSelection> createState() => _BlockSelectionState();
+}
+
+class _BlockSelectionState extends State<_BlockSelection> {
+  late final _BlockSelectionDelegate _delegate = _BlockSelectionDelegate(() => widget.index, widget.selection);
+
+  @override
+  void activate() {
+    super.activate();
+    _delegate.frozen = false;
+  }
+
+  @override
+  void deactivate() {
+    // Keep the record when the block scrolls away: its text unregisters
+    // afterwards, which would otherwise look like a deselection.
+    _delegate.frozen = true;
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
+    _delegate.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SelectionContainer(delegate: _delegate, child: widget.child);
+}
+
+class _BlockSelectionDelegate extends StaticSelectionContainerDelegate {
+  _BlockSelectionDelegate(this._index, this._selection) {
+    addListener(_record);
+  }
+
+  final int Function() _index;
+  final _Selection _selection;
+  bool frozen = false;
+
+  @override
+  SelectionResult dispatchSelectionEvent(SelectionEvent event) {
+    switch (event.type) {
+      // A new selection: forget blocks selected before that scrolled away.
+      case SelectionEventType.selectWord || SelectionEventType.selectParagraph:
+        _selection.clear();
+      case SelectionEventType.selectAll:
+        break;
+      default:
+        _selection.all = false;
+    }
+    final result = super.dispatchSelectionEvent(event);
+    _record();
+    return result;
+  }
+
+  void _record() {
+    if (frozen) return;
+    final text = value.status == SelectionStatus.none ? null : getSelectedContent()?.plainText;
+    if (text == null || text.isEmpty) {
+      _selection.text.remove(_index());
+    } else {
+      _selection.text[_index()] = text;
     }
   }
 }
@@ -698,7 +895,8 @@ List<InlineSpan> buildHighlightedSpans(
   return out;
 }
 
-/// Selectable rich paragraph that owns its link recognizers.
+/// Rich paragraph (selectable through the view's [SelectionArea]) that owns
+/// its link recognizers.
 class _RichParagraph extends StatefulWidget {
   const _RichParagraph({
     required this.spans,
@@ -759,7 +957,7 @@ class _RichParagraphState extends State<_RichParagraph> {
               return r;
             },
     );
-    return SelectableText.rich(
+    return Text.rich(
       TextSpan(children: children, style: widget.style),
       textAlign: widget.textAlign,
       style: widget.style,
