@@ -195,6 +195,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
 
   void _onViewerReady(PdfDocument doc, PdfViewerController c) {
     document = doc;
+    // pdfrx opens at the initial page without calling onPageChanged.
+    pageNumber = c.pageNumber ?? pageNumber;
     _searcher ??= PdfTextSearcher(controller)..addListener(_onSearch);
     _loadFailed = false;
     final lib = _services.library;
@@ -229,6 +231,10 @@ class _ViewerScreenState extends State<ViewerScreen> {
       if (mounted) setState(() => _showIndicator = false);
     });
   }
+
+  /// Page being read. Asks the viewer, since [pageNumber] only updates once
+  /// a page change has been reported.
+  int get _page => (controller.isReady ? controller.pageNumber : null) ?? pageNumber ?? _initialPage;
 
   int get _initialPage {
     if (widget.initialPage != null) return widget.initialPage!;
@@ -573,7 +579,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
                   duration: const Duration(milliseconds: 250),
                   child: GestureDetector(
                     onTap: () => _onMenu('goto'),
-                    child: _PageChip(text: '${pageNumber ?? 1} of ${document!.pages.length}'),
+                    child: _PageChip(text: '$_page of ${document!.pages.length}'),
                   ),
                 ),
               ),
@@ -714,8 +720,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
           onPressed: () async {
             final page = await Navigator.of(context).push<int>(
               MaterialPageRoute(
-                builder: (_) =>
-                    ReflowScreen(path: session.path, password: session.password, startPage: pageNumber ?? 1),
+                builder: (_) => ReflowScreen(path: session.path, password: session.password, startPage: _page),
               ),
             );
             if (page != null && controller.isReady) controller.goToPage(pageNumber: page);
@@ -724,7 +729,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         IconButton(
           tooltip: 'Read aloud',
           icon: const Icon(Symbols.volume_up),
-          onPressed: document == null ? null : () => tts.active ? tts.stop() : _readAloud(pageNumber ?? 1),
+          onPressed: document == null ? null : () => tts.active ? tts.stop() : _readAloud(_page),
         ),
         IconButton(
           tooltip: 'Search',
@@ -752,7 +757,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
 
   Future<void> _showMoreSheet() async {
     final lib = _services.library;
-    final page = pageNumber ?? 1;
+    final page = _page;
     final stat = File(session.path).statSync();
     await showModalBottomSheet<void>(
       context: context,
@@ -850,7 +855,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
   }
 
   Future<void> _onMenu(String v) async {
-    final page = pageNumber ?? 1;
+    final page = _page;
     switch (v) {
       case 'view':
         showViewSettingsSheet(context);
