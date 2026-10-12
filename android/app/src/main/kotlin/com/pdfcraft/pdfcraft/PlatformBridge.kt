@@ -26,7 +26,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.concurrent.Executors
 
-/** Android integration: "Open with"/share intents, saving to Downloads, all-files access, device scan and printing. */
+/** Android integration: "Open with"/share intents, the default PDF app, saving to Downloads, all-files access, device scan and printing. */
 class PlatformBridge(private val activity: Activity) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
     private var sink: EventChannel.EventSink? = null
     private var initial: Map<String, Any?>? = null
@@ -51,6 +51,8 @@ class PlatformBridge(private val activity: Activity) : MethodChannel.MethodCallH
             }
             else -> return
         }
+        // The test PDF of "Default PDF app" arriving means PDFCraft was chosen: nothing to open.
+        uris.removeAll { DefaultPdfApp.isProbe(activity, it) }
         if (uris.isEmpty()) return
         // Consume so that a configuration change doesn't re-deliver it.
         intent.action = Intent.ACTION_MAIN
@@ -136,6 +138,15 @@ class PlatformBridge(private val activity: Activity) : MethodChannel.MethodCallH
                 result.success(null)
             }
             "externalStorageRoot" -> result.success(Environment.getExternalStorageDirectory().absolutePath)
+            "defaultPdfApp" -> result.success(DefaultPdfApp.status(activity))
+            "askDefaultPdfApp" -> {
+                DefaultPdfApp.ask(activity)
+                result.success(null)
+            }
+            "openAppSettings" -> {
+                DefaultPdfApp.openAppSettings(activity, call.argument<String>("package")!!)
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
     }

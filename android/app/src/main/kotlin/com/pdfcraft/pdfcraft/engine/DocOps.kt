@@ -149,22 +149,30 @@ object DocOps {
                 PDFMergerUtility().appendDocument(doc, other.doc)
             }
             val all = doc.pages.toList()
+            // Rotations before any change: a page used twice is rotated from its original
+            // rotation both times, not from the first copy's.
+            val baseRotation = all.associateWith { it.rotation }
             val used = HashSet<PDPage>()
             val result = ArrayList<PDPage>()
             for (spec in specs) {
-                val page: PDPage = if (spec["blank"] == true) {
+                val rot = (spec["rotate"] as Number?)?.toInt() ?: 0
+                val page: PDPage
+                val base: Int
+                if (spec["blank"] == true) {
                     val w = (spec["width"] as Number?)?.toFloat() ?: PDRectangle.A4.width
                     val h = (spec["height"] as Number?)?.toFloat() ?: PDRectangle.A4.height
-                    PDPage(PDRectangle(w, h))
+                    page = PDPage(PDRectangle(w, h))
+                    base = 0
                 } else {
                     val f = spec["file"] as String?
                     val idx = (spec["index"] as Number).toInt() + (if (f != null) fileOffsets[f]!! else 0)
                     if (f == null && idx >= originalCount) throw EngineException("ARGS", "Page index out of range")
                     val src = all[idx]
-                    if (used.add(src)) src else clonePage(src)
+                    page = if (used.add(src)) src else clonePage(src)
+                    base = baseRotation[src] ?: 0
                 }
-                val rot = (spec["rotate"] as Number?)?.toInt() ?: 0
-                if (rot != 0) page.rotation = (((page.rotation + rot) % 360) + 360) % 360
+                val rotation = (((base + rot) % 360) + 360) % 360
+                if (page.rotation != rotation) page.rotation = rotation
                 result.add(page)
             }
             val tree = doc.pages

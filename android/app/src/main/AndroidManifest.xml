@@ -52,6 +52,12 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+        <!-- Serves the test PDF used to ask Android to make PDFCraft the default PDF app. -->
+        <provider
+            android:name=".DefaultPdfAppProbeProvider"
+            android:authorities="${applicationId}.probe"
+            android:exported="false"
+            android:grantUriPermissions="true" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -64,6 +70,11 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- To tell which app opens PDFs (Settings > Default PDF app). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="application/pdf"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

@@ -31,6 +31,10 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserver {
   CameraController? _camera;
   String? _error;
+
+  /// The camera being released while another activity is in front. It must be fully
+  /// released before the camera is opened again, or the camera rejects the new session.
+  Future<void>? _releasing;
   late final List<ScanPage> _pages = [...?widget.existing];
   bool _capturing = false;
   bool _flash = false;
@@ -70,7 +74,7 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       _camera = null;
       _liveQuad = null;
       if (mounted) setState(() {});
-      c.dispose();
+      _releasing = c.dispose();
     } else if (state == AppLifecycleState.resumed && _camera == null && !_initializing) {
       _init();
     }
@@ -80,6 +84,8 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
     if (_initializing) return;
     _initializing = true;
     try {
+      await _releasing?.catchError((_) {});
+      _releasing = null;
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         setState(() => _error = 'No camera available. You can still import photos.');
@@ -97,7 +103,9 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
         await c.setFlashMode(FlashMode.off);
         await c.setFocusMode(FocusMode.auto);
       } catch (_) {}
-      if (!mounted) {
+      final state = WidgetsBinding.instance.lifecycleState;
+      if (!mounted || (state != null && state != AppLifecycleState.resumed)) {
+        // Left the app while the camera was opening: resuming opens it again.
         await c.dispose();
         return;
       }
@@ -111,10 +119,10 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       setState(
         () => _error = e.code == 'CameraAccessDenied'
             ? 'Camera permission was denied. Allow it in Settings, or import photos instead.'
-            : 'Camera error: ${e.description}',
+            : 'The camera could not start. You can try again, or import photos instead.',
       );
     } catch (e) {
-      if (mounted) setState(() => _error = 'Camera error: $e');
+      if (mounted) setState(() => _error = 'The camera could not start. You can try again, or import photos instead.');
     } finally {
       _initializing = false;
     }
@@ -277,10 +285,21 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
-                        child: Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white70),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 16),
+                            OutlinedButton(
+                              onPressed: _init,
+                              style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                              child: const Text('Try again'),
+                            ),
+                          ],
                         ),
                       ),
                     )
@@ -313,20 +332,24 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
                       tooltip: 'Import photos',
                     ),
                     const Spacer(),
-                    GestureDetector(
-                      onTap: _capture,
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 4),
-                        ),
-                        padding: const EdgeInsets.all(4),
+                    Semantics(
+                      button: true,
+                      label: 'Take photo',
+                      child: GestureDetector(
+                        onTap: _capture,
                         child: Container(
+                          width: 72,
+                          height: 72,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _capturing ? Colors.white54 : Colors.white,
+                            border: Border.all(color: Colors.white, width: 4),
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _capturing ? Colors.white54 : Colors.white,
+                            ),
                           ),
                         ),
                       ),

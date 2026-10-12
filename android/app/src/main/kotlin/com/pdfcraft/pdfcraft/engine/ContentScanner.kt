@@ -110,6 +110,11 @@ class ContentScanner private constructor(page: PDPage) : PDFGraphicsStreamEngine
 
     private class Frame(val unit: Int) {
         var counter = 0
+
+        /** Operators of this unit being processed. PDFBox runs some operators through others
+         *  (T* calls Td, ' calls T* and Tj, TD calls TL and Td); those inner calls aren't in
+         *  the content stream, so they must not get ordinals of their own. */
+        var depth = 0
     }
 
     private val frames = ArrayList<Frame>()
@@ -146,23 +151,25 @@ class ContentScanner private constructor(page: PDPage) : PDFGraphicsStreamEngine
         }
     }
 
-    override fun processOperator(operator: Operator, operands: MutableList<COSBase>) {
-        if (suppress > 0) {
+    override fun processOperator(operator: Operator, operands: MutableList<COSBase>?) {
+        val frame = frames.last()
+        if (suppress > 0 || frame.depth > 0) {
             super.processOperator(operator, operands)
             return
         }
-        val frame = frames.last()
         val ordinal = frame.counter++
         val savedUnit = curUnit
         val savedOrdinal = curOrdinal
         val savedOperands = curOperands
         curUnit = frame.unit
         curOrdinal = ordinal
-        curOperands = operands
+        curOperands = operands ?: emptyList()
         currentText = null
+        frame.depth++
         try {
             super.processOperator(operator, operands)
         } finally {
+            frame.depth--
             currentText = null
             curUnit = savedUnit
             curOrdinal = savedOrdinal

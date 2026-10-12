@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -7,7 +9,8 @@ import '../../core/session/document_session.dart';
 import '../common/dialogs.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-/// Visual crop: drag the edges of the crop box, apply to one page or all pages.
+/// Visual crop: the box starts fitted to the page's content; drag its edges, apply to one
+/// page or all pages.
 class CropScreen extends StatefulWidget {
   const CropScreen({super.key, required this.session, this.initialPage = 0});
 
@@ -34,6 +37,7 @@ class _CropScreenState extends State<CropScreen> {
         _page = _page.clamp(0, d.pages.length - 1);
         _resetCrop();
       });
+      _fit();
     });
   }
 
@@ -43,9 +47,37 @@ class _CropScreenState extends State<CropScreen> {
     super.dispose();
   }
 
+  /// The whole page (no crop).
   void _resetCrop() {
     final pg = _doc!.pages[_page];
-    _crop = Rect.fromLTWH(pg.width * 0.05, pg.height * 0.05, pg.width * 0.9, pg.height * 0.9);
+    _crop = Rect.fromLTWH(0, 0, pg.width, pg.height);
+  }
+
+  /// Fits the box around the page's content, with a small margin.
+  Future<void> _fit() async {
+    final doc = _doc;
+    if (doc == null) return;
+    final page = _page;
+    final pg = doc.pages[page];
+    final bounds = await _contentBounds(pg);
+    if (!mounted || page != _page || bounds == null) return;
+    const margin = 12.0;
+    setState(() {
+      _crop = Rect.fromLTRB(
+        (bounds.left - margin).clamp(0, pg.width),
+        (bounds.top - margin).clamp(0, pg.height),
+        (bounds.right + margin).clamp(0, pg.width),
+        (bounds.bottom + margin).clamp(0, pg.height),
+      );
+    });
+  }
+
+  void _goTo(int page) {
+    setState(() {
+      _page = page;
+      _resetCrop();
+    });
+    _fit();
   }
 
   Future<void> _apply() async {
@@ -161,19 +193,20 @@ class _CropScreenState extends State<CropScreen> {
                 ),
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
                       children: [
                         IconButton(
-                          onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                          onPressed: _page > 0 ? () => _goTo(_page - 1) : null,
                           icon: const Icon(Symbols.chevron_left),
                         ),
-                        Text('Page ${_page + 1} of ${doc.pages.length}'),
+                        Text('${_page + 1} / ${doc.pages.length}'),
                         IconButton(
-                          onPressed: _page < doc.pages.length - 1 ? () => setState(() => _page++) : null,
+                          onPressed: _page < doc.pages.length - 1 ? () => _goTo(_page + 1) : null,
                           icon: const Icon(Symbols.chevron_right),
                         ),
                         const Spacer(),
+                        TextButton(onPressed: _fit, child: const Text('Fit')),
                         TextButton(onPressed: () => setState(_resetCrop), child: const Text('Reset')),
                         const Text('All pages'),
                         Switch(value: _allPages, onChanged: (v) => setState(() => _allPages = v)),
@@ -184,6 +217,35 @@ class _CropScreenState extends State<CropScreen> {
               ],
             ),
     );
+  }
+}
+
+/// Bounds of the non-white pixels of [page] in page points, or null for a blank page.
+Future<Rect?> _contentBounds(PdfPage page) async {
+  final img = await renderPageImage(page, maxSide: 500);
+  if (img == null) return null;
+  try {
+    final data = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (data == null) return null;
+    final w = img.width, h = img.height;
+    var minX = w, minY = h, maxX = -1, maxY = -1;
+    for (var y = 0; y < h; y++) {
+      final row = y * w * 4;
+      for (var x = 0; x < w; x++) {
+        final i = row + x * 4;
+        if (data.getUint8(i) < 235 || data.getUint8(i + 1) < 235 || data.getUint8(i + 2) < 235) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return null;
+    final sx = page.width / w, sy = page.height / h;
+    return Rect.fromLTRB(minX * sx, minY * sy, (maxX + 1) * sx, (maxY + 1) * sy);
+  } finally {
+    img.dispose();
   }
 }
 

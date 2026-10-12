@@ -8,6 +8,7 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.font.PDFont
+import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
@@ -23,6 +24,28 @@ import kotlin.math.min
 class TextBlock(val ops: List<TextOp>, val lines: List<TextLine>) {
     val rect: RectF get() = lines.map { it.rect }.reduce { a, b -> a.union(b) }
     val text: String get() = lines.joinToString("\n") { it.text }
+
+    /** The text as the user would type it: wrapped lines are joined (undoing hyphenation), and
+     *  a line break is kept only where a line ends well before the block's right edge. */
+    val paragraphText: String
+        get() {
+            val right = rect.r
+            val sb = StringBuilder()
+            for ((i, line) in lines.withIndex()) {
+                val t = line.text.trimEnd()
+                if (i > 0) {
+                    val prev = lines[i - 1]
+                    val prevText = prev.text.trimEnd()
+                    when {
+                        prev.rect.r < right - prev.size * 4 -> sb.append('\n')
+                        prevText.endsWith("-") && t.firstOrNull()?.isLowerCase() == true -> sb.setLength(sb.length - 1)
+                        else -> sb.append(' ')
+                    }
+                }
+                sb.append(if (i == 0) t else t.trimStart())
+            }
+            return sb.toString()
+        }
     val size: Float get() = lines.first().size
     val color: Int get() = ops.first().color
     val fontName: String get() = ops.first().font.name ?: ""
@@ -85,7 +108,7 @@ object ContentOps {
             val fn = b.fontName.lowercase()
             mapOf(
                 "id" to i,
-                "text" to b.text,
+                "text" to b.paragraphText,
                 "rect" to b.rect.toList(),
                 "fontSize" to b.size.toDouble(),
                 "color" to b.color.toLong(),
@@ -125,12 +148,16 @@ object ContentOps {
                 val bold = e["bold"] as Boolean? ?: (fn.contains("bold") || fn.contains("black") || fn.contains("semibold"))
                 val italic = e["italic"] as Boolean? ?: (fn.contains("italic") || fn.contains("oblique"))
                 val serif = e["serif"] as Boolean? ?: isSerif(fn)
-                val size = (e["fontSize"] as Number?)?.toFloat() ?: block.size
+                var size = (e["fontSize"] as Number?)?.toFloat() ?: block.size
                 val color = (e["color"] as Number?)?.toLong()?.toInt() ?: block.color
                 val rect = e["rect"]?.let { RectF.fromAny(it) } ?: block.rect
                 val firstBaseline = if (e["rect"] != null) rect.t + size * 0.9f else block.lines.first().baseline
                 val leading = if (block.lines.size > 1) block.leading else size * 1.25f
-                val font = od.font(bold, italic, serif)
+                val font = standardFont(block.ops.first().font, bold, italic, serif, text) ?: od.font(bold, italic, serif).also {
+                    // The bundled font is wider or narrower than most originals: scale it so the
+                    // text keeps its footprint, unless the user picked a size.
+                    if (abs(size - block.size) < 0.05f) size *= widthRatio(block, it)
+                }
                 // Let the box grow to the right until the next text block on the same band (or the
                 // page margin) before wrapping — like Acrobat's text boxes, and safe for columns.
                 val g = PageGeom(page)
@@ -140,8 +167,10 @@ object ContentOps {
                     val o = other.rect
                     if (o.b > rect.t && o.t < rect.b && o.l >= rect.r - 1f) rightLimit = min(rightLimit, o.l - 6f)
                 }
-                val available = if (e["rect"] == null) rightLimit - rect.l else 0f
-                writes.add(TextWrite(text, font, size, color, rect.l, firstBaseline, max(max(rect.width, size * 2), available), leading))
+                // A wrapped paragraph keeps its width so it re-wraps like the original.
+                val available = if (e["rect"] == null && block.lines.size == 1) rightLimit - rect.l else 0f
+                val width = if (block.lines.size > 1) rect.width + size * 0.5f else rect.width
+                writes.add(TextWrite(text, font, size, color, rect.l, firstBaseline, max(max(width, size * 2), available), leading))
             }
             ContentRewriter.apply(doc, page, scan, plan)
             if (writes.isNotEmpty()) {
@@ -152,6 +181,53 @@ object ContentOps {
                 }
             }
         }
+    }
+
+    /** The original font when it is one of the standard 14 (not embedded, always available)
+     *  and can show [text]; null otherwise. */
+    private fun standardFont(original: PDFont, bold: Boolean, italic: Boolean, serif: Boolean, text: String): PDFont? {
+        if (original.isEmbedded || !original.isStandard14) return null
+        val name = original.name?.substringAfter('+')?.lowercase() ?: return null
+        if (isSerif(name) != serif) return null
+        val font = when {
+            name.startsWith("times") -> when {
+                bold && italic -> PDType1Font.TIMES_BOLD_ITALIC
+                bold -> PDType1Font.TIMES_BOLD
+                italic -> PDType1Font.TIMES_ITALIC
+                else -> PDType1Font.TIMES_ROMAN
+            }
+            name.startsWith("helvetica") || name.startsWith("arial") -> when {
+                bold && italic -> PDType1Font.HELVETICA_BOLD_OBLIQUE
+                bold -> PDType1Font.HELVETICA_BOLD
+                italic -> PDType1Font.HELVETICA_OBLIQUE
+                else -> PDType1Font.HELVETICA
+            }
+            name.startsWith("courier") -> when {
+                bold && italic -> PDType1Font.COURIER_BOLD_OBLIQUE
+                bold -> PDType1Font.COURIER_BOLD
+                italic -> PDType1Font.COURIER_OBLIQUE
+                else -> PDType1Font.COURIER
+            }
+            else -> return null
+        }
+        val encodable = text.filter { it != '\n' && it != '\t' }.all { ch ->
+            try { font.encode(ch.toString()); true } catch (_: Exception) { false }
+        }
+        return if (encodable) font else null
+    }
+
+    /** How much [font] must be scaled to take the width the block's lines take now. */
+    private fun widthRatio(block: TextBlock, font: PDFont): Float {
+        var original = 0f
+        var replaced = 0f
+        for (line in block.lines) {
+            val w = try { font.getStringWidth(sanitize(font, line.text)) / 1000f * line.size } catch (_: Exception) { continue }
+            if (w <= 0f) continue
+            original += line.rect.width
+            replaced += w
+        }
+        if (original <= 0f || replaced <= 0f) return 1f
+        return (original / replaced).coerceIn(0.8f, 1.1f)
     }
 
     class TextWrite(

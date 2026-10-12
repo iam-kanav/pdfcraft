@@ -18,15 +18,72 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   int? _cacheBytes;
   int? _libraryBytes;
   bool? _allFiles;
+  DefaultPdfApp? _defaultApp;
+
+  /// Sent to another app's settings to clear its default: once it's cleared, carry on
+  /// with Android's prompt.
+  bool _clearingOtherDefault = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _measure();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Back from system settings or the "Open with" prompt: the answers may have changed.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _measure();
+  }
+
+  Future<void> _askAndroid() async {
+    final ok = await confirmDialog(
+      context,
+      title: 'Open PDFs with PDFCraft',
+      message:
+          'Android will ask which app to open a PDF with. Choose PDFCraft, then tap "Always".\n\n'
+          'Android doesn\'t let apps make themselves the default, so this choice is yours to make.',
+      confirmLabel: 'Continue',
+    );
+    if (ok) await PlatformBridge.instance.askDefaultPdfApp();
+  }
+
+  Future<void> _setDefaultApp() async {
+    final d = _defaultApp ?? await PlatformBridge.instance.defaultPdfApp();
+    if (!mounted) return;
+    switch (d.state) {
+      case DefaultPdfAppState.self:
+        showSnack(context, 'PDFCraft already opens your PDFs');
+      case DefaultPdfAppState.none:
+        await _askAndroid();
+      case DefaultPdfAppState.other:
+        final app = d.app ?? 'Another app';
+        final ok = await confirmDialog(
+          context,
+          title: 'PDFs open in $app',
+          message:
+              'Android only lets $app give this up:\n\n'
+              '1. In $app\'s settings, open "Open by default".\n'
+              '2. Tap "Clear default preferences".\n'
+              '3. Come back here to finish.',
+          confirmLabel: 'Open $app settings',
+        );
+        if (ok && d.package != null) {
+          _clearingOtherDefault = true;
+          await PlatformBridge.instance.openAppSettings(d.package!);
+        }
+    }
   }
 
   Future<int> _dirSize(Directory d) async {
@@ -43,12 +100,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final c = await _dirSize(cache);
     final l = await _dirSize(AppServices.instance.files.root);
     final a = await PlatformBridge.instance.hasAllFilesAccess();
+    final d = await PlatformBridge.instance.defaultPdfApp();
     if (mounted) {
       setState(() {
         _cacheBytes = c;
         _libraryBytes = l;
         _allFiles = a;
+        _defaultApp = d;
       });
+      if (_clearingOtherDefault && d.state != DefaultPdfAppState.other) {
+        _clearingOtherDefault = false;
+        if (d.state == DefaultPdfAppState.none) await _askAndroid();
+      }
     }
   }
 
@@ -59,6 +122,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          const _Header('Opening PDFs'),
+          ListTile(
+            leading: const Icon(Symbols.picture_as_pdf),
+            title: const Text('Default PDF app'),
+            subtitle: Text(switch (_defaultApp?.state) {
+              DefaultPdfAppState.self => 'PDFCraft opens your PDFs',
+              DefaultPdfAppState.other => '${_defaultApp!.app ?? 'Another app'} opens your PDFs — tap to change',
+              DefaultPdfAppState.none => 'Android asks each time — tap to always use PDFCraft',
+              null => 'Checking…',
+            }),
+            trailing: _defaultApp?.state == DefaultPdfAppState.self
+                ? const Icon(Symbols.check, color: Colors.green)
+                : null,
+            onTap: _setDefaultApp,
+          ),
           const _Header('Appearance'),
           ListTile(
             leading: const Icon(Symbols.brightness_6),

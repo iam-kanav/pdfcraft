@@ -54,6 +54,8 @@ class _NavigatorSheetState extends State<_NavigatorSheet> with SingleTickerProvi
       children: [
         TabBar(
           controller: _tabs,
+          // Narrow padding so "Bookmarks" fits a quarter of a phone's width.
+          labelPadding: const EdgeInsets.symmetric(horizontal: 4),
           tabs: const [
             Tab(text: 'Pages'),
             Tab(text: 'Bookmarks'),

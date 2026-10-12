@@ -142,6 +142,9 @@ class ViewerState extends ChangeNotifier {
   FillTool _fillTool = FillTool.select;
   Color color;
   Color inkColor;
+
+  /// Color of text and marks added in Fill & Sign: black, like ink on a paper form.
+  Color fillColor = const Color(0xFF000000);
   double strokeWidth;
   double opacity = 1;
   double fontSize = 14;

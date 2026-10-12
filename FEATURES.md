@@ -23,6 +23,7 @@ This page lists everything PDFCraft can do, what's still missing, and how each f
 | Read aloud with the current sentence highlighted | ✅ | Manual |
 | Open password-protected files (asks once per session) | ✅ | Manual, device test |
 | Open PDFs shared from other apps | ✅ | Manual |
+| Make PDFCraft the default app for PDFs (Settings → Default PDF app) | ✅ | Manual |
 
 ## Smart reading
 
@@ -42,7 +43,7 @@ This page lists everything PDFCraft can do, what's still missing, and how each f
 
 | Feature | Status | Tested by |
 | --- | --- | --- |
-| Edit existing text, keeping its font, size and color | ✅ | Manual, device test |
+| Edit existing text, keeping its font, size and color (standard fonts are reused; others are matched in width) | ✅ | Manual, device test |
 | Add text boxes and images; move, resize, replace or delete images | ✅ | Manual, device test |
 | Add shapes; move, resize, recolor or delete existing drawings | ✅ | Manual, device test |
 | Add links to web pages or other pages | ✅ | Device test |

@@ -25,7 +25,7 @@ class SplitScreen extends StatefulWidget {
 class _SplitScreenState extends State<SplitScreen> {
   int? _count;
   var _mode = SplitMode.everyN;
-  final _n = TextEditingController(text: '1');
+  final _n = TextEditingController(text: '2');
   final _ranges = TextEditingController();
   List<String>? _outputs;
   bool _busy = false;
@@ -94,6 +94,13 @@ class _SplitScreenState extends State<SplitScreen> {
     }
   }
 
+  String? _filesForN(int count) {
+    final n = int.tryParse(_n.text.trim());
+    if (n == null || n < 1 || count < 1) return null;
+    final files = (count + n - 1) ~/ n;
+    return files == 1 ? 'Makes 1 file' : 'Makes $files files';
+  }
+
   @override
   Widget build(BuildContext context) {
     final count = _count;
@@ -116,7 +123,8 @@ class _SplitScreenState extends State<SplitScreen> {
                       child: TextField(
                         controller: _n,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Pages per file'),
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(labelText: 'Pages per file', helperText: _filesForN(count)),
                       ),
                     ),
                   RadioListTile(value: SplitMode.ranges, title: const Text('Custom ranges')),
@@ -125,7 +133,10 @@ class _SplitScreenState extends State<SplitScreen> {
                       padding: const EdgeInsets.only(left: 56, right: 16),
                       child: TextField(
                         controller: _ranges,
-                        decoration: InputDecoration(labelText: 'Ranges', hintText: 'e.g. 1-3, 4-$count'),
+                        decoration: InputDecoration(
+                          labelText: 'Ranges',
+                          helperText: 'Each range becomes a file, e.g. 1-3, 4-$count',
+                        ),
                       ),
                     ),
                   RadioListTile(value: SplitMode.single, title: const Text('One file per page')),

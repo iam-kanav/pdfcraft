@@ -29,6 +29,19 @@ class _ExportScreenState extends State<ExportScreen> {
   double? _progress;
   String? _result;
   int? _pageCount;
+  final _scroll = ScrollController();
+
+  /// Brings the progress or the result, below the options, into view.
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -70,12 +83,22 @@ class _ExportScreenState extends State<ExportScreen> {
           if (mounted) setState(() => _progress = v);
         },
       );
-      if (mounted) setState(() => _result = out);
+      if (mounted) {
+        setState(() => _result = out);
+        _scrollToEnd();
+      }
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
       if (mounted) setState(() => _progress = null);
     }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _range.dispose();
+    super.dispose();
   }
 
   @override
@@ -87,6 +110,7 @@ class _ExportScreenState extends State<ExportScreen> {
         groupValue: _format,
         onChanged: (v) => setState(() => _format = v!),
         child: ListView(
+          controller: _scroll,
           padding: const EdgeInsets.all(16),
           children: [
             Text(p.basename(widget.path), style: Theme.of(context).textTheme.titleSmall),

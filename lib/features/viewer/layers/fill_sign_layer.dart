@@ -164,7 +164,7 @@ class _FillSignLayerState extends State<FillSignLayer> {
   Future<void> _onTapUp(TapUpDetails d) async {
     final p = d.localPosition / widget.scale;
     final author = AppServices.instance.settings.authorName;
-    final color = vs.inkColor;
+    final color = vs.fillColor;
     switch (vs.fillTool) {
       case FillTool.select:
         final hit = host.annotations
@@ -384,12 +384,12 @@ class FillSignToolbar extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Color and size',
-                    icon: Icon(Symbols.circle, fill: 1, color: vs.inkColor),
+                    icon: Icon(Symbols.circle, fill: 1, color: vs.fillColor),
                     onPressed: () => showStyleSheet(
                       context,
-                      color: vs.inkColor,
+                      color: vs.fillColor,
                       onColor: (c) {
-                        vs.inkColor = c;
+                        vs.fillColor = c;
                         vs.changed();
                       },
                       fontSize: vs.fontSize,

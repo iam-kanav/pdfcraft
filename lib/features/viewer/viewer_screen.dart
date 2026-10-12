@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -92,8 +93,10 @@ class _ViewerScreenState extends State<ViewerScreen> {
   List<AnnotInfo> annotations = [];
   Matrix4? _restoreMatrix;
 
-  /// Last matrix settled by the user (restored when only the viewport height changes).
+  /// Latest matrix at the current view size, restored when only the view's height changes
+  /// (toolbars appearing or disappearing).
   Matrix4? _stableMatrix;
+  Size? _stableSize;
   int _passwordAttempts = 0;
   bool _loadFailed = false;
   String? _loadError;
@@ -119,11 +122,13 @@ class _ViewerScreenState extends State<ViewerScreen> {
     tts = TtsController(host: host)..addListener(() => setState(() {}));
     if (widget.initialMode != ViewerMode.read) viewerState.mode = widget.initialMode;
     if (settings.keepScreenOn) SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    controller.addListener(_onMatrixChanged);
   }
 
   @override
   void dispose() {
     _indicatorTimer?.cancel();
+    controller.removeListener(_onMatrixChanged);
     tts.dispose();
     _searcher?.removeListener(_onSearch);
     _searcher?.dispose();
@@ -136,6 +141,16 @@ class _ViewerScreenState extends State<ViewerScreen> {
   void _onSession() => setState(() {});
   void _onSearch() => setState(() {});
   void _onViewerState() => setState(() {});
+
+  /// Tracks every move (scrolling, links, jumps to comments or search results), but not
+  /// the viewer's own adjustment when the view is resized.
+  void _onMatrixChanged() {
+    if (!controller.isReady) return;
+    final size = controller.viewSize;
+    if (_stableSize != null && size != _stableSize) return;
+    _stableMatrix = controller.value.clone();
+    _stableSize = size;
+  }
 
   int get _revision => session.revision;
 
@@ -207,20 +222,15 @@ class _ViewerScreenState extends State<ViewerScreen> {
       Future.delayed(const Duration(milliseconds: 120), () {
         if (mounted && controller.isReady) {
           controller.value = controller.makeMatrixInSafeRange(m);
-          _stableMatrix = controller.value.clone();
         }
       });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && controller.isReady) _stableMatrix ??= controller.value.clone();
-    });
     loadAnnotations();
     setState(() {});
   }
 
   void _onPageChanged(int? page) {
     if (page == null) return;
-    if (controller.isReady) _stableMatrix = controller.value.clone();
     setState(() {
       pageNumber = page;
       _showIndicator = true;
@@ -343,13 +353,21 @@ class _ViewerScreenState extends State<ViewerScreen> {
       onViewerReady: _onViewerReady,
       onViewSizeChanged: (size, old, c) {
         final keep = _stableMatrix;
-        if (old == null || keep == null || (size.width - old.width).abs() > 1) return;
+        if (old == null || keep == null || (size.width - old.width).abs() > 1) {
+          _stableSize = null;
+          return;
+        }
         // Toolbars appearing/disappearing only change the height: keep zoom and position (Acrobat behaviour).
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && c.isReady) c.value = c.makeMatrixInSafeRange(keep);
+          if (!mounted || !c.isReady) return;
+          _stableSize = null;
+          c.value = c.makeMatrixInSafeRange(keep);
         });
       },
-      onInteractionEnd: horizontal ? (_) => _snapToPage() : (_) => _stableMatrix = controller.value.clone(),
+      onInteractionStart: horizontal ? (_) => _swipeStartPage ??= _pageAtViewCenter() : null,
+      onInteractionEnd: horizontal ? _snapToPage : null,
+      // Single-page mode snaps to pages instead of gliding past them.
+      interactionEndFrictionCoefficient: horizontal ? 1e-20 : 0.0000135,
       onPageChanged: _onPageChanged,
       linkHandlerParams: PdfLinkHandlerParams(onLinkTap: _onLinkTap, linkColor: Colors.transparent),
       onGeneralTap: (context, c, details) {
@@ -446,10 +464,39 @@ class _ViewerScreenState extends State<ViewerScreen> {
     return lo + 1;
   }
 
-  void _snapToPage() {
-    final page = controller.pageNumber;
-    if (page == null || controller.currentZoom > controller.minScale * 1.05) return;
-    controller.goToPage(pageNumber: page, anchor: PdfPageAnchor.all);
+  /// Page shown when a single-page swipe started.
+  int? _swipeStartPage;
+
+  /// Page whose center is nearest the middle of the screen (single-page mode).
+  int _pageAtViewCenter() {
+    final cx = -controller.value.x + controller.viewSize.width / controller.currentZoom / 2;
+    final pages = controller.layout.pageLayouts;
+    var best = 0;
+    for (var i = 1; i < pages.length; i++) {
+      if ((pages[i].center.dx - cx).abs() < (pages[best].center.dx - cx).abs()) best = i;
+    }
+    return best + 1;
+  }
+
+  /// Settles single-page mode on a page after a swipe: a flick turns one page, a slower drag
+  /// lands on the page nearest the middle.
+  void _snapToPage(ScaleEndDetails details) {
+    final start = _swipeStartPage;
+    _swipeStartPage = null;
+    if (!controller.isReady || details.pointerCount > 0) return;
+    final pages = controller.layout.pageLayouts;
+    if (pages.isEmpty) return;
+    var target = _pageAtViewCenter();
+    final vx = details.velocity.pixelsPerSecond.dx;
+    if (start != null && target == start && vx.abs() > 300) target = start + (vx < 0 ? 1 : -1);
+    target = target.clamp(1, pages.length);
+    // Leave a zoomed-in page alone. Pages can differ in size, so compare with the zoom that
+    // fits the page rather than the viewer's minimum.
+    final rect = pages[(start ?? target) - 1];
+    final view = controller.viewSize;
+    final fit = math.min(view.width / (rect.width + 20), view.height / (rect.height + 20));
+    if (controller.currentZoom > fit * 1.05) return;
+    controller.goToPage(pageNumber: target, anchor: PdfPageAnchor.all);
   }
 
   void _onLinkTap(PdfLink link) {
@@ -525,7 +572,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
     final showChrome = chromeVisible || mode != ViewerMode.read;
     Widget viewer = PdfViewer.file(
       session.path,
-      key: ValueKey('viewer$_revision'),
+      // A new layout starts over at the current page, with that layout's initial zoom.
+      key: ValueKey('viewer$_revision-${settings.scrollMode}'),
       controller: controller,
       initialPageNumber: pageNumber ?? _initialPage,
       passwordProvider: _passwordProvider,
@@ -547,6 +595,9 @@ class _ViewerScreenState extends State<ViewerScreen> {
       },
       child: Scaffold(
         extendBodyBehindAppBar: false,
+        // The keyboard covers the page instead of shrinking it: shrinking re-fits the page
+        // (smaller), and dialogs and sheets already move above the keyboard.
+        resizeToAvoidBottomInset: false,
         appBar: showChrome ? (searching ? _searchBar() : _appBar(mode)) : null,
         body: Stack(
           children: [

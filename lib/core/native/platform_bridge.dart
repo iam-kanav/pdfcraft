@@ -57,4 +57,44 @@ class PlatformBridge {
   }
 
   Future<void> print(String path, String name) => _channel.invokeMethod('print', {'path': path, 'name': name});
+
+  /// Which app opens PDFs.
+  Future<DefaultPdfApp> defaultPdfApp() async {
+    final m = await _channel.invokeMethod<Map>('defaultPdfApp') ?? const {};
+    return DefaultPdfApp(
+      switch (m['state']) {
+        'self' => DefaultPdfAppState.self,
+        'other' => DefaultPdfAppState.other,
+        _ => DefaultPdfAppState.none,
+      },
+      app: m['app'] as String?,
+      package: m['package'] as String?,
+    );
+  }
+
+  /// Opens a test PDF so Android asks which app to use, with "Always".
+  Future<void> askDefaultPdfApp() => _channel.invokeMethod('askDefaultPdfApp');
+
+  /// Opens another app's system settings (for "Open by default").
+  Future<void> openAppSettings(String package) => _channel.invokeMethod('openAppSettings', {'package': package});
+}
+
+enum DefaultPdfAppState {
+  /// PDFCraft opens PDFs.
+  self,
+
+  /// Android asks every time.
+  none,
+
+  /// Another app opens PDFs.
+  other,
+}
+
+class DefaultPdfApp {
+  const DefaultPdfApp(this.state, {this.app, this.package});
+
+  final DefaultPdfAppState state;
+
+  /// Name and package of the other app, for [DefaultPdfAppState.other].
+  final String? app, package;
 }

@@ -72,30 +72,57 @@ class Samples {
         build: (c) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Center(child: pw.Text('Formatting Showcase', style: pw.TextStyle(font: sansBold, fontSize: 26, color: PdfColor.fromHex('#1D4ED8')))),
+            pw.Center(
+              child: pw.Text(
+                'Formatting Showcase',
+                style: pw.TextStyle(font: sansBold, fontSize: 26, color: PdfColor.fromHex('#1D4ED8')),
+              ),
+            ),
             pw.SizedBox(height: 6),
-            pw.Center(child: pw.Text('A centered subtitle line', style: pw.TextStyle(font: serifItalic, fontSize: 13))),
+            pw.Center(
+              child: pw.Text('A centered subtitle line', style: pw.TextStyle(font: serifItalic, fontSize: 13)),
+            ),
             pw.SizedBox(height: 18),
             pw.RichText(
               text: pw.TextSpan(
                 style: pw.TextStyle(font: serif, fontSize: 12),
                 children: [
                   const pw.TextSpan(text: 'This paragraph mixes '),
-                  pw.TextSpan(text: 'red words', style: pw.TextStyle(color: PdfColor.fromHex('#DC2626'))),
+                  pw.TextSpan(
+                    text: 'red words',
+                    style: pw.TextStyle(color: PdfColor.fromHex('#DC2626')),
+                  ),
                   const pw.TextSpan(text: ', '),
-                  const pw.TextSpan(text: 'underlined text', style: pw.TextStyle(decoration: pw.TextDecoration.underline)),
+                  const pw.TextSpan(
+                    text: 'underlined text',
+                    style: pw.TextStyle(decoration: pw.TextDecoration.underline),
+                  ),
                   const pw.TextSpan(text: ', '),
-                  const pw.TextSpan(text: 'struck text', style: pw.TextStyle(decoration: pw.TextDecoration.lineThrough)),
+                  const pw.TextSpan(
+                    text: 'struck text',
+                    style: pw.TextStyle(decoration: pw.TextDecoration.lineThrough),
+                  ),
                   const pw.TextSpan(text: ' and '),
-                  pw.TextSpan(text: 'monospaced code', style: pw.TextStyle(font: mono)),
-                  const pw.TextSpan(text: ' inside ordinary serif prose that wraps over more than one line of the page.'),
+                  pw.TextSpan(
+                    text: 'monospaced code',
+                    style: pw.TextStyle(font: mono),
+                  ),
+                  const pw.TextSpan(
+                    text: ' inside ordinary serif prose that wraps over more than one line of the page.',
+                  ),
                 ],
               ),
             ),
             pw.SizedBox(height: 14),
-            pw.UrlLink(destination: 'https://example.com/docs', child: pw.Text('Visit the documentation', style: pw.TextStyle(font: sans, fontSize: 12))),
+            pw.UrlLink(
+              destination: 'https://example.com/docs',
+              child: pw.Text('Visit the documentation', style: pw.TextStyle(font: sans, fontSize: 12)),
+            ),
             pw.SizedBox(height: 14),
-            pw.Align(alignment: pw.Alignment.centerRight, child: pw.Text('Signed, The Team', style: pw.TextStyle(font: sans, fontSize: 12))),
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text('Signed, The Team', style: pw.TextStyle(font: sans, fontSize: 12)),
+            ),
           ],
         ),
       ),
@@ -147,4 +174,33 @@ Future<List<String>> pageTexts(String path, {String? password}) async {
   } finally {
     await doc.dispose();
   }
+}
+
+/// A one-page PDF written by hand whose text moves between lines with `T*` and `'`, as many
+/// generators (ReportLab, LaTeX) do. PDFBox runs those through other operators internally.
+Future<void> writeLineOperatorPdf(String path) async {
+  const content =
+      'BT /F1 12 Tf 14 TL 72 720 Td (First line stays.) Tj T* (Second line gets edited.) Tj '
+      "(Third line stays too.) ' ET";
+  final objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R '
+        '/Resources << /Font << /F1 5 0 R >> >> >>',
+    '<< /Length ${content.length} >>\nstream\n$content\nendstream',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  final out = StringBuffer('%PDF-1.4\n');
+  final offsets = <int>[];
+  for (var i = 0; i < objects.length; i++) {
+    offsets.add(out.length);
+    out.write('${i + 1} 0 obj\n${objects[i]}\nendobj\n');
+  }
+  final xref = out.length;
+  out.write('xref\n0 ${objects.length + 1}\n0000000000 65535 f \n');
+  for (final o in offsets) {
+    out.write('${o.toString().padLeft(10, '0')} 00000 n \n');
+  }
+  out.write('trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n');
+  await File(path).writeAsString(out.toString());
 }

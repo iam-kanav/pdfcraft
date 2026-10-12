@@ -255,12 +255,15 @@ class DocumentStats {
       body = best.key;
     }
 
-    // Repeated header/footer texts.
+    // Repeated header/footer texts. Running headers are body-sized or smaller; a larger
+    // line near the top of every page is a heading ("Chapter 3" when chapters start
+    // a page), not a header.
     final counts = <String, int>{};
     for (final page in pages) {
       final seen = <String>{};
       for (final line in page.lines) {
         if (!isInMargin(line, page)) continue;
+        if (line.fontSize >= body * headingRatio - 0.01) continue;
         final n = normalizeMarginText(line.text);
         if (n.isNotEmpty) seen.add(n);
       }
@@ -992,6 +995,11 @@ class _PageAnalyzer {
     if (!edgeOk) return false;
     final shortBy = p.colX1 - p.x1;
     if (shortBy > math.max(3 * em, 0.12 * p.colWidth) && _endsSentence(p.text)) return false;
+    // Extra space after a finished sentence separates paragraphs, even when the previous line
+    // reaches the margin. Tops and bottoms both have to move apart, so a superscript or a
+    // taller glyph on one line doesn't count as space.
+    final gap = math.min(pitch, n.y1 - p.y1);
+    if (gap > _pitch(size) * 1.2 && _endsSentence(p.text)) return false;
     return true;
   }
 

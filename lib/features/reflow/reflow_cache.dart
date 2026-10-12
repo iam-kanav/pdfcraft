@@ -11,7 +11,7 @@ import '../../core/models/doc_structure.dart';
 
 /// Bump when extraction or analysis changes what Smart reading produces, so
 /// documents analyzed by an older version are analyzed again.
-const reflowCacheVersion = 1;
+const reflowCacheVersion = 2;
 
 /// Saved Smart reading results, so a document reopens instantly. Entries are
 /// keyed by the file's path, size and modification time, so an edited file

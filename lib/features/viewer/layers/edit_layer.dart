@@ -597,6 +597,19 @@ class _TextBlockEditorState extends State<_TextBlockEditor> {
   late bool _serif = widget.block?['serif'] as bool? ?? false;
   late Color _color = widget.block?['color'] == null ? Colors.black : Color(widget.block!['color'] as int);
 
+  static const _palette = [
+    Colors.black,
+    Color(0xFF374151),
+    Color(0xFFE11D48),
+    Color(0xFF2563EB),
+    Color(0xFF16A34A),
+    Color(0xFFF59E0B),
+    Colors.white,
+  ];
+
+  /// The palette, led by the text's original color when it isn't in it.
+  late final List<Color> _swatches = [if (!_palette.any((c) => c.toARGB32() == _color.toARGB32())) _color, ..._palette];
+
   @override
   Widget build(BuildContext context) {
     final isNew = widget.block == null;
@@ -654,15 +667,7 @@ class _TextBlockEditorState extends State<_TextBlockEditor> {
               Slider(value: _size, min: 4, max: 96, onChanged: (v) => setState(() => _size = v)),
               Wrap(
                 children: [
-                  for (final c in const [
-                    Colors.black,
-                    Color(0xFF374151),
-                    Color(0xFFE11D48),
-                    Color(0xFF2563EB),
-                    Color(0xFF16A34A),
-                    Color(0xFFF59E0B),
-                    Colors.white,
-                  ])
+                  for (final c in _swatches)
                     ColorDot(
                       color: c,
                       selected: c.toARGB32() == _color.toARGB32(),

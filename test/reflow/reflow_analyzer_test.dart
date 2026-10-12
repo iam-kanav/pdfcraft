@@ -286,6 +286,40 @@ void main() {
       expect(describe(kept), contains('P:Page 3 of 3'));
     });
 
+    test('keeps chapter headings that open every page', () {
+      final pages = [
+        for (var i = 1; i <= 5; i++)
+          page(i, [
+            tl('Chapter $i: Section Title $i', 40, size: 22, bold: true),
+            tl('Body text of chapter $i is written here and it fills the whole width of the', 100, right: r),
+            tl('text column before wrapping.', 112),
+          ]),
+      ];
+      expect(describe(analyzeDocument(pages)), [
+        for (var i = 1; i <= 5; i++) ...[
+          'H1:Chapter $i: Section Title $i',
+          'P:Body text of chapter $i is written here and it fills the whole width of the text column before wrapping.',
+        ],
+      ]);
+    });
+
+    test('a little extra space after a sentence starts a new paragraph', () {
+      // Lines 15 apart; the second paragraph starts 21 below the first's last line.
+      final doc = analyzeDocument([
+        page(1, [
+          tl('The first paragraph is written here and it fills the whole width of the', 100, right: r),
+          tl('text column before it wraps and ends on this line, also at the margin.', 115, right: r),
+          tl('The second paragraph starts after a small gap and carries on for a', 136, right: r),
+          tl('second line of text.', 151),
+        ]),
+      ]);
+      expect(describe(doc), [
+        'P:The first paragraph is written here and it fills the whole width of the text column before it wraps and '
+            'ends on this line, also at the margin.',
+        'P:The second paragraph starts after a small gap and carries on for a second line of text.',
+      ]);
+    });
+
     test('bulleted and numbered lists with continuation lines and nesting', () {
       final doc = analyzeDocument([
         page(1, [
